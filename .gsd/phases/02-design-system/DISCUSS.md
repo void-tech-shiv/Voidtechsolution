@@ -46,3 +46,4 @@ Establish a comprehensive, accessible, dark-mode-first design system and reusabl
 - `npm run build` (`next build`) compiles static and dynamic pages including `/design-system` with 0 errors.
 - Complete responsive inspection (320px to 1536px) with zero horizontal overflow.
 - Accessible keyboard navigation and visible focus indicators across all interactive elements.
+

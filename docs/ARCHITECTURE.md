@@ -1,7 +1,7 @@
 # ARCHITECTURE.md — System Architecture & Technology Blueprint
 
 ## 1. System Overview
-**VOIDTECH SOLUTION** is built as a unified full-stack web application on the **Next.js App Router** paradigm, combining React Server Components (RSC) for zero-client-bundle rendering, Next.js Route Handlers for RESTful API services, Server Actions for transactional form processing, and **Prisma ORM** interacting with a hosted **PostgreSQL** database.
+**VOIDTECH SOLUTION** is built as a unified full-stack web application on the **Next.js App Router** paradigm, combining React Server Components (RSC) for zero-client-bundle rendering, Next.js Route Handlers for RESTful API services, Server Actions for transactional form processing, a **Repository Pattern Abstraction Layer**, and **Prisma ORM** interacting with a hosted **PostgreSQL** database.
 
 ```mermaid
 flowchart TD
@@ -17,9 +17,11 @@ flowchart TD
         Validation["Zod Validation Layer"]
     end
 
-    subgraph DataLayer["Persistence Layer (Pending Phase 3)"]
-        PrismaClient["Prisma ORM Client (Singleton)"]
-        Postgres["PostgreSQL Database (Neon / Supabase)"]
+    subgraph DataLayer["Persistence & Repository Layer"]
+        Repo["Domain Repositories (src/server/repositories)"]
+        PrismaClient["Prisma ORM Client Singleton (src/lib/prisma.ts)"]
+        Postgres["PostgreSQL Database (Neon / Supabase / RDS)"]
+        StaticFallback["Static Fallback (src/config/site.ts)"]
     end
 
     Client -->|HTTPS / WSS| CDN
@@ -31,8 +33,10 @@ flowchart TD
     Middleware --> Actions
     Routes --> Validation
     Actions --> Validation
-    Validation --> PrismaClient
-    PrismaClient -.->|Phase 3 Migration| Postgres
+    Validation --> Repo
+    Repo --> PrismaClient
+    Repo -.->|Offline / Build-Time Fallback| StaticFallback
+    PrismaClient --> Postgres
 ```
 
 ---
@@ -55,12 +59,22 @@ src/
 ├── config/               # Static configuration (siteConfig, servicesRegistry, nav)
 ├── hooks/                # Custom client-side React hooks
 ├── lib/                  # Shared utilities (cn, formatters, prisma singleton)
-├── server/               # Server-only business logic & repositories (scaffolded)
+│   ├── prisma.ts         # Resilient PrismaClient singleton & health check
+│   └── utils.ts
+├── server/               # Server-only business logic & repositories
+│   └── repositories/     # Type-safe domain repositories
+│       ├── enquiries.repo.ts
+│       ├── services.repo.ts
+│       ├── portfolio.repo.ts
+│       ├── users.repo.ts
+│       ├── settings.repo.ts
+│       └── index.ts      # Barrel export
 ├── types/                # Domain types, Prisma re-exports, API envelopes
 └── validations/          # Zod validation schemas (enquiry, auth, content)
 
 prisma/
-└── schema.prisma         # Declarative PostgreSQL schema (Pending Phase 3)
+├── schema.prisma         # Declarative PostgreSQL schema definitions
+└── seed.ts               # Programmatic seeder (18 services, settings, projects)
 
 docs/                     # Architectural, system & operational documentation
 tests/                    # Vitest unit/component tests & Playwright E2E suites
@@ -68,31 +82,9 @@ tests/                    # Vitest unit/component tests & Playwright E2E suites
 
 ---
 
-## 3. UI Component Architecture (Phase 2 Additions)
+## 3. Data Access & Repository Layer (Phase 3 Additions)
 
-### Button Architecture (`src/components/ui/button.tsx`)
-- Common `Button` component supporting polymorphic variants: `primary`, `secondary`, `outline`, `ghost`, `glow`.
-- Named forwardRef convenience wrappers: `PrimaryButton`, `SecondaryButton`, `OutlineButton`, `GhostButton`, `GlowButton`.
-- Built-in loading state with accessible SVG spinner (`isLoading`), left and right icon slots, and active scale animations.
-
-### Card Architecture (`src/components/ui/card.tsx`)
-- `BaseCard`: Solid elevated charcoal surface.
-- `GlassCard`: Frosted backdrop blur with hover glow.
-- `ServiceCard`: Agency service presentation with category pill and deliverables.
-- `PricingCard`: Tier selector with features checklist and popular highlight.
-- `ProjectCard`: Case study presentation with client, industry, and quantified metrics.
-
-### Form Architecture (`src/components/ui/form.tsx`)
-- Unconditional `React.useId()` hooks generating linked input and error IDs.
-- `aria-invalid` and `aria-describedby` accessibility bindings.
-- Primitives: `Input`, `Textarea`, `Select`, `Checkbox`, `FormLabel`.
-
-### Feedback Architecture (`src/components/feedback/index.tsx` & `src/components/ui/badge.tsx`)
-- Semantic `Badge` variants (`default`, `purple`, `success`, `warning`, `error`, `outline`) with pulse dots.
-- `LoadingState`, `EmptyState`, and `ErrorState` with retry callbacks.
-
----
-
-## 4. Database Layer Status
-- **PostgreSQL + Prisma:** Schemas exist in `prisma/schema.prisma` and client is generated in `node_modules/@prisma/client`.
-- **Implementation Status:** Physical database connection, pooling, and migrations remain explicitly scheduled for **Phase 3: Database Design, Schema Setup & Data Layer**.
+- **Decoupling from Direct ORM Calls:** Route Handlers and Server Components never query `prisma` directly. They import domain repositories (`EnquiriesRepo`, `ServicesRepo`, `PortfolioRepo`, `UsersRepo`, `SettingsRepo`).
+- **Offline & Build-Time Resilience:** Next.js static page generation (`next build`) runs deterministically even without live PostgreSQL credentials. Repositories catch initialization exceptions and seamlessly supply typed static fallback data.
+- **Connection Pooling:** Datasource supports pooled connection strings via `DATABASE_URL` (PgBouncer/Prisma Accelerate) alongside direct migration connections via `DIRECT_URL`.
+- **Seeding Engine:** `prisma/seed.ts` upserts all 18 business services, initial portfolio projects, and default system settings.

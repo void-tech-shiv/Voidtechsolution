@@ -24,3 +24,4 @@
 - `next lint`: 0 ESLint warnings or errors.
 - `next build`: Successfully generated production bundles for static and dynamic routes including `/design-system`.
 - Responsive layout: Verified from 320px to 1536px with 0 horizontal scroll.
+
