@@ -82,7 +82,7 @@ export function Header() {
 
         {/* Action Controls & Mobile Trigger */}
         <div className="flex items-center gap-3">
-          <Link href="/#contact" tabIndex={-1} className="hidden sm:inline-flex">
+          <Link href="/contact" tabIndex={-1} className="hidden sm:inline-flex">
             <Button size="sm" variant="glow">
               Start Your Project
             </Button>
@@ -143,7 +143,7 @@ export function Header() {
             </div>
 
             <div className="pt-6 border-t border-void-border/60 flex flex-col gap-3">
-              <Link href="/#contact" tabIndex={-1} onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/contact" tabIndex={-1} onClick={() => setMobileMenuOpen(false)}>
                 <Button size="md" variant="primary" className="w-full">
                   Start Your Project
                 </Button>

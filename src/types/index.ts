@@ -1,4 +1,4 @@
-import type { EnquiryStatus, ServiceCategory, UserRole } from "@prisma/client";
+import type { EnquiryStatus, ServiceCategory, UserRole, Prisma } from "@prisma/client";
 
 export type { EnquiryStatus, ServiceCategory, UserRole };
 
@@ -76,6 +76,10 @@ export interface EnquiryInput {
   budgetRange?: string;
   timeline?: string;
   message: string;
+  selectedPackage?: string;
+  additionalConfig?: Prisma.InputJsonValue;
+  referenceUrl?: string;
+  consentGiven?: boolean;
 }
 
 /**

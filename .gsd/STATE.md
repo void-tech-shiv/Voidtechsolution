@@ -1,47 +1,45 @@
 ---
-updated: 2026-11-12T02:27:30+05:30
+updated: 2026-11-12T03:10:00+05:30
 ---
 
 # Project State — VOIDTECH SOLUTION
 
 ## Current Position
 
-**Milestone:** Milestone 3 — Public Marketing Pages  
-**Phase:** Phase 5 — Public Marketing Pages: About, Portfolio & Detailed Project Case Studies  
-**Status:** completed  
-**Plan:** Plan 05-01 — About Page, Portfolio Discovery & Dynamic Case Studies  
+**Milestone:** Milestone 4 — Commercial & Lead Generation  
+**Phase:** Phase 6 — Public Marketing Pages: Pricing Calculator, Contact & Enquiry Flow  
+**Status:** complete (awaiting user closure approval)  
+**Plan:** Plan 06-01 — Pricing Catalog, Estimation Calculator & Multi-Step Enquiry Flow (Executed & Verified)  
 
 ## Last Action
 
-- Completed Phase 5 implementation and empirical verification:
-  - Built dedicated `/about` page (`src/app/about/page.tsx`) with all 7 strategic sections (Hero, Who We Are narrative, Mission & Vision, 6 Core Values, 6 Engineering Phases, 7-Domain Tech Stack Matrix, and Collaboration CTA).
-  - Built dedicated `/portfolio` discovery page (`src/app/portfolio/page.tsx`) with server-side repository integration and client-side interactive filtering component (`src/components/sections/portfolio-filter.tsx`).
-  - Built dynamic `/portfolio/[slug]` case study route (`src/app/portfolio/[slug]/page.tsx`) with Next.js 15 async `params`, `generateStaticParams()`, `generateMetadata()`, `notFound()`, and an in-depth 11-section case study layout.
-  - Expanded `PortfolioRepo` fallback prototypes across 5 technical domains (`algorithmic-liquidity-engine`, `autonomous-ai-ops-agent`, `distributed-telemetry-data-mesh`, `decentralized-identity-vault`, `edge-iot-fleet-monitor`).
-  - Updated `mainNav` in `src/config/site.ts`: About points to `/about`, Portfolio points to `/portfolio`, keeping section anchors for Services, Pricing, and Contact.
-  - Authored comprehensive test suite in `tests/unit/about-portfolio.test.tsx` (16 passing tests).
-  - Ran full verification gates:
-    - `npx tsc --noEmit`: 0 errors.
-    - `npm run lint`: 0 warnings, 0 errors.
-    - `npm test`: 8/8 test suites passed, 112/112 tests passed.
-    - `npm run build`: Next.js production build succeeded with clean static generation of `/about`, `/portfolio`, and all dynamic `/portfolio/[slug]` routes.
-  - Authored `.gsd/phases/05-about-portfolio/05-01-SUMMARY.md` and `.gsd/phases/05-about-portfolio/VERIFICATION.md`.
-  - Updated `docs/PROJECT_STATUS.md`, `docs/ARCHITECTURE.md`, `docs/CHANGELOG.md`, `docs/TESTING.md`, `README.md`, `.gsd/ROADMAP.md`, `.gsd/TODO.md`.
+- Completed all Phase 6 deliverables on working branch `session/phase-6-pricing-contact`.
+- Authored dedicated `/pricing` page with 10 approved packages, category filters, interactive calculator, and commercial guarantees.
+- Built interactive `PricingCalculator` (`src/components/sections/pricing-calculator.tsx`) with scope serialization to `/contact`.
+- Authored dedicated `/contact` page with agency availability standards, remote-first SLA banner, and 3-step lead intake form.
+- Built `ContactEnquiryForm` (`src/components/sections/contact-enquiry-form.tsx`) with URL param pre-fill, progressive validation, full data preservation on error, and engaging success screen.
+- Implemented `submitEnquiryAction` and `POST /api/enquiries` with token-bucket rate limiting, duplicate cooldown guard, honeypot bot trap, and Nodemailer transactional email dispatch.
+- Updated navigation in `src/config/site.ts` to link to `/pricing` and `/contact`.
+- Authored 18 comprehensive tests in `tests/unit/pricing-contact.test.tsx`.
+- Ran 100% of project tests: **130/130 passing across 9 test suites**.
+- Verified strict compiler (`tsc --noEmit`), linter (`next lint`), and production build (`next build`).
+- Preserved zero remote migrations boundary (migration proposal documented in `MIGRATION_PROPOSAL.md`).
 
 ## Next Steps
 
-1. Present Phase 5 completion and verification report to user.
-2. Enforce strict stop condition: await user authorization before starting Phase 6.
-3. Do NOT deploy, do NOT run migrations or seeds, and do NOT send real emails.
+1. Present Phase 6 Completion Report and Closure Audit to the user.
+2. Await user review and authorization to proceed to Phase 7 (Admin Authentication & Security Middleware).
+3. Strictly DO NOT start Phase 7 until authorized.
 
 ## Active Decisions
 
 | Decision | Choice | Made | Affects |
 |----------|--------|------|---------|
-| Concept Governance | Visible `CONCEPT` badge and `SIMULATED BENCHMARK` tags on all prototypes | 2026-11-12 | `/portfolio`, `/portfolio/[slug]`, `PortfolioRepo` |
-| Navigation Direct Routes | `/about` and `/portfolio` now point directly to dedicated pages | 2026-11-12 | `src/config/site.ts`, `Header`, `Footer` |
-| Next.js 15 Async Params | `await params` in dynamic route and `generateMetadata` | 2026-11-12 | `src/app/portfolio/[slug]/page.tsx` |
-| Vitest Test Timeout | Set `testTimeout: 20000` to prevent remote DB handshake timeout | 2026-11-12 | `vitest.config.ts` |
+| Currency & Pricing | All 10 tiers strictly in INR (₹999 to ₹59,999+) | 2026-11-12 | `/pricing`, `PricingCalculator` |
+| Calculator Architecture | Add-on selection with dynamic range estimation & scope transfer | 2026-11-12 | `PricingCalculator`, `/contact` |
+| Multi-Step Form | 3-step progressive disclosure with Zod client/server validation | 2026-11-12 | `ContactEnquiryForm` |
+| Non-blocking Email | Transactional emails dispatched asynchronously without failing lead | 2026-11-12 | Enquiry API / Action |
+| Migration Strategy | Proposed in MIGRATION_PROPOSAL.md with zero live execution | 2026-11-12 | Remote DB safety |
 
 ## Blockers
 
@@ -49,4 +47,6 @@ updated: 2026-11-12T02:27:30+05:30
 
 ## Session Context
 
-- Working branch: `session/phase-5-about-portfolio`
+- Working branch: `session/phase-6-pricing-contact`
+- Latest test run: 130/130 passing across 9 suites
+- Production build: Succeeded (16/16 routes compiled)

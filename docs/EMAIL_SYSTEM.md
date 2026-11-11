@@ -110,3 +110,24 @@ ADMIN_ALERT_EMAIL="admin@voidtechsolution.com"
 1. **Never Commit `.env`:** The file `.env` is local-only and ignored by `.gitignore`.
 2. **App Password Revocation:** If an SMTP app password or API key is ever suspected of compromise, revoke it immediately in the email provider console and generate a fresh key.
 3. **No Credential Chat Pasting:** Antigravity and automated agents will never ask you to paste real passwords or secrets into chat. Enter them directly into your local `.env` file.
+
+---
+
+## 7. Phase 6: Enquiry Notification Dispatch Subsystem (`src/server/email/enquiry-mailer.ts`)
+
+In Phase 6, the dedicated transactional enquiry mailer `dispatchEnquiryNotifications(enquiry)` was implemented to handle inbound lead communication:
+
+```typescript
+export async function dispatchEnquiryNotifications(
+  enquiry: Enquiry,
+  customTransporter?: Transporter
+): Promise<{ customerEmailSent: boolean; adminEmailSent: boolean }>
+```
+
+### Key Architectural Behaviors
+1. **Independent Dual Dispatch:** Dispatches both the prospect confirmation email and the internal administrator alert email concurrently.
+2. **Error Isolation:** A failure in sending the admin alert (or customer email) does not throw an unhandled exception or abort the other email.
+3. **Delivery Audit Tracking:** Both dispatches record delivery status into the `EmailDelivery` database table with sanitized message payloads.
+4. **Subject Integrity:**
+   - Customer confirmation: `We've Received Your Project Enquiry — VOIDTECH SOLUTION`
+   - Admin notification: `New Project Enquiry — VOIDTECH SOLUTION: [Lead Name] [Ref: ...]`

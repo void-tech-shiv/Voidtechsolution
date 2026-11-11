@@ -90,7 +90,7 @@ describe("Phase 3: Email Templates Visual Identity & Content Integrity", () => {
       enquiryId: "enq_test_123456",
     });
 
-    expect(subject).toContain("Enquiry Received");
+    expect(subject).toContain("We've Received Your Project Enquiry");
     expect(html).toContain("Enterprise ERP & CRM Development");
     expect(html).toContain("24 business hours");
     expect(text).toContain("Kavita Sharma");
@@ -109,7 +109,7 @@ describe("Phase 3: Email Templates Visual Identity & Content Integrity", () => {
       message: "We need custom inventory tracking and barcode scanning.",
     });
 
-    expect(subject).toContain("[NEW LEAD]");
+    expect(subject).toContain("New Project Enquiry");
     expect(subject).toContain("Rohan Varma");
     expect(html).toContain("rohan@enterprise.in");
     expect(html).toContain("+91 9876543210");

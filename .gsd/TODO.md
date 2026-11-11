@@ -104,8 +104,28 @@
 - [x] Synchronize documentation (`PROJECT_STATUS.md`, `ARCHITECTURE.md`, `TESTING.md`, `CHANGELOG.md`, `README.md`)
 - [x] Enforce strict stop condition: Phase 6 NOT started, awaiting user authorization
 
+## Phase 6: Public Marketing Pages — Pricing Calculator, Contact & Enquiry Flow (Completed & Verified)
+- [x] Author Phase 6 GSD planning artifacts (`.gsd/phases/06-pricing-contact/DISCUSS.md`, `06-01-PLAN.md`)
+- [x] Author database migration proposal (`.gsd/phases/06-pricing-contact/MIGRATION_PROPOSAL.md`) without live execution
+- [x] Update `prisma/schema.prisma` with optional non-breaking fields and generate client (`npx prisma generate`)
+- [x] Update `src/types/index.ts` and `EnquiriesRepo` to persist new fields
+- [x] Implement token-bucket rate limiter and SHA-256 duplicate submission fingerprinting (`src/server/security/rate-limiter.ts`)
+- [x] Implement dedicated transactional email templates and enquiry mailer (`src/server/email/enquiry-mailer.ts`)
+- [x] Implement Server Action `submitEnquiryAction` (`src/server/actions/enquiry.actions.ts`) with honeypot bot trap
+- [x] Implement REST API Route Handler `POST /api/enquiries` (`src/app/api/enquiries/route.ts`)
+- [x] Implement interactive `PricingCalculator` (`src/components/sections/pricing-calculator.tsx`) with real-time recalculation
+- [x] Implement interactive `PricingTable` (`src/components/sections/pricing-table.tsx`) with category filters
+- [x] Implement dedicated Pricing page (`src/app/pricing/page.tsx`) with all 10 approved tiers, calculator, and 4 guarantees
+- [x] Implement multi-step `ContactEnquiryForm` (`src/components/sections/contact-enquiry-form.tsx`) with URL pre-fill and data preservation
+- [x] Implement dedicated Contact page (`src/app/contact/page.tsx`) with remote-first availability standards and 24h SLA
+- [x] Update `mainNav` in `src/config/site.ts` to link to `/pricing` and `/contact`
+- [x] Author comprehensive test suite (`tests/unit/pricing-contact.test.tsx`, 18 tests)
+- [x] Run full quality gate: `tsc --noEmit` (0 errors), `next lint` (0 errors), `vitest run` (130 tests passed across 9 suites), `next build` (clean compilation)
+- [x] Author `.gsd/phases/06-pricing-contact/06-01-SUMMARY.md` and `VERIFICATION.md`
+- [x] Synchronize documentation (`PROJECT_STATUS.md`, `ARCHITECTURE.md`, `API_DOCUMENTATION.md`, `DATABASE_DESIGN.md`, `EMAIL_SYSTEM.md`, `SECURITY.md`, `TESTING.md`, `CHANGELOG.md`, `README.md`)
+- [x] Enforce strict stop condition: Phase 7 NOT started, awaiting user authorization
+
 ## Future Phases (Pending Milestone Approvals)
-- [ ] Phase 6: Public Marketing Pages — Pricing Calculator, Contact & Enquiry Flow
 - [ ] Phase 7: Secure Admin authentication & session management
 - [ ] Phase 8: Admin dashboard shell & analytics overview
 - [ ] Phase 9: Admin enquiry management & pipeline Kanban

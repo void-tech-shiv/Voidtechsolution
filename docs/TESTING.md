@@ -119,3 +119,29 @@ npm run build
   10. Accessible `Accordion` keyboard toggle, ARIA attributes, and empty fallback state.
   11. Direct email copy-to-clipboard functionality in `QuickInquiry`.
   12. Header and Footer navigation link consistency.
+
+---
+
+## 6. Phase 6 Test Suite — Pricing, Calculator & Contact System
+
+- **Test File:** `tests/unit/pricing-contact.test.tsx` (18 tests)
+- **Total Project Tests:** 130 passing across 9 test suites (100% pass rate).
+- **Coverage Areas:**
+  1. **Pricing Table Rendering:** All 10 approved packages with INR pricing (₹999 to ₹59,999+) and deliverable lists.
+  2. **Category Filter Tabs:** Correct filtering across Websites, Platforms & E-Commerce, Enterprise & AI, and All Tiers.
+  3. **Package Selection Links:** Valid `/contact?package=[slug]` navigation targets.
+  4. **Calculator Baseline Price:** Instant calculation for default category (₹999 for Basic Static).
+  5. **Category Switch:** Automatic baseline recalculation on discipline change (e.g. SaaS -> ₹24,999+).
+  6. **Add-On Selection:** Incremental recalculation when selecting architectural modules.
+  7. **Custom Quotation Handling:** Sets custom quote flag when bespoke modules (e.g. Legacy Migration, 3D WebGL) are selected.
+  8. **Delivery Priority Urgency:** Calculates +25% sprint acceleration multiplier.
+  9. **Calculator Reset Action:** Restores baseline configuration and clears add-ons.
+  10. **Progressive Form Navigation:** Step 1 -> Step 2 -> Step 3 transitions.
+  11. **Step-by-Step Validation:** Enforces category, budget, timeline, minimum brief length, name, email, and consent before progressing/submitting.
+  12. **Success Screen Rendering:** Unique Reference ID (`ENQ-...`), 3-step onboarding guide, and reset action.
+  13. **Data Preservation on Server Failure:** Form inputs retained when database or network encounters error, rendering accessible alert with "Retry Submission" button.
+  14. **Honeypot Bot Trap:** Fast-path silent rejection when `website_url` is populated.
+  15. **Duplicate Prevention:** Rejects identical submissions within 60-second cooldown window.
+  16. **Non-Blocking Email Notifications:** Asynchronously invokes `dispatchEnquiryNotifications()`.
+  17. **API Route Status 201:** `POST /api/enquiries` returns created status and enquiry ID.
+  18. **API Route Status 400:** `POST /api/enquiries` returns structured validation error envelope.

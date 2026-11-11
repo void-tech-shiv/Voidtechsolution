@@ -49,6 +49,10 @@ model Enquiry {
   budgetRange     String?
   timeline        String?
   message         String          @db.Text
+  selectedPackage String?
+  additionalConfig Json?
+  referenceUrl    String?
+  consentGiven    Boolean         @default(true)
   status          EnquiryStatus   @default(NEW)
   internalNotes   String?         @db.Text
   ipHash          String?

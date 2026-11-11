@@ -1,8 +1,8 @@
 # PROJECT_STATUS.md — VOIDTECH SOLUTION Status Dashboard
 
 > **Current Status as of:** 2026-11-12  
-> **Active Milestone:** Milestone 3 — Phase 5: About Page, Portfolio & Detailed Project Case Studies (Completed & Verified)  
-> **Strict Stop Condition:** STRICTLY DO NOT START PHASE 6 until user reviews and explicitly authorizes start.
+> **Active Milestone:** Milestone 4 — Phase 6: Interactive Pricing Calculator, Contact System & Enquiry Management Backend (Completed & Verified)  
+> **Strict Stop Condition:** STRICTLY DO NOT START PHASE 7 until user reviews and explicitly authorizes start.
 
 ---
 
@@ -12,11 +12,11 @@
 |---|---|---|---|---|
 | **Phase 1: Foundation** | M1 | Scaffolding, TypeScript strict, Next.js, Prisma schema, Docs | ✅ Complete | Verified clean build & tests |
 | **Phase 2: Design System** | M2 | Brand tokens, typography, UI components, Header, Footer, Preview | ✅ Complete | Verified 32 tests, clean build |
-| **Phase 3: Database & Core Services** | M2 | All 10 models, 10 INR pricing packages, Nodemailer SMTP service, OTP engine, Repositories, Seeder, Credential Readiness | ✅ Complete | Verified 82 tests, clean build |
+| **Phase 3: Database & Core Services** | M3 | All 10 models, 10 INR pricing packages, Nodemailer SMTP service, OTP engine, Repositories, Seeder, Credential Readiness | ✅ Complete | Verified 82 tests, clean build |
 | **Phase 4: Home & Services** | M3 | Hero, Brand Intro, 18-Service Catalog, Why Us, 7-Stage Process, Concept Lab, INR Pricing Preview, FAQ Accordion, Closing CTA | ✅ Complete | Verified 96 tests, clean build |
 | **Phase 5: About & Portfolio**| M3 | Agency story, engineering approach, 6 values, tech matrix, interactive portfolio discovery, dynamic case studies | ✅ Complete | Verified 112 tests, clean build |
-| **Phase 6: Pricing & Contact**| M4 | Tier selector, cost estimator, lead enquiry form | ⏸️ Pending | Strictly awaiting user authorization |
-| **Phase 7: Authentication** | M5 | Admin login, sessions, CSRF, middleware security | ⬜ Pending | Security controls specified |
+| **Phase 6: Pricing & Contact**| M4 | 10 approved INR packages, interactive cost calculator, 3-step lead enquiry intake, Nodemailer transactional mailer, rate limiting & anti-spam | ✅ Complete | Verified 130 tests (9 suites), clean build |
+| **Phase 7: Authentication** | M5 | Admin login, sessions, CSRF, middleware security | ⏸️ Pending | Strictly awaiting user authorization |
 | **Phase 8: Admin Shell** | M5 | Admin layout, navigation, analytics overview | ⬜ Pending | Architecture specified |
 | **Phase 9: Enquiry Pipeline**| M6 | Lead triage Kanban, status management, email triggers | ⬜ Pending | Data model specified |
 | **Phase 10: Admin CMS** | M6 | Portfolio, Service, and Pricing administration | ⬜ Pending | Repositories implemented |
@@ -25,44 +25,60 @@
 
 ---
 
-## 2. Phase 5 Deliverables Breakdown
+## 2. Phase 6 Deliverables Breakdown
 
 ### ✅ Completed & Empirically Verified
-- [x] **Dedicated About Page (`src/app/about/page.tsx`):**
-  - Section 1 — Hero: Approved headline *"Engineering Ideas Into Digital Reality."*, supporting statement, *"Explore Our Work"* (`/portfolio`) and *"Start Your Project"* (`/#contact`) CTAs.
-  - Section 2 — Who We Are: Transparent statement establishing VOIDTECH SOLUTION as an engineering-first studio; zero fabricated employee counts, founding dates, or certifications.
-  - Section 3 — Mission & Vision: Exact approved mission (*"Transform ideas into reliable, useful and maintainable digital solutions."*) and vision (*"Make modern technology more accessible to businesses and innovators through thoughtful software engineering."*).
-  - Section 4 — Core Values: 6 pillars (Engineering Quality, Transparent Communication, Practical Innovation, Maintainable Architecture, User-Centered Design, Continuous Improvement).
-  - Section 5 — Engineering Approach: 6 structured phases (Understand the requirement, Define the architecture, Design the experience, Develop the solution, Test thoroughly, Deliver and support).
-  - Section 6 — Technology Stack Matrix: 7 categorized domains (Frontend, Backend, Database, AI & Automation, Mobile, Cloud & DevOps, Design) without unverified partnerships.
-  - Section 7 — Closing CTA: *"Have an idea worth building?"* linking to `/#contact`.
-- [x] **Dedicated Portfolio Listing Page (`src/app/portfolio/page.tsx`):**
-  - Hero: Approved headline *"Selected Work & Engineering Concepts."* with subtext.
-  - Integration with `PortfolioRepo.getAllProjects()` with resilient try/catch fallback.
-  - Interactive client-side filtering component (`src/components/sections/portfolio-filter.tsx`):
-    - Category pills: All Projects, FINTECH, DEV OPS AI, DATA ENGINEERING, CYBERSECURITY, IOT EMBEDDED.
-    - Live search input querying title, summary, and tech tags.
-    - Prominent `CONCEPT` classification badges and simulated benchmark tags.
-    - Accessible empty state with "Clear All Filters" action.
-- [x] **Dynamic Case Study Route (`src/app/portfolio/[slug]/page.tsx`):**
-  - Next.js 15 async `params` handling (`await params`).
-  - SSG static params generation via `generateStaticParams()`.
-  - SEO dynamic metadata via `generateMetadata()`.
-  - Proper 404 handling via `notFound()`.
-  - 11 strategic sections: Breadcrumbs, Hero with quick metadata banner, Concept transparency notice, Problem & Constraints, Design & Architecture, Architecture Blueprint schematic, Simulated Benchmark metrics, Tech Stack, Code Access Brief, Related Engineering Concepts, and Closing Conversion CTA.
+- [x] **Dedicated Pricing Page (`src/app/pricing/page.tsx`):**
+  - Section 1 — Hero: Headline *"Predictable Investment. Zero Hidden Costs."*, supporting copy on INR milestone billing, jump buttons to packages and calculator.
+  - Section 2 — All 10 Approved Pricing Tiers (`<PricingTable />`): Filter tabs (All, Websites, Platforms & E-Commerce, Enterprise & AI), full deliverable lists, starting price badges (`+` notation), and "Select Package" CTA linking to `/contact?package=[slug]`.
+  - Section 3 — Interactive Cost Calculator (`<PricingCalculator />`): Real-time parameter estimation in INR with non-binding disclaimer notice.
+  - Section 4 — Guarantees & Commercial Protections: 4 pillars (Full IP Ownership & Source Handover, 30/40/30 Milestone Billing, Locked Scope & Change Orders, 30-Day Stability Warranty).
+  - Section 5 — Pricing FAQs: Sourced from `FaqRepo.getActiveFaqs()` rendered via `<FaqAccordion />`.
+  - Section 6 — Closing Conversion CTA linking to `/contact`.
+- [x] **Interactive Pricing Calculator Component (`src/components/sections/pricing-calculator.tsx`):**
+  - 8 Project Disciplines (Website, E-commerce, Mobile App, SaaS, AI Automation, API & Backend, ERP & CRM, Custom Software).
+  - 10 Approved Starting Package baselines (₹999 to ₹59,999+).
+  - 8 Architectural Add-ons with transparent INR pricing and custom quotation tags.
+  - Interface Design Complexity (Standard Dark vs WebGL / 3D Custom Quote).
+  - Delivery Timeline Urgency (Standard vs Priority Sprint +25%).
+  - Live estimate summary card with subtotal calculation, non-binding disclaimer, and "Continue to Enquiry Form" CTA transferring parameters via URL query params.
+  - Reset calculator button restoring default baseline state.
+- [x] **Dedicated Contact Page (`src/app/contact/page.tsx`):**
+  - Section 1 — Hero: Headline *"Let's Build Something Exceptional."* with consultation focus.
+  - Section 2 — Agency Availability & Scoping Standards: Operating Model (Distributed/Remote-First), Working Hours (Mon–Sat 9AM–7PM IST), Scoping SLA (24 Business Hours), Confidentiality (Mutual NDA upon request).
+  - Section 3 — Multi-Step Lead Enquiry Intake: Wrapped in `<Suspense>` boundary reading pre-populated URL params.
+  - Section 4 — Direct Communication Channel: Official email `contact@voidtechsolution.com` for RFPs and enterprise tenders.
+- [x] **Interactive Multi-Step Contact Form Component (`src/components/sections/contact-enquiry-form.tsx`):**
+  - Step 1: Project Scope & Category (with URL param pre-fill support).
+  - Step 2: Technical Specifications & Timeline (budget range, urgency, project brief textarea with character counter, reference URL).
+  - Step 3: Contact & Organization Details (Full Name, Work Email, Phone/WhatsApp, Company Name, Honeypot bot trap, Consent checkbox).
+  - Progressive step validation ensuring complete inputs before advancing.
+  - Resilient error handling: Preserves all entered form state on server error, renders accessible error alert banner, and offers "Retry Submission" button.
+  - Engaging Success Screen: Unique Reference ID (`ENQ-...`), 3-step onboarding guide, and form reset option.
+- [x] **Server-Side Enquiry Processing & Persistence:**
+  - Server Action `submitEnquiryAction` in `src/server/actions/enquiry.actions.ts`.
+  - API Route `POST /api/enquiries` in `src/app/api/enquiries/route.ts`.
+  - Parameterized persistence via `EnquiriesRepo.createEnquiry()` with safe database failure handling.
+  - Token-bucket rate limiting (5 submissions per 10 minutes per IP/email).
+  - Duplicate submission cooldown guard (60 seconds for identical payloads).
+  - Honeypot bot detection trap rejecting spam silently.
+- [x] **Transactional Email Notification System (Nodemailer SMTP):**
+  - Customer confirmation email: Subject *"We've Received Your Project Enquiry — VOIDTECH SOLUTION"*.
+  - Internal admin alert email: Subject *"New Project Enquiry — VOIDTECH SOLUTION: [Lead Name] [Ref: ...]"*.
+  - Dispatched asynchronously and independently via `dispatchEnquiryNotifications()`.
+  - Independent delivery logging in `EmailDelivery` table.
 - [x] **Navigation Updates:**
-  - `siteConfig.mainNav` updated in `src/config/site.ts`: About points to `/about`, Portfolio points to `/portfolio`, keeping section anchors for Services, Pricing, and Contact.
+  - `siteConfig.mainNav` updated in `src/config/site.ts`: Pricing points to `/pricing`, Contact points to `/contact`.
+  - Header and mobile drawer CTAs updated to link to `/contact`.
 - [x] **Empirical Quality Gates:**
   - `tsc --noEmit`: 0 TypeScript compiler errors.
   - `next lint`: 0 ESLint warnings or errors.
-  - `vitest run`: 8 test suites passed, 112/112 unit tests passed.
-  - `next build`: Next.js production build succeeded with clean static generation of `/about`, `/portfolio`, and dynamic `/portfolio/[slug]` routes.
+  - `vitest run`: 9 test suites passed, 130/130 unit tests passed (100%).
+  - `next build`: Next.js production build succeeded with clean static generation of `/pricing`, `/contact`, and dynamic `/api/enquiries` route.
 
 ---
 
-## 3. Strict Stop Condition Enforced
-- Phase 5 has been completed and verified.
-- **Phase 6 has NOT been started.**
-- No database migrations or schema modifications were run.
-- No real emails were dispatched.
-- Working tree on branch `session/phase-5-about-portfolio`.
+## 3. Strict Stop Boundary Enforced
+- **Zero Real Remote Migrations:** Documented in `.gsd/phases/06-pricing-contact/MIGRATION_PROPOSAL.md`. Remote PostgreSQL database untouched.
+- **Zero Real Emails:** Real SMTP mocked in automated verification test suites.
+- **Strict Stop Condition:** Phase 6 complete. Strictly awaiting user approval before starting Phase 7.

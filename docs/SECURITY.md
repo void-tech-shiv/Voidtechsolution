@@ -84,3 +84,27 @@ frame-ancestors 'none';
 
 ## 7. Security Incident Response
 Any identified vulnerabilities should be reported directly to `security@voidtechsolution.com`. Patches are prioritized and released following strict semantic versioning and verification test suites.
+
+---
+
+## 8. Phase 6: Inbound Lead Intake Security Controls
+
+### A. Honeypot Bot Detection Trap
+A hidden input field (`website_url`) is placed within `<ContactEnquiryForm />` with inline styling `display: none`, `tabIndex: -1`, and `autoComplete: "off"`. Legitimate users cannot see or interact with this field. Automated scrapers and spam bots inspecting form DOM nodes routinely populate all inputs.
+- Fast-check rejection: `submitEnquiryAction` detects non-empty honeypots upfront prior to schema evaluation, logging a security warning and rejecting the submission silently without disclosing validation rules.
+
+### B. Token-Bucket Rate Limiting (`src/server/security/rate-limiter.ts`)
+Inbound requests to `submitEnquiryAction` and `POST /api/enquiries` are gated by a token-bucket rate limiter tracking `${clientIp}:${email}`:
+- **Rate Limit:** 5 requests per 10 minutes.
+- When exceeded, returns HTTP 429 Too Many Requests with exact `resetInSeconds` cooldown duration.
+
+### C. SHA-256 Duplicate Submission Fingerprinting
+To prevent accidental double-clicks or rapid resubmissions of identical content:
+- Generates a cryptographic digest: `SHA-256(email + ":" + message + ":" + package)`.
+- Enforces an active 60-second cooldown window. Identical submissions within 60s receive a friendly notice that their enquiry is already under review.
+
+### D. Safe Error Handling & Resilience
+In the event of database connectivity interruption (such as during cold starts or remote connection pool resets):
+- Server action catches the write failure and returns a safe, unprivileged error message.
+- Zero connection strings, database hosts, or internal stack traces are returned to the client or rendered in error alerts.
+- Prospect input data is completely preserved on the client form with an accessible "Retry Submission" button and mailto fallback.

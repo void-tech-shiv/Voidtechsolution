@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.6.0] — 2026-11-12
+### Phase 6: Interactive Pricing Calculator, Contact System & Enquiry Management Backend
+
+#### Added
+- **Dedicated Pricing Page (`src/app/pricing/page.tsx`):**
+  - Hero header: *"Predictable Investment. Zero Hidden Costs."* with milestone billing breakdown.
+  - Interactive Pricing Table (`<PricingTable />`) with category filter tabs (All, Websites, Platforms & E-Commerce, Enterprise & AI) rendering all 10 approved INR packages (₹999 to ₹59,999+) with deliverables and package selection CTAs.
+  - Interactive Pricing Calculator (`<PricingCalculator />`) embedded at `#calculator`.
+  - 4 Engineering & Billing Guarantees: Full IP & Source Handover, 30/40/30 Milestone Billing, Locked Scope & Change Orders, 30-Day Stability Warranty.
+  - Pricing FAQs powered by `FaqRepo.getActiveFaqs()` via `<FaqAccordion />`.
+  - Dynamic SEO metadata for `/pricing`.
+- **Interactive Project Pricing Calculator (`src/components/sections/pricing-calculator.tsx`):**
+  - 8 Project Disciplines (Website, E-commerce, Mobile App, SaaS, AI Automation, API & Backend, ERP & CRM, Custom Software).
+  - 10 Starting Package Baselines with real-time recalculation in Indian Rupees (INR ₹).
+  - 8 Architectural Add-On Modules (Auth/RBAC, Payments, APIs, AI/RAG, WebSockets, Localization, Legacy Migration, WebGL).
+  - Design Complexity selector (Standard Dark vs WebGL / 3D Custom Quote).
+  - Delivery Urgency selector (Standard Schedule vs Priority Sprint +25%).
+  - Live estimate summary card with subtotal range, non-binding disclaimer, and direct "Continue to Enquiry Form" CTA serializing parameters to `/contact` query string.
+  - Calculator Reset button restoring baseline state.
+- **Dedicated Contact Page (`src/app/contact/page.tsx`):**
+  - Hero header: *"Let's Build Something Exceptional."*
+  - Agency Consultation Standards: Operating Model (Distributed/Remote-First), Working Hours (Mon–Sat 9AM–7PM IST), Scoping SLA (24 Business Hours), Confidentiality (Mutual NDA).
+  - Multi-Step Project Intake Form wrapped in Suspense boundary.
+  - Direct communication desk (`contact@voidtechsolution.com`).
+  - Dynamic SEO metadata for `/contact`.
+- **Interactive Multi-Step Lead Intake Form (`src/components/sections/contact-enquiry-form.tsx`):**
+  - 3-step progressive layout: Step 1 (Scope & Category), Step 2 (Technical Specifications & Timeline), Step 3 (Contact & Organization Details).
+  - Auto-prefill from Pricing Calculator query parameters (`category`, `package`, `addons`, `timeline`).
+  - Form validation with Zod schemas and real-time character counters.
+  - Full data preservation on server interruption with accessible error alert banner and "Retry Submission" button.
+  - Engaging Success Screen: Unique Reference ID (`ENQ-...`), 3-step onboarding guide, and reset action.
+  - Hidden honeypot anti-spam trap (`website_url`).
+- **Server-Side Enquiry Processing & Persistence:**
+  - Server Action `submitEnquiryAction` (`src/server/actions/enquiry.actions.ts`).
+  - Next.js API Route Handler `POST /api/enquiries` (`src/app/api/enquiries/route.ts`).
+  - Parameterized persistence via `EnquiriesRepo.createEnquiry()` with safe database failure handling.
+  - Token-bucket rate limiting (5 per 10 minutes per IP/email) and SHA-256 duplicate submission cooldown guard (60 seconds).
+  - Transactional email dispatch via Nodemailer SMTP (`dispatchEnquiryNotifications()`) with customer confirmation and admin alert notifications.
+- **Prisma Schema Update & Migration Proposal:**
+  - Extended `Enquiry` model with `selectedPackage`, `additionalConfig`, `referenceUrl`, `consentGiven`.
+  - Authored `.gsd/phases/06-pricing-contact/MIGRATION_PROPOSAL.md` with exact SQL and zero remote execution.
+- **Test Suite Expansion (`tests/unit/pricing-contact.test.tsx`):**
+  - Added 18 comprehensive unit tests covering the pricing table, interactive calculator, multi-step contact form, server action, rate limiting, duplicate rejection, and API routes.
+  - Test suite now stands at **130 passing tests** across 9 test suites (100% passing).
+
+---
+
 ## [0.5.0] — 2026-11-12
 ### Phase 5: About Page, Portfolio & Detailed Project Case Studies
 

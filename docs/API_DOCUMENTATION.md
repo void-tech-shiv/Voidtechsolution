@@ -52,6 +52,54 @@ Health check route handler verifying system uptime, environment, and deployment 
 
 ---
 
+### `POST /api/enquiries` (Phase 6 Implemented)
+Inbound lead enquiry intake route handler with bot detection, rate limiting, duplicate cooldown, and transactional email notification.
+
+- **Access:** Public
+- **Rate Limit:** 5 requests per 10 minutes per IP/email
+- **Duplicate Cooldown:** 60-second duplicate payload guard
+- **Request Headers:** `Content-Type: application/json`, `x-forwarded-for` (optional client IP)
+- **Request Body:**
+```json
+{
+  "name": "Alex Mercer",
+  "email": "alex@mercer.com",
+  "phone": "+91 9876543210",
+  "companyName": "Mercer Innovations",
+  "serviceCategory": "WEB_DEVELOPMENT",
+  "selectedPackage": "professional",
+  "budgetRange": "15K_TO_50K",
+  "timeline": "1_TO_3_MONTHS",
+  "message": "We need a custom Next.js portal with payment integration and user auth.",
+  "referenceUrl": "https://example.com",
+  "consentGiven": true,
+  "additionalConfig": {
+    "addons": ["auth-rbac", "payment-gateway"],
+    "source": "pricing_calculator"
+  },
+  "website_url": ""
+}
+```
+- **Response (201 Created):**
+```json
+{
+  "success": true,
+  "data": {
+    "enquiryId": "cm3abc1230000xyz",
+    "message": "Your project enquiry has been successfully registered."
+  },
+  "meta": {
+    "timestamp": "2026-11-12T03:00:00.000Z"
+  }
+}
+```
+- **Error Responses:**
+  - `400 Bad Request`: Validation failure or spam bot detected (`{ "success": false, "error": { "code": "VALIDATION_ERROR", "message": "...", "details": { ... } } }`)
+  - `429 Too Many Requests`: Submission rate limit reached (`{ "success": false, "error": { "code": "RATE_LIMITED", "message": "..." } }`)
+  - `500 Internal Error`: Database interruption (`{ "success": false, "error": { "code": "INTERNAL_ERROR", "message": "..." } }`)
+
+---
+
 ## 3. Server-Side Service APIs (Phase 3 Implemented)
 
 ### A. Reusable Nodemailer Transactional Email Service (`src/server/email/`)

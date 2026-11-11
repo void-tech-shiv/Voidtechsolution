@@ -20,6 +20,10 @@ erDiagram
         string budgetRange
         string timeline
         text message
+        string selectedPackage
+        json additionalConfig
+        string referenceUrl
+        boolean consentGiven
         enum status
         text internalNotes
         string ipHash

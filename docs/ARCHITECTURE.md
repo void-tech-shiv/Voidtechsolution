@@ -191,3 +191,74 @@ graph TD
     P3 --> S9["Conversion CTA"]
 ```
 
+
+---
+
+## 9. Phase 6: Interactive Pricing Calculator, Contact System & Enquiry Pipeline Architecture
+
+### System Topology
+
+```mermaid
+flowchart TD
+    Client["Client Browser"]
+    
+    subgraph PricingArchitecture["/pricing Route"]
+        P_Hero["Hero: Predictable Investment"]
+        P_Table["PricingTable (10 Approved INR Tiers & Category Filters)"]
+        P_Calc["PricingCalculator (Interactive Estimation Engine)"]
+        P_Guarantees["Commercial Protections (Full IP, 30/40/30, Warranty)"]
+        P_FAQ["FaqAccordion (Pricing Clarifications)"]
+    end
+
+    subgraph ContactArchitecture["/contact Route"]
+        C_Hero["Hero: Let's Build Something Exceptional"]
+        C_Standards["Availability Standards (Remote-First, 24h SLA)"]
+        C_Form["ContactEnquiryForm (3-Step Lead Intake)"]
+        C_Alt["Direct Email Desk (contact@voidtechsolution.com)"]
+    end
+
+    subgraph BackendProcessing["Server-Side Intake Engine"]
+        Action["submitEnquiryAction (Server Action)"]
+        ApiRoute["POST /api/enquiries (REST Route)"]
+        Honeypot["Honeypot Bot Trap (website_url)"]
+        RateLimiter["Token Bucket Rate Limiter (5 per 10m)"]
+        Fingerprint["Duplicate Cooldown Guard (60s SHA-256)"]
+        ZodParser["Zod enquirySubmissionSchema.strict()"]
+        Repo["EnquiriesRepo.createEnquiry()"]
+        Mailer["dispatchEnquiryNotifications()"]
+    end
+
+    subgraph PersistenceAndEmail["Storage & Notification Services"]
+        DB["PostgreSQL (Enquiry Table)"]
+        CustomerEmail["Customer Confirmation Email (Nodemailer)"]
+        AdminAlert["Admin Lead Notification Email (Nodemailer)"]
+        DeliveryLog["EmailDelivery Table (Audit Tracking)"]
+    end
+
+    Client -->|View Tiers & Calculate| PricingArchitecture
+    P_Calc -->|URL Query Params /contact?category=...&package=...| ContactArchitecture
+    P_Table -->|Select Package /contact?package=...| ContactArchitecture
+    Client -->|Fill 3-Step Intake| C_Form
+    C_Form -->|Execute Mutation| Action
+    Client -->|External Form / API Client| ApiRoute
+    ApiRoute --> Action
+    Action --> Honeypot
+    Honeypot -->|Clean| RateLimiter
+    RateLimiter -->|Allowed| Fingerprint
+    Fingerprint -->|Unique| ZodParser
+    ZodParser -->|Valid| Repo
+    Repo --> DB
+    Repo -->|Success| Mailer
+    Mailer --> CustomerEmail
+    Mailer --> AdminAlert
+    Mailer --> DeliveryLog
+```
+
+### Architectural Principles
+1. **Dynamic Parameter Passing:** The calculator packages selected attributes (`category`, `package`, `addons`, `timeline`) into clean URL query params, seamlessly transferring context to `/contact` without client-side global state overhead.
+2. **Resilient Data Preservation:** Form submissions catch server errors and preserve 100% of the prospect's entered data, displaying an accessible retry button and direct email alternative.
+3. **Multi-Layer Bot & Spam Protection:**
+   - Honeypot trap: Empty field check rejects bots before schema validation.
+   - Token bucket rate limiter: Enforces a cap of 5 submissions per 10 minutes per IP/email.
+   - SHA-256 fingerprinting: Rejects identical submissions within a 60-second cooldown window.
+4. **Decoupled Notification Pipeline:** Confirmation and admin alert emails are dispatched asynchronously; email transit interruptions never abort database persistence or falsify client failure.

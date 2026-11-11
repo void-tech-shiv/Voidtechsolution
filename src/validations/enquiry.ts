@@ -30,7 +30,29 @@ export const timelineEnum = z.enum([
 ]);
 
 /**
- * Validation schema for inbound client enquiries
+ * Validates reference URLs: must be a valid http/https URL when provided.
+ */
+const optionalUrlSchema = z
+  .string()
+  .trim()
+  .max(300, "Reference URL must not exceed 300 characters")
+  .refine(
+    (val) => {
+      if (!val || val === "") return true;
+      try {
+        const parsed = new URL(val);
+        return parsed.protocol === "http:" || parsed.protocol === "https:";
+      } catch {
+        return false;
+      }
+    },
+    { message: "Please enter a valid URL starting with http:// or https://" }
+  )
+  .optional()
+  .or(z.literal(""));
+
+/**
+ * Client-facing Form Schema
  */
 export const enquiryFormSchema = z.object({
   name: z
@@ -56,14 +78,38 @@ export const enquiryFormSchema = z.object({
     .optional()
     .or(z.literal("")),
   serviceCategory: serviceCategoryEnum,
-  budgetRange: budgetRangeEnum.optional(),
-  timeline: timelineEnum.optional(),
+  budgetRange: budgetRangeEnum.optional().nullable(),
+  timeline: timelineEnum.optional().nullable(),
   message: z
     .string()
     .trim()
     .min(10, "Please provide at least 10 characters describing your project")
     .max(3000, "Message cannot exceed 3000 characters"),
+  selectedPackage: z
+    .string()
+    .trim()
+    .max(100, "Package identifier is too long")
+    .optional()
+    .or(z.literal("")),
+  additionalConfig: z.record(z.unknown()).optional().nullable(),
+  referenceUrl: optionalUrlSchema,
+  consentGiven: z
+    .boolean()
+    .default(true)
+    .refine((val) => val === true, "You must accept the consultation review policy to proceed"),
+  // Honeypot field for bot detection (must remain empty)
+  website_url: z
+    .string()
+    .max(0, "Spam submission detected")
+    .optional()
+    .or(z.literal("")),
 });
 
 export type EnquiryFormValues = z.infer<typeof enquiryFormSchema>;
 
+/**
+ * Server-side Submission Schema (Strictly rejects unexpected properties)
+ */
+export const enquirySubmissionSchema = enquiryFormSchema.strict();
+
+export type EnquirySubmissionInput = z.infer<typeof enquirySubmissionSchema>;
