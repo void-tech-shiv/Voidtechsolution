@@ -42,6 +42,14 @@
 - [x] Author comprehensive unit tests (`tests/unit/email.test.ts`, `tests/unit/otp.test.ts`, `tests/unit/database.test.ts` — 73 total passing)
 - [x] Author `docs/EMAIL_SYSTEM.md` and synchronize all architectural documentation
 - [x] Run full verification suite (`tsc`, `lint`, `test`, `build`) with 100% clean results
+- [x] Centralize Zod environment schema validation (`src/config/env.ts`) with production mode guardrails
+- [x] Add cryptographic scrypt password hashing & constant-time verification (`src/server/security/password.ts`)
+- [x] Secure initial admin bootstrap in `prisma/seed.ts` with scrypt password hashing
+- [x] Standardize `.env.example` with comprehensive provider setup instructions and placeholders
+- [x] Pre-generate 256-bit cryptographically secure `AUTH_SECRET` and `OTP_PEPPER_SECRET` in local `.env`
+- [x] Verify `.env` is strictly ignored by Git (`.gitignore:25`)
+- [x] Deprecate and remove legacy Phase 1 placeholders (`EMAIL_PROVIDER_API_KEY`, `EMAIL_FROM`, `ENQUIRY_NOTIFICATION_RECIPIENT`)
+- [x] Author `tests/unit/env.test.ts` (9 tests, expanding test suite to 82 tests passing)
 - [x] Enforce strict stop condition: Phase 4 NOT started, awaiting user authorization
 
 ## Future Phases (Pending Milestone Approvals)

@@ -1,6 +1,7 @@
-import { PrismaClient, ServiceCategory } from "@prisma/client";
+import { PrismaClient, ServiceCategory, UserRole } from "@prisma/client";
 import { servicesRegistry, siteConfig } from "../src/config/site";
 import { approvedPricingPackages } from "../src/config/pricing";
+import { hashPassword } from "../src/server/security/password";
 
 const prisma = new PrismaClient();
 
@@ -269,6 +270,35 @@ async function main() {
     });
   }
   console.log("✅ Initial portfolio case studies seeded.");
+
+  // 6. Bootstrap Administrator Account (Secure Hashing)
+  const adminEmail = process.env.ADMIN_EMAIL || "admin@voidtechsolution.com";
+  const adminPassword = process.env.ADMIN_PASSWORD;
+
+  if (adminPassword && adminPassword.trim().length >= 8) {
+    console.log(`🔐 Bootstrapping administrator account for '${adminEmail}'...`);
+    const passwordHash = hashPassword(adminPassword.trim());
+
+    await prisma.adminUser.upsert({
+      where: { email: adminEmail.trim().toLowerCase() },
+      update: {
+        passwordHash,
+        name: "Lead System Administrator",
+        role: "SUPER_ADMIN" as UserRole,
+        isActive: true,
+      },
+      create: {
+        email: adminEmail.trim().toLowerCase(),
+        passwordHash,
+        name: "Lead System Administrator",
+        role: "SUPER_ADMIN" as UserRole,
+        isActive: true,
+      },
+    });
+    console.log("✅ Administrator account successfully bootstrapped with secure scrypt hash.");
+  } else {
+    console.log("ℹ️  ADMIN_PASSWORD not set or < 8 chars; skipping admin account bootstrap.");
+  }
 
   console.log("🎉 Seeding completed successfully!");
 }

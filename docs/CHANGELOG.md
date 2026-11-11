@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.3.2] — 2026-11-12
+### Phase 3: Environment Configuration & Credential Readiness
+
+#### Added & Standardized
+- **Centralized Environment Schema Validation (`src/config/env.ts`):**
+  - Added comprehensive Zod validation for all application environment variables (`DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, `OTP_PEPPER_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `SMTP_*`, `NEXT_PUBLIC_SITE_URL`, `NODE_ENV`).
+  - Implemented strict production mode guardrails rejecting localhost database strings, development dummy passwords, and placeholder auth secrets when `NODE_ENV === "production"`.
+- **Cryptographic Password Security (`src/server/security/password.ts`):**
+  - Added `hashPassword()` using Node.js `crypto.scryptSync` with unique 16-byte random salts.
+  - Added `verifyPassword()` using `crypto.timingSafeEqual` to prevent timing attacks.
+  - Updated `prisma/seed.ts` to securely hash `ADMIN_PASSWORD` before storage.
+- **Environment Contract Standardized (`.env.example` & `.env`):**
+  - Standardized `.env.example` with detailed setup instructions for PostgreSQL and Nodemailer SMTP (Gmail App Password, Mailgun, SendGrid).
+  - Pre-generated strong 256-bit cryptographically secure keys (`AUTH_SECRET`, `OTP_PEPPER_SECRET`) in local `.env`.
+  - Prepared local `.env` with clearly marked placeholders ready for user credential entry.
+  - Verified `.env` is ignored by Git (`.gitignore`).
+  - Safely deprecated and removed legacy Phase 1 placeholders (`EMAIL_PROVIDER_API_KEY`, `EMAIL_FROM`, `ENQUIRY_NOTIFICATION_RECIPIENT`).
+- **Test Suite Expansion (`tests/unit/env.test.ts`):**
+  - Added 9 unit tests verifying environment validation, production constraint enforcement, and scrypt password hashing/verification.
+  - Total test suite expanded to **82 passing tests** across 6 test suites.
+
+---
+
 ## [0.3.1] — 2026-11-12
 ### Phase 3: Database Architecture & Data Layer — Closure Audit
 

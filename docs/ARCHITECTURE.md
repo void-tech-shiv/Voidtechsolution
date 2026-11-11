@@ -65,6 +65,7 @@ src/
 │   ├── sections/         # Feature blocks (scaffolded for future phases)
 │   └── ui/               # Atomic primitives (Button, Card, Form, Badge)
 ├── config/               # Static configuration & catalogs
+│   ├── env.ts            # Centralized Zod Environment Schema Validation
 │   ├── pricing.ts        # Approved INR Pricing Packages (10 Tiers)
 │   └── site.ts           # siteConfig, servicesRegistry, navigation
 ├── hooks/                # Custom client-side React hooks
@@ -90,6 +91,7 @@ src/
 │   │   └── index.ts      # Barrel export
 │   └── security/         # Security operations & authentication helpers
 │       ├── otp.service.ts # Cryptographic 6-digit OTP engine & rate limiting
+│       ├── password.ts   # Cryptographic scrypt password hashing & verification
 │       └── index.ts
 ├── types/                # Domain types, Prisma re-exports, API envelopes
 └── validations/          # Zod validation schemas (enquiry, auth, content)

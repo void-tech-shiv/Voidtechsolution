@@ -39,7 +39,7 @@ npm run build
 
 ---
 
-## 3. Test Suites & Coverage (Phase 3 Audit Closure: 73 Tests Passing)
+## 3. Test Suites & Coverage (Phase 3 Credential Readiness: 82 Tests Passing)
 
 ### Active Test Suites:
 1. **`tests/unit/smoke.test.ts` (8 tests):**
@@ -66,11 +66,15 @@ npm run build
 5. **`tests/unit/otp.test.ts` (8 tests):**
    - **Generation & Hashing:** Cryptographically secure 6-digit numerical string verification (`^\d{6}$`), uniform distribution, deterministic HMAC-SHA256 hashing with salt and pepper isolation.
    - **Lifecycle & Security Policies:** 5-minute expiration verification, 60-second resend cooldown enforcement against rapid token spamming, single-use consumption preventing replay attacks, max 5 attempts lockout policy, expiration rejection, and strict purpose isolation (LOGIN code cannot reset PASSWORD).
+6. **`tests/unit/env.test.ts` (9 tests):**
+   - **Environment Validation:** Comprehensive Zod validation in development mode.
+   - **Production Hardening:** Rejects development dummy passwords and placeholder auth secrets when `NODE_ENV === "production"`.
+   - **Password Security:** Scrypt password hashing with unique random salts, constant-time verification against timing attacks, rejection of short passwords (< 8 chars), and graceful error handling on malformed hashes.
 
 ---
 
 ## 4. Verification Gate Summary
-- **Vitest Unit & Component Tests:** 5 test files, 73 tests passing (0 failures).
+- **Vitest Unit & Component Tests:** 6 test files, 82 tests passing (0 failures).
 - **TypeScript Strict Mode:** `tsc --noEmit` passed with 0 errors.
 - **ESLint:** `next lint` passed with 0 warnings or errors.
 - **Next.js Production Build:** `next build` passed with all static and dynamic routes compiled.

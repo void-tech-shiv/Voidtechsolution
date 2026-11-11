@@ -46,6 +46,7 @@ frame-ancestors 'none';
 | **Privilege Escalation** | Admin route tampering | Next.js Edge Middleware intercepts `/admin/*`, validating cryptographically signed sessions before page rendering. |
 | **OTP Brute Force** | Rapid sequence guessing of 6-digit codes | Cryptographic SHA-256 HMAC storage, maximum 5 attempts lockout, 60s cooldown, constant-time `crypto.timingSafeEqual`. |
 | **Credential / Log Leakage** | Database or SMTP passwords printed in stack traces | Catch blocks intercept database & SMTP errors, masking credentials and recipients prior to console output. |
+| **Weak Production Credentials** | Development dummy secrets deployed to production | `validateAppEnvironment()` strictly blocks localhost DB strings, placeholder auth secrets, and test SMTP passwords in `production`. |
 
 ---
 
@@ -62,19 +63,22 @@ frame-ancestors 'none';
 
 ---
 
-## 5. SMTP & Transactional Email Security
+## 5. Administrator Password Hashing & Bootstrapping
 
-- **Server-Only Execution:** Nodemailer is strictly executed in Node.js server route handlers and server actions.
-- **Credential Masking:** SMTP user credentials and passwords are validated via Zod and never leaked to frontend client bundles or log outputs.
-- **Delivery Audit Trail:** Outbound transactional emails are persisted to `EmailDelivery` with delivery state transitions (`PENDING`, `SENT`, `FAILED`).
-- **Bounded Retries:** Outbound transient failures are limited to 3 attempts with exponential backoff before transitioning to `FAILED`.
+1. **Hashing Algorithm:** Uses Node.js built-in `crypto.scryptSync` with a unique 16-byte cryptographically random salt (`crypto.randomBytes(16)`).
+2. **Storage Format:** Stored in the database as `<hex_salt>:<hex_hash>`.
+3. **Verification:** Constant-time verification using `crypto.timingSafeEqual` prevents timing side-channel attacks.
+4. **Zero Plaintext Storage:** Neither the initial bootstrap password (`ADMIN_PASSWORD`) nor any user-entered password is ever stored or logged in plaintext.
 
 ---
 
-## 6. Audit Logging & Database Write Integrity
+## 6. Environment Configuration & Credential Readiness Protocol
 
-- **Immutable Audit Trail:** Sensitive state transitions (admin logins, settings adjustments, status changes) are recorded in `AuditLog` (`action`, `entity`, `actorId`, `ipAddress`, `details`).
-- **Fail-Safe Write Guardrails:** Database write operations strictly catch exceptions and throw clean, descriptive domain errors (`"Database write operation failed"`) without leaking internal connection strings, hostnames, or database credentials.
+1. **Local Isolation:** `.env` is local-only and strictly ignored by Git via `.gitignore`.
+2. **No Credentials in Chat:** Users should never paste production database passwords, SMTP app passwords, or API keys into AI assistant chats. Enter them directly into the local `.env` file.
+3. **Cryptographic Key Generation:** `AUTH_SECRET` and `OTP_PEPPER_SECRET` are generated using 256-bit cryptographically secure pseudorandom generators (`crypto.randomBytes(32).toString('hex')`).
+4. **Automated Validation:** `src/config/env.ts` validates all environment variables at application startup via Zod.
+5. **Deprecations:** Legacy Phase 1 placeholders (`EMAIL_PROVIDER_API_KEY`, `EMAIL_FROM`, `ENQUIRY_NOTIFICATION_RECIPIENT`) are deprecated and removed in favor of standard Nodemailer SMTP (`SMTP_*`).
 
 ---
 

@@ -1,31 +1,31 @@
 # VOIDTECH SOLUTION — EMAIL SYSTEM ARCHITECTURE & SMTP SPECIFICATION
 
 **Brand Tagline:** Build. Launch. Grow Online.  
-**Phase:** Phase 3 (Database Architecture & Data Layer — Closure Audit)  
+**Phase:** Phase 3 (Database Architecture & Data Layer — Credential Readiness)  
 **Provider:** Nodemailer via Standard Secure SMTP  
 
 ---
 
 ## 1. Executive Overview
 
-The VOIDTECH SOLUTION Email System provides a mission-critical, server-side transactional mailing service built strictly with **Nodemailer** and standard SMTP. It eliminates third-party platform lock-in (e.g. Resend, SendGrid) while guaranteeing end-to-end delivery tracking, cryptographic OTP handling, bounded retries for transient connection drops, zero-credential logging, and strict visual fidelity matching the VoidTech charcoal-and-violet design system.
+The VOIDTECH SOLUTION Email System provides a mission-critical, server-side transactional mailing service built strictly with **Nodemailer** and standard SMTP. It eliminates third-party platform lock-in (e.g. Resend, SendGrid API SDKs) while guaranteeing end-to-end delivery tracking, cryptographic OTP handling, bounded retries for transient connection drops, zero-credential logging, and strict visual fidelity matching the VoidTech charcoal-and-violet design system.
 
 ---
 
 ## 2. Configuration & Environment Variables
 
-All SMTP configuration is parsed, coercively cast, and validated at runtime using **Zod** (`src/server/email/config.ts`).
+All SMTP configuration is parsed, coercively cast, and validated at runtime using **Zod** (`src/server/email/config.ts` and `src/config/env.ts`).
 
-| Variable | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `SMTP_HOST` | String | `smtp.voidtechsolution.com` | Outgoing SMTP host server |
-| `SMTP_PORT` | Number | `587` | Port (e.g. 587 for STARTTLS, 465 for SSL) |
-| `SMTP_SECURE` | Boolean | `false` | True for port 465, false for 587/STARTTLS |
-| `SMTP_USER` | String | Required | Authenticated SMTP username / API key |
-| `SMTP_PASS` | String | Required | Authenticated SMTP password / secret |
-| `SMTP_FROM_NAME` | String | `VOIDTECH SOLUTION` | Default friendly sender display name |
-| `SMTP_FROM_EMAIL` | Email | `notifications@voidtechsolution.com` | Authenticated outbound sender address |
-| `ADMIN_ALERT_EMAIL` | Email | `admin@voidtechsolution.com` | Target inbox for inbound lead alerts |
+| Variable | Type | Default | Description | Required in Prod? |
+| :--- | :--- | :--- | :--- | :---: |
+| `SMTP_HOST` | String | `smtp.voidtechsolution.com` | Outgoing SMTP host server | **YES** |
+| `SMTP_PORT` | Number | `587` | Port (e.g. 587 for STARTTLS, 465 for SSL) | **YES** |
+| `SMTP_SECURE` | Boolean | `false` | True for port 465, false for 587/STARTTLS | **YES** |
+| `SMTP_USER` | String | `mailer@voidtechsolution.com` | Authenticated SMTP username / account | **YES** |
+| `SMTP_PASS` | String | None | Authenticated SMTP password or App Password | **YES** |
+| `SMTP_FROM_NAME` | String | `VOIDTECH SOLUTION` | Default friendly sender display name | Optional |
+| `SMTP_FROM_EMAIL` | Email | `notifications@voidtechsolution.com` | Authenticated outbound sender address | **YES** |
+| `ADMIN_ALERT_EMAIL` | Email | `admin@voidtechsolution.com` | Target inbox for inbound lead alerts | **YES** |
 
 > [!SECURITY]
 > SMTP credentials (`SMTP_PASS`, `SMTP_USER`) are strictly restricted to the Node.js server runtime. They are never imported or packaged into Next.js client bundles, nor printed to console logs.
@@ -72,13 +72,41 @@ All templates are designed in full alignment with VOIDTECH SOLUTION's dark desig
 
 ---
 
-## 5. Verification & Testing
+## 5. Local Credential Setup Guide
 
-The email system is comprehensively covered by automated Vitest unit tests in `tests/unit/email.test.ts`:
-- Environment variable validation & negative schema failure tests.
-- Mocked SMTP connection verification.
-- Template rendering checks verifying VoidTech branding, slogans, and plain-text fallback content.
-- Mocked successful delivery tracking (`PENDING` -> `SENT`).
-- Transient failure retry loop verification with exponential backoff.
-- Permanent delivery exhaustion error handling (`PENDING` -> `FAILED`).
+### Option A: Gmail SMTP (Recommended for Local Dev & Testing)
+1. In your Google Account, enable **2-Step Verification**.
+2. Navigate to **Security > 2-Step Verification > App Passwords**.
+3. Generate a new App Password named `VoidTech Website`.
+4. Copy the generated 16-character password into `.env`:
+   ```bash
+   SMTP_HOST="smtp.gmail.com"
+   SMTP_PORT="587"
+   SMTP_SECURE="false"
+   SMTP_USER="your-email@gmail.com"
+   SMTP_PASS="xxxx xxxx xxxx xxxx" # (spaces can be omitted)
+   SMTP_FROM_NAME="VOIDTECH SOLUTION"
+   SMTP_FROM_EMAIL="your-email@gmail.com"
+   ADMIN_ALERT_EMAIL="your-email@gmail.com"
+   ```
 
+### Option B: Professional SMTP Providers (Mailgun, SendGrid, Brevo, AWS SES)
+Configure the credentials provided in your provider dashboard:
+```bash
+SMTP_HOST="smtp.mailgun.org"       # or smtp.sendgrid.net, smtp-relay.brevo.com
+SMTP_PORT="587"
+SMTP_SECURE="false"
+SMTP_USER="postmaster@mg.voidtechsolution.com" # or "apikey" for SendGrid
+SMTP_PASS="your-provider-smtp-secret-or-api-key"
+SMTP_FROM_NAME="VOIDTECH SOLUTION"
+SMTP_FROM_EMAIL="notifications@voidtechsolution.com"
+ADMIN_ALERT_EMAIL="admin@voidtechsolution.com"
+```
+
+---
+
+## 6. Secret Rotation & Hygiene Guidelines
+
+1. **Never Commit `.env`:** The file `.env` is local-only and ignored by `.gitignore`.
+2. **App Password Revocation:** If an SMTP app password or API key is ever suspected of compromise, revoke it immediately in the email provider console and generate a fresh key.
+3. **No Credential Chat Pasting:** Antigravity and automated agents will never ask you to paste real passwords or secrets into chat. Enter them directly into your local `.env` file.

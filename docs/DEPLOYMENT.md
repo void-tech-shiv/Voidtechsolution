@@ -36,7 +36,7 @@ Continuous Integration pipeline on every Pull Request to `main`:
 2. **Quality Gate:**
    - `npm run typecheck` (`tsc --noEmit`)
    - `npm run lint` (`next lint`)
-   - `npm test` (Vitest unit and RTL suite — 73 passing tests)
+   - `npm test` (Vitest unit and RTL suite — 82 passing tests)
    - `npm run build` (Next.js production build check)
 3. **Automated Deployment:** Merges to `main` trigger instant production deployment with atomic rollback capabilities.
 
@@ -51,7 +51,10 @@ Ensure the following variables are configured in the Production Host Settings:
 - [ ] `DIRECT_URL` (Direct connection string for Prisma migrations)
 - [ ] `AUTH_SECRET` (Cryptographic secret >= 32 characters)
 - [ ] `OTP_PEPPER_SECRET` (Cryptographic pepper for OTP SHA-256 HMAC hashing)
+- [ ] `ADMIN_EMAIL` (Initial bootstrap administrator email address)
+- [ ] `ADMIN_PASSWORD` (Initial bootstrap password; hashed via scrypt on seed)
 - [ ] `NEXT_PUBLIC_SITE_URL` (Production canonical URL: `https://voidtechsolution.com`)
+- [ ] `NODE_ENV` (`production`)
 
 ### SMTP & Transactional Email (Nodemailer):
 - [ ] `SMTP_HOST` (e.g. `smtp.mailgun.org` or `smtp.sendgrid.net`)
