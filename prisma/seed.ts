@@ -5,51 +5,91 @@ import { approvedPricingPackages } from "../src/config/pricing";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Starting VOIDTECH SOLUTION Database Seeding...");
+  const forceOverwrite = process.env.SEED_FORCE_OVERWRITE === "true";
 
+  console.log("🌱 Starting VOIDTECH SOLUTION Database Seeding...");
+  console.log(`📋 Strategy: ${forceOverwrite ? "CONTROLLED SYNCHRONIZATION (SEED_FORCE_OVERWRITE=true)" : "SAFE INITIAL SEED (Preserve Existing Records)"}`);
+
+  let createdServices = 0;
+  let preservedServices = 0;
+  let updatedServices = 0;
+
+  let createdSettings = 0;
+  let preservedSettings = 0;
+  let updatedSettings = 0;
+
+  let createdPackages = 0;
+  let preservedPackages = 0;
+  let updatedPackages = 0;
+
+  let createdFaqs = 0;
+  let preservedFaqs = 0;
+  let updatedFaqs = 0;
+
+  let createdProjects = 0;
+  let preservedProjects = 0;
+  let updatedProjects = 0;
+
+  // ----------------------------------------------------------------------------
   // 1. Seed all 18 Registered Business Services
-  console.log(`📦 Seeding ${servicesRegistry.length} business services...`);
+  // ----------------------------------------------------------------------------
+  console.log(`\n📦 Processing ${servicesRegistry.length} business services...`);
   for (let i = 0; i < servicesRegistry.length; i++) {
     const srv = servicesRegistry[i];
     if (!srv) continue;
 
-    await prisma.service.upsert({
+    const existing = await prisma.service.findUnique({
       where: { slug: srv.slug },
-      update: {
-        title: srv.title,
-        shortDesc: srv.shortDescription,
-        fullDesc: srv.fullDescription,
-        icon: srv.iconName,
-        category: srv.category as ServiceCategory,
-        deliverables: srv.deliverables,
-        technologies: srv.technologies,
-        startingPriceInr: srv.startingPriceInr || null,
-        currency: srv.currency || "INR",
-        isFeatured: srv.isFeatured,
-        orderIndex: i + 1,
-      },
-      create: {
-        id: srv.id,
-        slug: srv.slug,
-        title: srv.title,
-        shortDesc: srv.shortDescription,
-        fullDesc: srv.fullDescription,
-        icon: srv.iconName,
-        category: srv.category as ServiceCategory,
-        deliverables: srv.deliverables,
-        technologies: srv.technologies,
-        startingPriceInr: srv.startingPriceInr || null,
-        currency: srv.currency || "INR",
-        isFeatured: srv.isFeatured,
-        isActive: true,
-        orderIndex: i + 1,
-      },
     });
-  }
-  console.log("✅ All 18 business services successfully seeded.");
 
+    if (!existing) {
+      await prisma.service.create({
+        data: {
+          id: srv.id,
+          slug: srv.slug,
+          title: srv.title,
+          shortDesc: srv.shortDescription,
+          fullDesc: srv.fullDescription,
+          icon: srv.iconName,
+          category: srv.category as ServiceCategory,
+          deliverables: srv.deliverables,
+          technologies: srv.technologies,
+          startingPriceInr: srv.startingPriceInr || null,
+          currency: srv.currency || "INR",
+          isFeatured: srv.isFeatured,
+          isActive: true,
+          orderIndex: i + 1,
+        },
+      });
+      createdServices++;
+    } else if (forceOverwrite) {
+      await prisma.service.update({
+        where: { slug: srv.slug },
+        data: {
+          title: srv.title,
+          shortDesc: srv.shortDescription,
+          fullDesc: srv.fullDescription,
+          icon: srv.iconName,
+          category: srv.category as ServiceCategory,
+          deliverables: srv.deliverables,
+          technologies: srv.technologies,
+          startingPriceInr: srv.startingPriceInr || null,
+          currency: srv.currency || "INR",
+          isFeatured: srv.isFeatured,
+          orderIndex: i + 1,
+        },
+      });
+      updatedServices++;
+    } else {
+      preservedServices++;
+    }
+  }
+  console.log(`✅ Services processed: ${createdServices} created, ${preservedServices} preserved, ${updatedServices} updated.`);
+
+  // ----------------------------------------------------------------------------
   // 2. Seed Baseline Site Settings
-  console.log("⚙️  Seeding baseline site settings...");
+  // ----------------------------------------------------------------------------
+  console.log("\n⚙️  Processing baseline site settings...");
   const defaultSettings = [
     {
       key: "site_name",
@@ -79,57 +119,87 @@ async function main() {
   ];
 
   for (const setting of defaultSettings) {
-    await prisma.siteSetting.upsert({
+    const existing = await prisma.siteSetting.findUnique({
       where: { key: setting.key },
-      update: {
-        value: setting.value,
-        description: setting.description,
-      },
-      create: {
-        key: setting.key,
-        value: setting.value,
-        description: setting.description,
-      },
     });
-  }
-  console.log("✅ Baseline site settings seeded.");
 
+    if (!existing) {
+      await prisma.siteSetting.create({
+        data: {
+          key: setting.key,
+          value: setting.value,
+          description: setting.description,
+        },
+      });
+      createdSettings++;
+    } else if (forceOverwrite) {
+      await prisma.siteSetting.update({
+        where: { key: setting.key },
+        data: {
+          value: setting.value,
+          description: setting.description,
+        },
+      });
+      updatedSettings++;
+    } else {
+      preservedSettings++;
+    }
+  }
+  console.log(`✅ Site settings processed: ${createdSettings} created, ${preservedSettings} preserved, ${updatedSettings} updated.`);
+
+  // ----------------------------------------------------------------------------
   // 3. Seed 10 Approved Pricing Packages (INR ₹)
-  console.log(`💰 Seeding ${approvedPricingPackages.length} approved INR pricing packages...`);
+  // ----------------------------------------------------------------------------
+  console.log(`\n💰 Processing ${approvedPricingPackages.length} approved INR pricing packages...`);
   for (const pkg of approvedPricingPackages) {
-    await prisma.pricingPackage.upsert({
+    const existing = await prisma.pricingPackage.findUnique({
       where: { slug: pkg.slug },
-      update: {
-        name: pkg.name,
-        category: pkg.category as ServiceCategory,
-        priceInr: pkg.priceInr,
-        currency: pkg.currency,
-        isStartingPrice: pkg.isStartingPrice,
-        billingPeriod: pkg.billingPeriod,
-        features: pkg.features,
-        popular: pkg.popular,
-        orderIndex: pkg.orderIndex,
-        isActive: true,
-      },
-      create: {
-        slug: pkg.slug,
-        name: pkg.name,
-        category: pkg.category as ServiceCategory,
-        priceInr: pkg.priceInr,
-        currency: pkg.currency,
-        isStartingPrice: pkg.isStartingPrice,
-        billingPeriod: pkg.billingPeriod,
-        features: pkg.features,
-        popular: pkg.popular,
-        orderIndex: pkg.orderIndex,
-        isActive: true,
-      },
     });
-  }
-  console.log("✅ All 10 approved INR pricing packages seeded.");
 
+    if (!existing) {
+      await prisma.pricingPackage.create({
+        data: {
+          slug: pkg.slug,
+          name: pkg.name,
+          category: pkg.category as ServiceCategory,
+          priceInr: pkg.priceInr,
+          currency: pkg.currency,
+          isStartingPrice: pkg.isStartingPrice,
+          billingPeriod: pkg.billingPeriod,
+          features: pkg.features,
+          popular: pkg.popular,
+          orderIndex: pkg.orderIndex,
+          isActive: true,
+        },
+      });
+      createdPackages++;
+    } else if (forceOverwrite) {
+      await prisma.pricingPackage.update({
+        where: { slug: pkg.slug },
+        data: {
+          name: pkg.name,
+          category: pkg.category as ServiceCategory,
+          priceInr: pkg.priceInr,
+          currency: pkg.currency,
+          isStartingPrice: pkg.isStartingPrice,
+          billingPeriod: pkg.billingPeriod,
+          features: pkg.features,
+          popular: pkg.popular,
+          orderIndex: pkg.orderIndex,
+          isActive: true,
+        },
+      });
+      updatedPackages++;
+    } else {
+      preservedPackages++;
+    }
+  }
+  console.log(`✅ Pricing packages processed: ${createdPackages} created, ${preservedPackages} preserved, ${updatedPackages} updated.`);
+
+  // ----------------------------------------------------------------------------
   // 4. Seed Baseline FAQs
-  console.log("❓ Seeding baseline FAQs...");
+  // ----------------------------------------------------------------------------
+  console.log("\n❓ Processing baseline FAQs...");
   const initialFaqs = [
     {
       id: "faq-01",
@@ -169,29 +239,44 @@ async function main() {
   ];
 
   for (const faq of initialFaqs) {
-    await prisma.fAQ.upsert({
+    const existing = await prisma.fAQ.findUnique({
       where: { id: faq.id },
-      update: {
-        question: faq.question,
-        answer: faq.answer,
-        category: faq.category,
-        orderIndex: faq.orderIndex,
-        isActive: true,
-      },
-      create: {
-        id: faq.id,
-        question: faq.question,
-        answer: faq.answer,
-        category: faq.category,
-        orderIndex: faq.orderIndex,
-        isActive: true,
-      },
     });
-  }
-  console.log("✅ Baseline FAQs seeded.");
 
+    if (!existing) {
+      await prisma.fAQ.create({
+        data: {
+          id: faq.id,
+          question: faq.question,
+          answer: faq.answer,
+          category: faq.category,
+          orderIndex: faq.orderIndex,
+          isActive: true,
+        },
+      });
+      createdFaqs++;
+    } else if (forceOverwrite) {
+      await prisma.fAQ.update({
+        where: { id: faq.id },
+        data: {
+          question: faq.question,
+          answer: faq.answer,
+          category: faq.category,
+          orderIndex: faq.orderIndex,
+          isActive: true,
+        },
+      });
+      updatedFaqs++;
+    } else {
+      preservedFaqs++;
+    }
+  }
+  console.log(`✅ FAQs processed: ${createdFaqs} created, ${preservedFaqs} preserved, ${updatedFaqs} updated.`);
+
+  // ----------------------------------------------------------------------------
   // 5. Seed Featured Portfolio Projects (Concept Lab Architecture Prototypes)
-  console.log("📁 Seeding initial portfolio case studies (Internal Architecture Prototypes)...");
+  // ----------------------------------------------------------------------------
+  console.log("\n📁 Processing initial portfolio case studies (Internal Architecture Prototypes)...");
   const initialProjects = [
     {
       id: "proj-seed-01",
@@ -234,49 +319,71 @@ async function main() {
   ];
 
   for (const proj of initialProjects) {
-    await prisma.portfolioProject.upsert({
+    const existing = await prisma.portfolioProject.findUnique({
       where: { slug: proj.slug },
-      update: {
-        title: proj.title,
-        clientName: proj.clientName,
-        industry: proj.industry,
-        summary: proj.summary,
-        challenge: proj.challenge,
-        solution: proj.solution,
-        results: proj.results,
-        techStack: proj.techStack,
-        metrics: proj.metrics,
-        projectType: proj.projectType,
-        isFeatured: proj.isFeatured,
-        orderIndex: proj.orderIndex,
-      },
-      create: {
-        id: proj.id,
-        slug: proj.slug,
-        title: proj.title,
-        clientName: proj.clientName,
-        industry: proj.industry,
-        summary: proj.summary,
-        challenge: proj.challenge,
-        solution: proj.solution,
-        results: proj.results,
-        techStack: proj.techStack,
-        metrics: proj.metrics,
-        projectType: proj.projectType,
-        isFeatured: proj.isFeatured,
-        orderIndex: proj.orderIndex,
-      },
     });
+
+    if (!existing) {
+      await prisma.portfolioProject.create({
+        data: {
+          id: proj.id,
+          slug: proj.slug,
+          title: proj.title,
+          clientName: proj.clientName,
+          industry: proj.industry,
+          summary: proj.summary,
+          challenge: proj.challenge,
+          solution: proj.solution,
+          results: proj.results,
+          techStack: proj.techStack,
+          metrics: proj.metrics,
+          projectType: proj.projectType,
+          isFeatured: proj.isFeatured,
+          orderIndex: proj.orderIndex,
+        },
+      });
+      createdProjects++;
+    } else if (forceOverwrite) {
+      await prisma.portfolioProject.update({
+        where: { slug: proj.slug },
+        data: {
+          title: proj.title,
+          clientName: proj.clientName,
+          industry: proj.industry,
+          summary: proj.summary,
+          challenge: proj.challenge,
+          solution: proj.solution,
+          results: proj.results,
+          techStack: proj.techStack,
+          metrics: proj.metrics,
+          projectType: proj.projectType,
+          isFeatured: proj.isFeatured,
+          orderIndex: proj.orderIndex,
+        },
+      });
+      updatedProjects++;
+    } else {
+      preservedProjects++;
+    }
   }
-  console.log("✅ Initial portfolio case studies seeded.");
+  console.log(`✅ Portfolio case studies processed: ${createdProjects} created, ${preservedProjects} preserved, ${updatedProjects} updated.`);
 
-  // 6. Administrator Account Isolation
-  // To preserve strict authorization boundaries, default database seeding NEVER creates,
-  // modifies, or bootstraps administrator accounts. Administrator account provisioning
-  // is strictly isolated to Phase 7 under separate, explicit owner authorization.
-  console.log("ℹ️  Administrator account creation is excluded from public catalog seed (Phase 7 boundary).");
+  // ----------------------------------------------------------------------------
+  // 6. Security Boundaries (Zero Modification of Enquiries & Administrator Records)
+  // ----------------------------------------------------------------------------
+  console.log("\n🛡️  Security Boundaries:");
+  console.log("  • Customer Enquiries: ZERO modifications (all inbound customer records preserved).");
+  console.log("  • Administrator Accounts: ZERO modifications (strictly isolated to Phase 7).");
+  console.log("  • Audit Logs & OTP Records: ZERO modifications (live security records preserved).");
 
-  console.log("🎉 Seeding completed successfully!");
+  console.log("\n================ SEED EXECUTION SUMMARY ================");
+  console.log(`Mode:              ${forceOverwrite ? "CONTROLLED SYNCHRONIZATION (OVERWRITE)" : "SAFE INITIAL SEED (PRESERVE EXISTING)"}`);
+  console.log(`Services:          ${createdServices} created | ${preservedServices} preserved | ${updatedServices} updated`);
+  console.log(`Site Settings:     ${createdSettings} created | ${preservedSettings} preserved | ${updatedSettings} updated`);
+  console.log(`Pricing Packages:  ${createdPackages} created | ${preservedPackages} preserved | ${updatedPackages} updated`);
+  console.log(`FAQs:              ${createdFaqs} created | ${preservedFaqs} preserved | ${updatedFaqs} updated`);
+  console.log(`Portfolio Concept: ${createdProjects} created | ${preservedProjects} preserved | ${updatedProjects} updated`);
+  console.log("========================================================\n");
 }
 
 main()
