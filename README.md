@@ -124,3 +124,4 @@ Project planning, state snapshots, and milestone verification are governed by **
 - Current Milestone: **Milestone 1 — Project Foundation**
 - Current Phase: **Phase 1 (Completed & Verified)**
 - Active Branch: `session/phase-1-foundation`
+

@@ -22,3 +22,4 @@
 - `next lint`: 0 ESLint warnings or errors.
 - `next build`: Successfully generated production bundles for static and dynamic routes.
 - Git working tree: Clean commit history on `session/phase-1-foundation`.
+

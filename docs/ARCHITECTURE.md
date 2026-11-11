@@ -81,3 +81,4 @@ tests/                    # Vitest unit/component tests & Playwright E2E suites
 
 ### Zod & React Hook Form
 - **Why:** Unified schema definition that serves both client-side form validation (immediate user feedback) and server-side route validation (data integrity before database insertion).
+

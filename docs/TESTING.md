@@ -57,3 +57,4 @@ tests/
   2. Submitting `/contact` form with valid inputs and asserting success confirmation.
   3. Attempting unauthorized access to `/admin` and verifying redirect to `/admin/login`.
   4. Logging in as admin and inspecting enquiry table rows.
+

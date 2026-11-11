@@ -86,3 +86,4 @@ VOIDTECH uses controlled glassmorphism without blurring artifacts or legibility 
 ## 6. Iconography & Motion Standards
 - **Icons:** Standardized on `lucide-react` with 1.75px stroke width.
 - **Motion:** Framer Motion / CSS transitions strictly restrained (200ms–350ms duration, `ease-out`). Avoid disorienting bouncing or high-frequency loops.
+

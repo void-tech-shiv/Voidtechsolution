@@ -55,3 +55,4 @@ Ensure the following variables are configured in the Vercel Project Settings:
 - [ ] `EMAIL_FROM` (Verified sending domain address)
 - [ ] `ENQUIRY_NOTIFICATION_RECIPIENT` (Primary agency intake email)
 - [ ] `NEXT_PUBLIC_SITE_URL` (Production canonical URL, e.g. `https://voidtechsolution.com`)
+

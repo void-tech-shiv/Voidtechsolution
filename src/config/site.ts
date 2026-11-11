@@ -246,3 +246,4 @@ export const servicesRegistry: ServiceDefinition[] = [
     isFeatured: false,
   },
 ];
+

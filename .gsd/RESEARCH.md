@@ -28,3 +28,4 @@
 
 ### 6. Package Manager & Script Execution
 - **Environment:** Windows PowerShell environment. Due to Windows PowerShell ExecutionPolicy, `npm.cmd` and `npx.cmd` must be invoked directly to prevent `PSSecurityException`.
+

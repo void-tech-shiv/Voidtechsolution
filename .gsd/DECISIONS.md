@@ -27,3 +27,4 @@
 - **Context:** Fast unit/component feedback loops and end-to-end browser testing are needed without slowing down developer velocity.
 - **Decision:** Use Vitest with React Testing Library for lightning-fast unit and component test execution, paired with Playwright for browser-level E2E integration tests.
 - **Consequences:** Unified ESM support, native TypeScript execution, and high test confidence.
+

@@ -184,3 +184,4 @@ Stores authenticated administrators for the agency operations portal.
 - Index on `enquiries(createdAt DESC)` for chronological activity streams.
 - Unique indexes on `services(slug)` and `portfolio_projects(slug)` for high-speed dynamic page lookups.
 - Compound index on `services(isActive, orderIndex)` for pre-sorted catalog rendering.
+

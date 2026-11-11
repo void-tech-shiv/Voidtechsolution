@@ -127,3 +127,4 @@ Retrieves published case studies with tech stack filters.
 Creates a new client case study.
 
 - **Access:** Authenticated Admin only
+

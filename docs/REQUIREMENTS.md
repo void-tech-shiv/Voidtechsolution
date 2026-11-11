@@ -54,3 +54,4 @@
 - **NFR-04.1:** TypeScript strict mode must be enforced with 0 `any` escapes in production code paths.
 - **NFR-04.2:** Automated test suites must achieve high unit and integration coverage.
 - **NFR-04.3:** The codebase must maintain modular separation between UI components, server actions, route handlers, and data models.
+
