@@ -1,57 +1,51 @@
 ---
-updated: 2026-11-12T04:36:00+05:30
+updated: 2026-11-12T04:55:00+05:30
 ---
 
 # Project State — VOIDTECH SOLUTION
 
 ## Current Position
 
-**Milestone:** Milestone 4 — Commercial & Lead Generation (COMPLETED & VERIFIED)  
-**Phase:** Phase 6 — Public Marketing Pages: Pricing Calculator, Contact & Enquiry Flow  
-**Status:** complete (Verified with live PostgreSQL deployment)  
-**Plan:** Plan 06-01 — Pricing Catalog, Estimation Calculator & Multi-Step Enquiry Flow (Executed, Deployed & Verified)  
+**Milestone:** Milestone 5 — Administrative Authentication & System Architecture  
+**Phase:** Phase 7 — Admin Authentication, Session Management & Role-Based Access Control  
+**Status:** executing (Milestone 7.0 Discovery & Security Design Complete)  
+**Plan:** Plan 07-01 — Discovery, Threat Modeling, Session Architecture & RBAC Design (Executed & Staged)  
 
 ## Last Action
 
-- Owner successfully deployed initial database migration `20261112000000_init` to the remote PostgreSQL database.
-- Executed `npm run db:seed` under safe preservation strategy (18 services, 10 pricing packages, 5 FAQs, 5 site settings, 2 portfolio concepts).
-- Verified complete database state using automated verification script `npm run db:verify`:
-  - 10 application tables present in `public` schema.
-  - `_prisma_migrations` recorded initial migration.
-  - All 10 Prisma Client delegates fully functional.
-  - Record counts verified: Services = 18, Pricing Packages = 10, FAQs = 5, Site Settings = 5, Concepts = 2.
-  - Live inbound test enquiry successfully recorded (`prisma.enquiry.count() = 1`).
-  - Zero admin accounts created (strict Phase 7 security boundary maintained).
-- All 131 tests passing across 9 test suites; production build verified.
+- Initialized dedicated git branch `session/phase-7-admin-auth` from latest verified commit `1a9208e`.
+- Completed **Milestone 7.0 — Discovery & Security Design**:
+  - Inspected existing codebase, Prisma models (`AdminUser`, `UserRole`, `AuditLog`, `OtpVerification`), scrypt utilities (`src/server/security/password.ts`), OTP engine, and rate limiter.
+  - Authored comprehensive Discovery Audit: [`.gsd/phases/07-authentication/07-DISCOVERY.md`](file:///d:/voidtechsolution/.gsd/phases/07-authentication/07-DISCOVERY.md).
+  - Authored detailed Security Design & Threat Model: [`.gsd/phases/07-authentication/07-SECURITY-DESIGN.md`](file:///d:/voidtechsolution/.gsd/phases/07-authentication/07-SECURITY-DESIGN.md) (STRIDE threat model, sequence flow, RBAC matrix, dual-layer Edge/DB session lifecycle, and `AdminSession` schema proposal).
+  - Authored Milestone Implementation Roadmap: [`.gsd/phases/07-authentication/07-IMPLEMENTATION-PLAN.md`](file:///d:/voidtechsolution/.gsd/phases/07-authentication/07-IMPLEMENTATION-PLAN.md).
+- Confirmed CodeRabbit status: OAuth/plugin account not connected; standard manual security review established.
+- Quality gates maintained: 136/136 unit tests passing across 9 test suites; production build verified.
 
 ## Next Steps
 
-1. Transition git branch to `session/phase-7-admin-auth` for Milestone 5: Authentication, Session Management & Role-Based Access Control.
-2. Initialize Phase 7 GSD files (`.gsd/phases/07-authentication/DISCUSS.md`, `07-01-PLAN.md`).
-3. Implement Edge-compatible Web Crypto session token signing and verification (`src/server/security/session.ts`).
-4. Implement Admin Authentication Server Actions (`src/server/actions/auth.actions.ts`) with scrypt password verification and audit logging.
-5. Implement Next.js route protection middleware (`src/middleware.ts`) guarding `/admin/*`.
-6. Build dedicated Admin Login UI (`src/app/admin/login/page.tsx`).
+1. Present Milestone 7.0 Discovery & Security Design report to the project owner.
+2. Await owner review and authorization to proceed with **Milestone 7.1 (Admin Authentication & Validation Layer)** and **Milestone 7.2 (Database Session Engine)**.
+3. Strictly maintain production database boundaries (zero remote migrations or account creation without explicit owner authorization).
 
 ## Active Decisions
 
 | Decision | Choice | Made | Affects |
 |----------|--------|------|---------|
-| Currency & Pricing | All 10 tiers strictly in INR (₹999 to ₹59,999+) | 2026-11-12 | `/pricing`, `PricingCalculator` |
-| Commercial Terms | 50/50 payment, 30-day bug-fix warranty, no 24h SLA | 2026-11-12 | `/pricing`, `/contact`, site copy |
-| Public Support Email | `voidtechsolutionsupport@gmail.com` | 2026-11-12 | Global contact identity |
-| Database Migration | `20261112000000_init` deployed & verified | 2026-11-12 | Remote DB schema |
-| Safe Seeding | Non-destructive `findUnique` check; `SEED_FORCE_OVERWRITE` opt-in | 2026-11-12 | `prisma/seed.ts` |
-| Admin Isolation | Admin bootstrapping decoupled from seed, isolated to Phase 7 | 2026-11-12 | `admin_users` table |
+| Session Architecture | Database-backed revocable sessions (`AdminSession`) storing SHA-256 token hash | 2026-11-12 | Session security |
+| Edge Verification | Web Crypto API HMAC-SHA256 cookie signing for sub-ms middleware verification | 2026-11-12 | `middleware.ts` |
+| Auth Dependency | Zero third-party auth packages (pure bespoke native implementation) | 2026-11-12 | Maintainability & security |
+| MFA Architecture | Optional step-up MFA (via existing OTP service) rather than mandatory blocking | 2026-11-12 | Admin workflow |
+| Password Security | Node scrypt (16-byte salt, 64-byte key) with `crypto.timingSafeEqual` | 2026-11-12 | Credentials storage |
+| Cookie Policy | `HttpOnly`, `Secure` in prod, `SameSite: "lax"`, 8h lifetime, 2h idle timeout | 2026-11-12 | Session management |
 
 ## Blockers
 
-*None.*
+*None. Awaiting owner review of Milestone 7.0 architecture before proceeding to Milestone 7.1.*
 
 ## Session Context
 
-- Working branch: `session/phase-6-pricing-contact` (ready to branch to `session/phase-7-admin-auth`)
-- Latest commit: `8b7d74a`
-- Latest test run: 131/131 passing across 9 suites
-- Production build: Succeeded (16/16 routes compiled)
-- Remote Database: 100% operational, healthy, and verified with live test enquiry
+- Working branch: `session/phase-7-admin-auth`
+- Base commit: `1a9208e`
+- Test suite: 136/136 tests passing (100%)
+- Remote database: 10 tables operational, 0 admin accounts
