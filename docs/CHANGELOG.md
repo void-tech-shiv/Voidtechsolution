@@ -7,46 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.0] — 2026-11-11
+### Phase 2: Design System, Brand Identity & Reusable UI Components
+
+#### Added
+- **Semantic CSS Token System:**
+  - Defined CSS custom properties in `src/app/globals.css` for void backgrounds (`--bg-primary`, `--bg-secondary`, `--bg-surface`, `--bg-surface-elevated`), text tiers, electric purple luminescence (`--accent-purple`, `--accent-neon`, `--accent-glow`), structural borders, and semantic status colors (`success`, `warning`, `error`, `info`).
+  - Integrated tokens with `tailwind.config.ts` under `void.*`, `electric.*`, and `status.*`.
+- **Typography & Next.js Font Optimization:**
+  - Integrated `next/font/google` for `Inter` (`--font-sans`) and `JetBrains Mono` (`--font-mono`) with zero layout shift and system fallbacks.
+- **Button Primitives Suite (`src/components/ui/button.tsx`):**
+  - Created polymorphic `Button` supporting `primary`, `secondary`, `outline`, `ghost`, and `glow` variants.
+  - Exported named convenience components: `PrimaryButton`, `SecondaryButton`, `OutlineButton`, `GhostButton`, and `GlowButton`.
+  - Added support for sizes (`sm`, `md`, `lg`), `isLoading` state, left and right icon slots, and active scale transitions.
+- **Card Primitives Suite (`src/components/ui/card.tsx`):**
+  - Implemented `BaseCard` (elevated surface) and `GlassCard` (frosted glass with inner highlight and glow).
+  - Implemented specialized agency cards: `ServiceCard`, `PricingCard`, and `ProjectCard`.
+- **Form Primitives Suite (`src/components/ui/form.tsx`):**
+  - Implemented `FormLabel`, `Input`, `Textarea`, `Select`, and `Checkbox`.
+  - Handled unconditional `React.useId()` bindings, `aria-invalid`, `aria-describedby`, error state text, and helper labels.
+- **Feedback Primitives Suite (`src/components/ui/badge.tsx` & `src/components/feedback/index.tsx`):**
+  - Implemented `Badge` with semantic variants (`default`, `purple`, `success`, `warning`, `error`, `outline`) and optional pulsing dot.
+  - Implemented `LoadingState`, `EmptyState`, and `ErrorState` with retry callbacks.
+- **Layout Primitives Suite (`src/components/layout/index.tsx`):**
+  - Implemented `Container` (narrow, default, wide, full), `Section` (vertical padding tiers), and `SectionHeading`.
+- **Responsive Navigation Header & Enhanced Footer:**
+  - Upgraded `Header` to a client component with interactive mobile navigation drawer, animated hamburger/close toggle, focus management, body scroll locking, and Escape key listeners.
+  - Enhanced `Footer` with multi-column layout, brand introduction, core capabilities links, configurable contact placeholders, and social links.
+- **Internal Design System Preview Route:**
+  - Created `/design-system` (`src/app/design-system/page.tsx`) showcasing all tokens, typography, buttons, cards, forms, and feedback states.
+- **Test Suite Expansion:**
+  - Created `tests/unit/design-system.test.tsx` containing 24 comprehensive unit and component tests.
+  - Total passing tests expanded from 8 to 32.
+
+#### Verified
+- TypeScript validation: `tsc --noEmit` passed with 0 errors.
+- ESLint: `next lint` passed with 0 warnings/errors.
+- Automated tests: `vitest run` passed with 32/32 tests.
+- Production build: `next build` compiled with 0 errors, generating `/design-system` static page cleanly.
+
+---
+
 ## [0.1.0] — 2026-11-11
 ### Phase 1: Project Initialization, Specification & Foundation
 
 #### Added
-- **GSD Mission Control Integration:**
-  - Initialized canonical GSD specifications (`.gsd/SPEC.md` with Planning Lock status `FINALIZED`).
-  - Created complete 12-phase roadmap in `.gsd/ROADMAP.md` covering public marketing pages, 18 services, and admin portal.
-  - Initialized `.gsd/STATE.md`, `.gsd/DECISIONS.md` (ADR-001 through ADR-004), `.gsd/JOURNAL.md`, `.gsd/TODO.md`, and `.gsd/RESEARCH.md`.
-  - Authored Phase 1 execution files in `.gsd/phases/01-foundation/` (`DISCUSS.md`, `01-01-PLAN.md`).
-- **Core Technology Scaffolding:**
-  - Configured Next.js 15 with App Router and React 19.
-  - Enforced TypeScript strict mode (`tsconfig.json`) with path aliases (`@/*`).
-  - Configured Tailwind CSS with custom VOIDTECH color tokens (`void-black`, `void-dark`, `void-charcoal`, `electric-purple`, `electric-violet`, `electric-neon`), glassmorphism utilities, and controlled glow effects.
-  - Added Lucide React iconography and Framer Motion animation tooling.
-  - Set up PostgreSQL schema with Prisma ORM (`prisma/schema.prisma`) defining `Enquiry`, `Service`, `PortfolioProject`, `AdminUser`, and `SystemSetting` models (marked as pending physical connection in Phase 3).
-  - Implemented Zod enquiry validation schema (`src/validations/enquiry.ts`).
-  - Configured Vitest test runner with jsdom environment and React Testing Library (`tests/setup.ts`, `tests/unit/smoke.test.ts`).
-  - Established system health route handler (`src/app/api/health/route.ts`).
-  - Created reusable atomic UI components (`Button`, `Card`, `Header`, `Footer`).
-  - Built clean foundation landing page (`src/app/page.tsx`) showcasing brand identity, active foundation badge, and 18 pre-registered business services.
-- **Documentation Suite:**
-  - `README.md`
-  - `.env.example`
-  - `docs/PROJECT_OVERVIEW.md`
-  - `docs/REQUIREMENTS.md`
-  - `docs/ARCHITECTURE.md`
-  - `docs/DATABASE_DESIGN.md`
-  - `docs/API_DOCUMENTATION.md`
-  - `docs/DESIGN_SYSTEM.md`
-  - `docs/SECURITY.md`
-  - `docs/TESTING.md`
-  - `docs/DEPLOYMENT.md`
-  - `docs/CHANGELOG.md`
-  - `docs/PROJECT_STATUS.md`
-
-#### Verified
-- Dependency installation: 537 packages installed cleanly.
-- Prisma client generation: `npx prisma generate` completed with exit code 0.
-- Vitest test suite: 8 passing unit tests (utilities, schemas, services registry).
-- TypeScript validation: `tsc --noEmit` passed with 0 errors.
-- ESLint quality check: `next lint` passed with 0 warnings/errors.
-- Production build: `next build` compiled all routes cleanly with zero static generation errors.
-
+- GSD Mission Control specification lock and 12-phase roadmap.
+- Next.js 15 App Router scaffolding with strict TypeScript.
+- Prisma ORM PostgreSQL schema for 5 domain entities.
+- Initial UI layout shells and health check Route Handler.
+- Complete documentation suite in `docs/` and `.env.example`.

@@ -11,12 +11,13 @@ flowchart TD
     subgraph NextServer["Next.js App Router Runtime"]
         Middleware["Edge Middleware (Auth & Rate Limit)"]
         RSC["React Server Components (HTML Streaming)"]
+        DesignPreview["Internal Design Preview (/design-system)"]
         Routes["API Route Handlers (/api/*)"]
         Actions["Server Actions (Mutation Layer)"]
         Validation["Zod Validation Layer"]
     end
 
-    subgraph DataLayer["Persistence Layer"]
+    subgraph DataLayer["Persistence Layer (Pending Phase 3)"]
         PrismaClient["Prisma ORM Client (Singleton)"]
         Postgres["PostgreSQL Database (Neon / Supabase)"]
     end
@@ -25,12 +26,13 @@ flowchart TD
     CDN --> NextServer
     NextServer --> Middleware
     Middleware --> RSC
+    Middleware --> DesignPreview
     Middleware --> Routes
     Middleware --> Actions
     Routes --> Validation
     Actions --> Validation
     Validation --> PrismaClient
-    PrismaClient --> Postgres
+    PrismaClient -.->|Phase 3 Migration| Postgres
 ```
 
 ---
@@ -40,45 +42,57 @@ flowchart TD
 ```
 src/
 ├── app/                  # Next.js App Router (pages, layouts, route handlers)
-│   ├── (public)/         # Public marketing route group
-│   ├── admin/            # Authenticated admin portal route group
-│   ├── api/              # Backend Route Handlers (/api/health, /api/enquiries)
-│   ├── globals.css       # Tailwind base styles and CSS variables
-│   ├── layout.tsx        # Root HTML shell, fonts, accessibility skip links
+│   ├── api/health/       # System health check endpoint (/api/health)
+│   ├── design-system/    # Internal Design System Preview (/design-system)
+│   ├── globals.css       # Semantic tokens, CSS variables, reduced-motion rules
+│   ├── layout.tsx        # Root HTML shell, Google fonts (Inter + JetBrains Mono)
 │   └── page.tsx          # Homepage foundation entrypoint
 ├── components/           # Modular UI component library
-│   ├── layout/           # Header, Footer, AdminSidebar, Navigation
-│   ├── sections/         # Feature blocks (Hero, ServicesShowcase, Testimonials)
-│   └── ui/               # Atomic primitives (Button, Card, Input, Modal, Badge)
+│   ├── feedback/         # LoadingState, EmptyState, ErrorState
+│   ├── layout/           # Container, Section, SectionHeading, Header, Footer
+│   ├── sections/         # Feature blocks (scaffolded for future phases)
+│   └── ui/               # Atomic primitives (Button, Card, Form, Badge)
 ├── config/               # Static configuration (siteConfig, servicesRegistry, nav)
-├── hooks/                # Custom client-side React hooks (useScroll, useMediaQuery)
-├── lib/                  # Shared utilities (cn, prisma singleton, formatters)
-├── server/               # Server-only business logic, services, and repositories
+├── hooks/                # Custom client-side React hooks
+├── lib/                  # Shared utilities (cn, formatters, prisma singleton)
+├── server/               # Server-only business logic & repositories (scaffolded)
 ├── types/                # Domain types, Prisma re-exports, API envelopes
 └── validations/          # Zod validation schemas (enquiry, auth, content)
 
 prisma/
-└── schema.prisma         # Declarative PostgreSQL schema definitions
+└── schema.prisma         # Declarative PostgreSQL schema (Pending Phase 3)
 
-docs/                     # Mandatory architectural and operational documentation
+docs/                     # Architectural, system & operational documentation
 tests/                    # Vitest unit/component tests & Playwright E2E suites
 ```
 
 ---
 
-## 3. Key Technology Decisions
+## 3. UI Component Architecture (Phase 2 Additions)
 
-### Next.js App Router & React Server Components
-- **Why:** Delivers fast page loads via server-side rendering, streaming HTML, and automatic code splitting. Eliminates client-side state overhead for static/marketing sections while keeping dynamic interactive islands for forms and admin tooling.
-- **Trade-offs:** Stricter mental model around client vs. server boundaries (`"use client"` vs server components).
+### Button Architecture (`src/components/ui/button.tsx`)
+- Common `Button` component supporting polymorphic variants: `primary`, `secondary`, `outline`, `ghost`, `glow`.
+- Named forwardRef convenience wrappers: `PrimaryButton`, `SecondaryButton`, `OutlineButton`, `GhostButton`, `GlowButton`.
+- Built-in loading state with accessible SVG spinner (`isLoading`), left and right icon slots, and active scale animations.
 
-### Tailwind CSS & Custom Glassmorphism
-- **Why:** Colocated atomic styling with zero runtime CSS-in-JS overhead. Built-in responsive modifiers (`sm:`, `md:`, `lg:`) and custom token extensions for the VOIDTECH brand (deep charcoal `#050507`, electric violet `#8b5cf6`, and controlled radial glows).
+### Card Architecture (`src/components/ui/card.tsx`)
+- `BaseCard`: Solid elevated charcoal surface.
+- `GlassCard`: Frosted backdrop blur with hover glow.
+- `ServiceCard`: Agency service presentation with category pill and deliverables.
+- `PricingCard`: Tier selector with features checklist and popular highlight.
+- `ProjectCard`: Case study presentation with client, industry, and quantified metrics.
 
-### PostgreSQL & Prisma ORM
-- **Why:** PostgreSQL provides relational integrity, JSONB support for dynamic metadata, and transaction safety. Prisma ORM generates strictly-typed TypeScript client models, preventing runtime schema mismatches.
-- **Phase 1 Status:** Schema defined; migrations and physical database provisioning deferred to Phase 3.
+### Form Architecture (`src/components/ui/form.tsx`)
+- Unconditional `React.useId()` hooks generating linked input and error IDs.
+- `aria-invalid` and `aria-describedby` accessibility bindings.
+- Primitives: `Input`, `Textarea`, `Select`, `Checkbox`, `FormLabel`.
 
-### Zod & React Hook Form
-- **Why:** Unified schema definition that serves both client-side form validation (immediate user feedback) and server-side route validation (data integrity before database insertion).
+### Feedback Architecture (`src/components/feedback/index.tsx` & `src/components/ui/badge.tsx`)
+- Semantic `Badge` variants (`default`, `purple`, `success`, `warning`, `error`, `outline`) with pulse dots.
+- `LoadingState`, `EmptyState`, and `ErrorState` with retry callbacks.
 
+---
+
+## 4. Database Layer Status
+- **PostgreSQL + Prisma:** Schemas exist in `prisma/schema.prisma` and client is generated in `node_modules/@prisma/client`.
+- **Implementation Status:** Physical database connection, pooling, and migrations remain explicitly scheduled for **Phase 3: Database Design, Schema Setup & Data Layer**.

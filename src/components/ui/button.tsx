@@ -6,6 +6,8 @@ export interface ButtonProps
   variant?: "primary" | "secondary" | "outline" | "ghost" | "glow";
   size?: "sm" | "md" | "lg";
   isLoading?: boolean;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -17,23 +19,25 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       size = "md",
       isLoading = false,
       disabled,
+      leftIcon,
+      rightIcon,
       type = "button",
       ...props
     },
     ref
   ) => {
     const baseStyles =
-      "inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-purple/60 focus-visible:ring-offset-2 focus-visible:ring-offset-void-black disabled:opacity-50 disabled:pointer-events-none select-none cursor-pointer";
+      "inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-purple/70 focus-visible:ring-offset-2 focus-visible:ring-offset-void-black disabled:opacity-50 disabled:pointer-events-none select-none cursor-pointer tracking-wide";
 
     const variants = {
       primary:
-        "bg-gradient-to-r from-electric-violet to-electric-purple text-white shadow-glow-sm hover:shadow-glow-md hover:brightness-110 active:scale-[0.98]",
+        "bg-gradient-to-r from-electric-violet to-electric-purple text-white shadow-glow-sm hover:shadow-glow-md hover:brightness-110 active:scale-[0.98] border border-electric-purple/40",
       secondary:
-        "bg-void-surface text-void-light border border-void-border hover:border-electric-purple/40 hover:text-white hover:bg-void-charcoal",
+        "bg-void-charcoal text-void-light border border-void-border hover:border-electric-purple/40 hover:text-white hover:bg-void-surface active:scale-[0.98]",
       outline:
-        "border border-electric-purple/50 text-electric-purple hover:bg-electric-purple/10 active:bg-electric-purple/20",
+        "border border-electric-purple/60 text-electric-purple hover:bg-electric-purple/10 active:bg-electric-purple/20 active:scale-[0.98]",
       ghost:
-        "text-void-muted hover:text-void-white hover:bg-void-surface/60",
+        "text-void-muted hover:text-void-white hover:bg-void-surface/80 active:bg-void-surface",
       glow:
         "bg-void-charcoal text-white border border-electric-purple shadow-glow-md hover:shadow-glow-lg hover:border-electric-neon active:scale-[0.98]",
     };
@@ -59,6 +63,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <circle
                 className="opacity-25"
@@ -77,7 +82,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             <span>Loading...</span>
           </span>
         ) : (
-          children
+          <>
+            {leftIcon && <span className="inline-flex shrink-0">{leftIcon}</span>}
+            <span>{children}</span>
+            {rightIcon && <span className="inline-flex shrink-0">{rightIcon}</span>}
+          </>
         )}
       </button>
     );
@@ -86,3 +95,27 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
 Button.displayName = "Button";
 
+export const PrimaryButton = React.forwardRef<HTMLButtonElement, Omit<ButtonProps, "variant">>(
+  (props, ref) => <Button ref={ref} variant="primary" {...props} />
+);
+PrimaryButton.displayName = "PrimaryButton";
+
+export const SecondaryButton = React.forwardRef<HTMLButtonElement, Omit<ButtonProps, "variant">>(
+  (props, ref) => <Button ref={ref} variant="secondary" {...props} />
+);
+SecondaryButton.displayName = "SecondaryButton";
+
+export const OutlineButton = React.forwardRef<HTMLButtonElement, Omit<ButtonProps, "variant">>(
+  (props, ref) => <Button ref={ref} variant="outline" {...props} />
+);
+OutlineButton.displayName = "OutlineButton";
+
+export const GhostButton = React.forwardRef<HTMLButtonElement, Omit<ButtonProps, "variant">>(
+  (props, ref) => <Button ref={ref} variant="ghost" {...props} />
+);
+GhostButton.displayName = "GhostButton";
+
+export const GlowButton = React.forwardRef<HTMLButtonElement, Omit<ButtonProps, "variant">>(
+  (props, ref) => <Button ref={ref} variant="glow" {...props} />
+);
+GlowButton.displayName = "GlowButton";

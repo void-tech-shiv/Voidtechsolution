@@ -1,8 +1,23 @@
 import type { Metadata, Viewport } from "next";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { siteConfig } from "@/config/site";
 import "./globals.css";
+
+const sansFont = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+  fallback: ["system-ui", "-apple-system", "sans-serif"],
+});
+
+const monoFont = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
+  fallback: ["monospace"],
+});
 
 export const metadata: Metadata = {
   title: {
@@ -41,6 +56,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: "#050507",
   colorScheme: "dark",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -49,11 +66,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html
+      lang="en"
+      className={`dark ${sansFont.variable} ${monoFont.variable}`}
+    >
       <body className="min-h-screen bg-void-black font-sans text-void-light antialiased selection:bg-electric-purple selection:text-white">
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-electric-purple focus:px-4 focus:py-2 focus:text-white focus:outline-none"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-lg focus:bg-electric-purple focus:px-4 focus:py-2.5 focus:text-white focus:shadow-glow-md focus:outline-none focus:ring-2 focus:ring-white"
         >
           Skip to main content
         </a>
@@ -68,4 +88,3 @@ export default function RootLayout({
     </html>
   );
 }
-
