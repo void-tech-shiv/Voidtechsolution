@@ -131,17 +131,34 @@ enum UserRole {
 }
 
 model AdminUser {
-  id           String    @id @default(cuid())
-  email        String    @unique
+  id           String         @id @default(cuid())
+  email        String         @unique
   passwordHash String
   name         String
-  role         UserRole  @default(ADMIN)
-  isActive     Boolean   @default(true)
+  role         UserRole       @default(ADMIN)
+  isActive     Boolean        @default(true)
   lastLoginAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  sessions     AdminSession[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 
   @@map("admin_users")
+}
+
+model AdminSession {
+  id           String    @id @default(cuid())
+  userId       String
+  user         AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionToken String    @unique // SHA-256 hash of the opaque client cookie token
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  lastActiveAt DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("admin_sessions")
 }
 
 // ------------------------------------------------------------------------------

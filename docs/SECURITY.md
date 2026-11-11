@@ -108,3 +108,35 @@ In the event of database connectivity interruption (such as during cold starts o
 - Server action catches the write failure and returns a safe, unprivileged error message.
 - Zero connection strings, database hosts, or internal stack traces are returned to the client or rendered in error alerts.
 - Prospect input data is completely preserved on the client form with an accessible "Retry Submission" button and mailto fallback.
+
+---
+
+## 9. Phase 7: Administrative Authentication & Session Security Architecture
+
+### A. Dual-Layer Session Verification (Edge + Database)
+1. **Layer 1 — Edge Middleware Early Rejection (`src/middleware.ts`):**
+   - Inspects `vts_session` cookie signed via Web Crypto API HMAC-SHA256 (`crypto.subtle`).
+   - Acts as an early rejection filter with sub-millisecond network edge performance.
+   - **Crucial Security Boundary:** Edge HMAC verification is **NOT** proof of current authorization; it solely confirms the token has not expired cryptographically and was signed with `AUTH_SECRET`.
+2. **Layer 2 — Server-Side Authoritative Database Validation (`src/server/security/session.ts`):**
+   - Authoritative verification queries `admin_sessions` in PostgreSQL via the token's SHA-256 hash.
+   - Verifies session row exists in the database (not revoked).
+   - Enforces **Absolute Session Lifetime: 8 hours** (`expiresAt`).
+   - Enforces **Server-Side Idle Timeout: 30 minutes** (`Date.now() - lastActiveAt > 30 min`).
+   - Enforces **Account Active Status** (`user.isActive === true`).
+   - Resolves the administrator's authoritative role directly from the database row.
+
+### B. Cookie Security & XSS Boundaries
+- **Cookie Attributes:** `HttpOnly: true`, `Secure: true` in production, `SameSite: "lax"`, `Path: "/"`, `Max-Age: 28800` (8 hours).
+- **XSS Limits & Clarification:** `HttpOnly` prevents client-side JavaScript (`document.cookie`) from reading the raw session token. However, `HttpOnly` does not prevent request-hijacking attacks if an XSS vulnerability exists. Therefore, deep defenses include context-aware output encoding (React JSX automatic HTML escaping), strict Zod schema validation on all inputs, strict Content Security Policy (CSP), and independent server-side authorization checks on all actions.
+
+### C. CSRF & Origin Validation (`src/server/security/origin.ts`)
+- `SameSite=Lax` is reinforced with explicit server-side Origin verification.
+- All state-changing administrative operations are restricted strictly to HTTP POST Server Actions. No mutations are permitted via GET endpoints.
+- `validateRequestOrigin` verifies incoming `Origin` (with `Referer` fallback) against the authoritative request `Host`.
+
+### D. Session Rotation & Revocation Lifecycle
+- **Rotation:** Session tokens are rotated immediately upon successful authentication.
+- **Revocation on Logout:** Session row is deleted from `admin_sessions` and client cookie is cleared.
+- **Global Revocation:** Deactivating an account or resetting credentials revokes all active sessions for that user (`DELETE FROM admin_sessions WHERE userId = ?`).
+

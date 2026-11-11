@@ -100,3 +100,4 @@ The existing PostgreSQL schema contains 10 application models and 5 custom enums
   1. NextAuth / Auth.js introduces significant complexity, external adapter dependencies, and frequent breaking API changes between Next.js versions.
   2. The application already possesses scrypt password hashing, rate limiting, and Prisma repositories.
   3. A bespoke, lightweight session engine built natively with Web Crypto and Prisma guarantees 100% control, zero external attack surface, full type safety, and seamless integration with the existing `AdminUser` and `AuditLog` tables.
+

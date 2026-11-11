@@ -118,3 +118,4 @@ Phase 7 will be implemented in strict sequential milestones. Each milestone defi
 * [ ] `npm run build`: All 13+ routes compiled cleanly.
 * [ ] CodeRabbit / Manual Security Review: Zero exposed credentials, zero timing vulnerabilities.
 * [ ] Git Working Tree: Clean and tagged to `session/phase-7-admin-auth`.
+
