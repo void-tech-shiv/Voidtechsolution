@@ -112,3 +112,40 @@ tests/                    # Vitest unit/component tests & Playwright E2E suites
 - **Offline & Build-Time Resilience:** Next.js static page generation runs deterministically without live PostgreSQL. Read queries catch connection errors and supply structured fallbacks.
 - **Strict Write Error Guarantees:** Database write failures strictly throw observable, descriptive errors without leaking connection credentials.
 - **Auditing & Delivery Logs:** Every transactional email and critical administrative action is recorded via `EmailDelivery` and `AuditLog` models.
+
+
+---
+
+## 7. Phase 4: Public Marketing Homepage Architecture
+
+### Component Hierarchy & Data Flow
+
+```mermaid
+graph TD
+    A[Next.js App Router Page: src/app/page.tsx] -->|Parallel Data Fetch| B[Repositories Layer]
+    B -->|getServices| C[ServicesRepo]
+    B -->|getProjects| D[PortfolioRepo]
+    B -->|getPackages| E[PricingRepo]
+    B -->|getFaqs| F[FaqRepo]
+    
+    C -->|Fallback Resilience| G[Static Registry Fallback]
+    D -->|Fallback Resilience| H[Concept Prototypes Fallback]
+    E -->|Fallback Resilience| I[Approved INR Tiers Fallback]
+    F -->|Fallback Resilience| J[Approved FAQs Fallback]
+
+    A --> S1[Section 1: Hero & Strategic CTAs]
+    A --> S2[Section 2: Brand Introduction & Values]
+    A --> S3[Section 3: Services Showcase & Interactive Filter]
+    A --> S4[Section 4: Why Choose VoidTech]
+    A --> S5[Section 5: 7-Stage Development Process]
+    A --> S6[Section 6: Featured Projects / Concept Lab]
+    A --> S7[Section 7: Transparent INR Pricing Preview]
+    A --> S8[Section 8: Accessible FAQ Accordion]
+    A --> S9[Section 9: Closing Conversion Banner]
+```
+
+### Key Public Architecture Invariants:
+1. **Server Component Pre-rendering:** `src/app/page.tsx` runs as an async Server Component, fetching data on the server with zero client database exposure.
+2. **Safe Fallback Resilience:** When database tables do not exist or are unpopulated, repositories catch query errors and immediately return static baseline configurations without crashing or throwing 500 errors.
+3. **Interactive Client Boundary Isolation:** Only interactive elements (`ServicesFilter`, `FaqAccordion`, `QuickInquiry`) are marked with `"use client"`. They receive plain JSON props from the server component.
+4. **Authenticity & Concept Isolation:** Internal prototypes are strictly tagged with `CONCEPT` badges to avoid misleading claims.

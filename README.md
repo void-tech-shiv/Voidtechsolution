@@ -121,7 +121,7 @@ Comprehensive architectural and engineering documentation is maintained in the [
 ## 6. Project Governance & Status
 
 Project planning, state snapshots, and milestone verification are governed by **GSD Mission Control**:
-- Current Milestone: **Milestone 1 — Project Foundation**
-- Current Phase: **Phase 1 (Completed & Verified)**
-- Active Branch: `session/phase-1-foundation`
+- Current Milestone: **Milestone 3 — Public Marketing Website**
+- Current Phase: **Phase 4 — Homepage, Services & Dynamic Showcase (Completed & Verified)**
+- Active Branch: `session/phase-4-home-services`
 

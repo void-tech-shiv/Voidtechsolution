@@ -52,8 +52,29 @@
 - [x] Author `tests/unit/env.test.ts` (9 tests, expanding test suite to 82 tests passing)
 - [x] Enforce strict stop condition: Phase 4 NOT started, awaiting user authorization
 
+## Phase 4: Public Marketing Website — Homepage & Services (Completed & Verified)
+- [x] Create accessible WAI-ARIA Accordion primitive (`src/components/ui/accordion.tsx`)
+- [x] Create dynamic service icon mapper (`src/components/sections/service-icon.tsx`)
+- [x] Build interactive client-side category filter & search (`src/components/sections/services-filter.tsx`)
+- [x] Build interactive FAQ accordion with graceful empty state (`src/components/sections/faq-accordion.tsx`)
+- [x] Build direct project consultation inquiry component (`src/components/sections/quick-inquiry.tsx`)
+- [x] Implement complete 9-section responsive homepage (`src/app/page.tsx`):
+  - [x] Section 1: Hero ("Turning Ideas Into Powerful Digital Products.")
+  - [x] Section 2: Brand Introduction & Principles
+  - [x] Section 3: Full-Spectrum Services Showcase (18 offerings, category tabs, tech tags, starting INR prices)
+  - [x] Section 4: Why Partner With VoidTech (6 practical differentiators)
+  - [x] Section 5: The 7-Stage Development Journey
+  - [x] Section 6: Internal Engineering Prototypes (Concept Lab with visible CONCEPT labels)
+  - [x] Section 7: Predictable Investment Tiers (10 approved INR packages, ₹999 to ₹59,999+)
+  - [x] Section 8: Frequently Asked Questions (accessible accordion)
+  - [x] Section 9: Closing Conversion Banner (direct email consultation)
+- [x] Author comprehensive unit & integration test suite (`tests/unit/homepage.test.tsx`, 14 tests)
+- [x] Run full quality verification: `tsc --noEmit` (0 errors), `next lint` (0 errors), `vitest run` (96 tests passed), `next build` (clean)
+- [x] Synchronize repository documentation (`README.md`, `docs/PROJECT_STATUS.md`, `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, `docs/CHANGELOG.md`)
+- [x] Update GSD state and planning artifacts
+- [x] Enforce strict stop condition: Phase 5 NOT started, awaiting user authorization
+
 ## Future Phases (Pending Milestone Approvals)
-- [ ] Phase 4: Public Marketing Pages — Home, Services & Dynamic Showcase
 - [ ] Phase 5: Public Marketing Pages — About, Portfolio & Case Studies
 - [ ] Phase 6: Public Marketing Pages — Pricing Calculator, Contact & Enquiry Flow
 - [ ] Phase 7: Secure Admin authentication & session management

@@ -78,3 +78,24 @@ npm run build
 - **TypeScript Strict Mode:** `tsc --noEmit` passed with 0 errors.
 - **ESLint:** `next lint` passed with 0 warnings or errors.
 - **Next.js Production Build:** `next build` passed with all static and dynamic routes compiled.
+
+
+---
+
+## 4. Phase 4 Test Suite — Public Marketing Experience
+
+- **Test File:** `tests/unit/homepage.test.tsx` (14 tests)
+- **Total Project Tests:** 96 passing across 7 test suites.
+- **Coverage Areas:**
+  1. Complete Homepage rendering with all 9 strategic sections.
+  2. Hero headline, supporting copy, and dual CTA navigation.
+  3. Brand introduction quote and 3 core engineering commitments.
+  4. Services Showcase rendering with all 18 approved services.
+  5. Category filtering and live keyword search in `ServicesFilter`.
+  6. Practical differentiators in Why Choose VoidTech.
+  7. 7-stage delivery lifecycle steps.
+  8. Concept Lab projects with explicit `CONCEPT` badge.
+  9. All 10 approved pricing tiers in INR (₹999 to ₹59,999+) with preserved plus signs.
+  10. Accessible `Accordion` keyboard toggle, ARIA attributes, and empty fallback state.
+  11. Direct email copy-to-clipboard functionality in `QuickInquiry`.
+  12. Header and Footer navigation link consistency.

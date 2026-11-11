@@ -1,8 +1,8 @@
 # PROJECT_STATUS.md — VOIDTECH SOLUTION Status Dashboard
 
-> **Current Status as of:** 2026-11-12
-> **Active Milestone:** Milestone 2 — Phase 3: Database Architecture, Data Layer & Credential Readiness (Completed & Verified)
-> **Strict Stop Condition:** STRICTLY DO NOT START PHASE 4 until user explicitly reviews credentials and authorizes start.
+> **Current Status as of:** 2026-11-12  
+> **Active Milestone:** Milestone 3 — Phase 4: Public Marketing Website (Completed & Verified)  
+> **Strict Stop Condition:** STRICTLY DO NOT START PHASE 5 until user reviews and explicitly authorizes start.
 
 ---
 
@@ -12,9 +12,9 @@
 |---|---|---|---|---|
 | **Phase 1: Foundation** | M1 | Scaffolding, TypeScript strict, Next.js, Prisma schema, Docs | ✅ Complete | Verified clean build & tests |
 | **Phase 2: Design System** | M2 | Brand tokens, typography, UI components, Header, Footer, Preview | ✅ Complete | Verified 32 tests, clean build |
-| **Phase 3: Database & Core Services** | M2 | All 10 models, 10 INR pricing packages, Nodemailer SMTP service, OTP engine, Repositories, Seeder, Credential Readiness | ✅ Complete & Ready | Verified 82 tests, clean build |
-| **Phase 4: Home & Services** | M3 | Hero, testimonials, catalog of 18 services | ⏸️ STOPPED | Strictly waiting for user authorization |
-| **Phase 5: About & Portfolio**| M3 | Agency narrative, case studies with tech stacks | ⬜ Pending | Specifications registered |
+| **Phase 3: Database & Core Services** | M2 | All 10 models, 10 INR pricing packages, Nodemailer SMTP service, OTP engine, Repositories, Seeder, Credential Readiness | ✅ Complete | Verified 82 tests, clean build |
+| **Phase 4: Home & Services** | M3 | Hero, Brand Intro, 18-Service Catalog, Why Us, 7-Stage Process, Concept Lab, INR Pricing Preview, FAQ Accordion, Closing CTA | ✅ Complete | Verified 96 tests, clean build |
+| **Phase 5: About & Portfolio**| M3 | Agency narrative, deep case studies with tech stacks | ⏸️ Pending | Strictly awaiting user authorization |
 | **Phase 6: Pricing & Contact**| M4 | Tier selector, cost estimator, lead enquiry form | ⬜ Pending | Validation schemas registered |
 | **Phase 7: Authentication** | M5 | Admin login, sessions, CSRF, middleware security | ⬜ Pending | Security controls specified |
 | **Phase 8: Admin Shell** | M5 | Admin layout, navigation, analytics overview | ⬜ Pending | Architecture specified |
@@ -25,49 +25,36 @@
 
 ---
 
-## 2. Phase 3 Deliverables Breakdown
+## 2. Phase 4 Deliverables Breakdown
 
 ### ✅ Completed & Empirically Verified
-- [x] **Complete Database Schema (`prisma/schema.prisma`):**
-  - All 10 models verified: `Enquiry`, `Service`, `PortfolioProject`, `AdminUser`, `PricingPackage`, `FAQ`, `SiteSetting`, `AuditLog`, `OtpVerification`, `EmailDelivery`.
-  - Enums: `EnquiryStatus`, `ServiceCategory`, `UserRole`, `OtpPurpose`, `EmailDeliveryStatus`.
-  - Schema validated with `npx prisma validate` and Prisma Client generated with `npx prisma generate`.
-- [x] **Approved INR Pricing Structure (`src/config/pricing.ts`):**
-  - All prices stored and presented strictly in INR (₹).
-  - Ten approved starting prices: Basic Static (₹999), Standard Business (₹2,999), Professional (₹5,999), Premium Custom (₹12,999+), E-commerce (₹19,999+), SaaS (₹24,999+), LMS (₹29,999+), Marketplace (₹34,999+), ERP & CRM (₹49,999+), AI-Powered (₹59,999+).
-  - `startingPriceUsd` completely removed in favor of `startingPriceInr` and `currency: "INR"`.
-- [x] **Nodemailer + SMTP Transactional Email Subsystem (`src/server/email/`):**
-  - Environment validation schema with Zod for `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM_NAME`, `SMTP_FROM_EMAIL`, `ADMIN_ALERT_EMAIL`.
-  - Reusable SMTP connection pool transporter with verification function (`verifySmtpConnection`).
-  - Central `sendEmail` function with bounded exponential retries (up to 3 retries) and automated delivery tracking to `EmailDelivery`.
-  - 6 VoidTech dark-styled email templates with plain-text fallbacks:
-    1. OTP verification
-    2. Password reset
-    3. Enquiry confirmation (with 24h SLA review guarantee)
-    4. New enquiry admin alert (with full structured lead brief)
-    5. Enquiry status update
-    6. Security notification
-  - Safe error handling: zero credential logging and masked email addresses.
-- [x] **Cryptographic OTP Verification Engine (`src/server/security/otp.service.ts`):**
-  - Cryptographically secure 6-digit generation using `crypto.randomInt(100000, 1000000)`.
-  - HMAC-SHA256 secure hash storage with server-side pepper and salt.
-  - 5-minute default expiration window, max 5 verification attempts lockout, 60-second cooldown, single-use consumption.
-- [x] **Environment Configuration & Credential Readiness:**
-  - Standardized `.env.example` with complete documentation and placeholders.
-  - Prepared local uncommitted `.env` with strong random 256-bit `AUTH_SECRET` and `OTP_PEPPER_SECRET`.
-  - Verified `.env` is ignored by Git (`.gitignore:25`).
-  - Added centralized Zod environment validation in `src/config/env.ts` with strict production mode constraints.
-  - Added cryptographic scrypt password hashing & constant-time verification in `src/server/security/password.ts`.
-  - Updated `prisma/seed.ts` to securely hash initial admin bootstrap password (`ADMIN_PASSWORD`).
-  - Removed deprecated Phase 1 placeholders (`EMAIL_PROVIDER_API_KEY`, `EMAIL_FROM`, `ENQUIRY_NOTIFICATION_RECIPIENT`).
-- [x] **Comprehensive Quality Gate Verification:**
-  - Vitest test suite: 6 test suites, **82 tests passing** (0 failures).
-  - Strict TypeScript check (`tsc --noEmit`): 0 errors.
-  - ESLint check (`next lint`): 0 warnings or errors.
-  - Next.js production build (`next build`): successfully compiled all static and dynamic routes.
+- [x] **High-Impact 9-Section Homepage (`src/app/page.tsx`):**
+  - Section 1 — Hero: Headline "Turning Ideas Into Powerful Digital Products.", supporting copy, primary CTA "Start Your Project", secondary CTA "Explore Our Services", authentic technical highlights (18 Tracks, 100% Bespoke, Full Ownership, From ₹999).
+  - Section 2 — Brand Introduction: Authentic statement on practical engineering, purpose-driven architecture, zero vendor lock-in, and high-assurance code.
+  - Section 3 — Services Showcase: Data-driven service catalog rendering all 18 approved services via `ServicesRepo.getAllServices()` with safe fallback, category filter tabs, Lucide icons, and INR starting prices.
+  - Section 4 — Why Choose VoidTech: 6 practical engineering differentiators (custom requirements, modern stack, accessible UI, thoughtful process, direct communication, maintainable architecture).
+  - Section 5 — Development Process: 7-stage delivery lifecycle (Discovery, Planning, UI/UX Design, Development, Testing, Deployment, Support).
+  - Section 6 — Featured Projects: Sourced from `PortfolioRepo`, displaying verified internal CONCEPT prototypes (`algorithmic-liquidity-engine`, `autonomous-ai-ops-agent`) with prominent "CONCEPT" badge and simulated benchmarks.
+  - Section 7 — Pricing Preview: Sourced from `PricingRepo`, highlighting 10 approved starting price tiers in INR (₹999 to ₹59,999+) with "Starting from" notation and preserved `+` symbols.
+  - Section 8 — FAQ Preview: Sourced from `FaqRepo`, featuring an accessible keyboard-navigable accordion with ARIA attributes and smooth animations.
+  - Section 9 — Final CTA: Headline "Have an Idea? Let's Build It.", supporting copy, and direct inquiry CTA with copy-to-clipboard email utility.
+- [x] **Reusable Section & UI Components:**
+  - `src/components/ui/accordion.tsx`: Accessible WAI-ARIA compliant accordion with keyboard navigation and smooth height animations.
+  - `src/components/sections/service-icon.tsx`: Dynamic Lucide React icon mapper for all 18 services with fallback.
+  - `src/components/sections/services-filter.tsx`: Client-side interactive filter tabs and keyword search for services.
+  - `src/components/sections/faq-accordion.tsx`: Interactive FAQ accordion component with graceful empty state.
+  - `src/components/sections/quick-inquiry.tsx`: Direct email consultation component with copy-to-clipboard functionality and service guarantees.
+- [x] **Empirical Quality Gates:**
+  - `tsc --noEmit`: 0 TypeScript compiler errors.
+  - `next lint`: 0 ESLint warnings or errors.
+  - `vitest run`: 7 test files passed, 96/96 unit tests passed.
+  - `next build`: Next.js production build succeeded with clean static generation of all pages.
 
 ---
 
-## 3. Strict Stop Condition Status
-- **Environment Configuration & Credential Readiness:** 100% COMPLETE.
-- **Phase 4 Status:** NOT STARTED. Awaiting explicit user instruction before proceeding to Phase 4.
+## 3. Strict Stop Condition Enforced
+- Phase 4 has been completed and verified.
+- **Phase 5 has NOT been started.**
+- No database migrations or schema modifications were run.
+- No real emails were dispatched.
+- Working tree on branch `session/phase-4-home-services`.

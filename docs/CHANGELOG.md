@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.0] — 2026-11-12
+### Phase 4: Public Marketing Website — Homepage, Services & Dynamic Showcase
+
+#### Added
+- **Full Responsive 9-Section Homepage (`src/app/page.tsx`):**
+  - Section 1 (Hero): Headline "Turning Ideas Into Powerful Digital Products.", supporting copy, dual CTA navigation ("Start Your Project" & "Explore Our Services"), and authentic capability highlights.
+  - Section 2 (Brand Introduction): Authentic statement regarding pragmatic engineering, purpose-driven architecture, zero vendor lock-in, and high-assurance code.
+  - Section 3 (Services Showcase): Complete 18-service catalog with category filter tabs, keyword search, deliverables, tech tags, and INR pricing.
+  - Section 4 (Why Choose VoidTech): 6 practical differentiators focused on custom architecture, accessibility, and clean code.
+  - Section 5 (Development Process): 7-stage delivery lifecycle (Discovery, Planning, UI/UX Design, Development, Testing, Deployment, Support).
+  - Section 6 (Featured Projects): Concept Lab architecture prototypes with prominent `CONCEPT` badge and benchmark metrics.
+  - Section 7 (Pricing Preview): All 10 approved starting price tiers in INR (₹999 to ₹59,999+) with preserved plus signs.
+  - Section 8 (FAQ Preview): WAI-ARIA accessible accordion with smooth transitions and keyboard navigation.
+  - Section 9 (Final Closing CTA): Direct project inquiry banner with one-click email copy utility.
+- **UI & Section Components:**
+  - `src/components/ui/accordion.tsx`: Accessible, keyboard-navigable Accordion primitive.
+  - `src/components/sections/service-icon.tsx`: Dynamic Lucide React icon mapper for services.
+  - `src/components/sections/services-filter.tsx`: Client-side interactive category filter and keyword search.
+  - `src/components/sections/faq-accordion.tsx`: Interactive FAQ accordion with graceful empty state.
+  - `src/components/sections/quick-inquiry.tsx`: Direct consultation component with clipboard copy functionality.
+- **Verification & Test Suite (`tests/unit/homepage.test.tsx`):**
+  - Added 14 unit and integration tests covering all 9 sections, 18 services, 10 pricing tiers, concept badge verification, and accordion toggling.
+  - Total test suite now stands at **96 passing tests** across 7 test suites.
+- **Pre-Flight Verification Script (`scripts/verify-live-env.ts`):**
+  - Added non-destructive live environment audit utility (`npm run verify:env`) verifying PostgreSQL connection (`SELECT 1`), SMTP verification handshake (`transporter.verify`), authentication keys, and security guards.
+
+---
+
 ## [0.3.2] — 2026-11-12
 ### Phase 3: Environment Configuration & Credential Readiness
 

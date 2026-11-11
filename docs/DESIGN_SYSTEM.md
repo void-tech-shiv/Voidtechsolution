@@ -136,3 +136,26 @@ This internal route provides visual verification of:
 5. All form controls with both valid and error states.
 6. Feedback badges, loading states, empty states, and error alerts.
 7. Responsive mobile and desktop layout behavior.
+
+
+---
+
+## 8. Phase 4 Component Extensions
+
+### Accordion (`src/components/ui/accordion.tsx`)
+- **Accessibility:** Built adhering to the WAI-ARIA Accordion Pattern (`aria-expanded`, `aria-controls`, `role="region"`).
+- **Keyboard Navigation:** Enter/Space toggle, full focus indicator via `focus-visible:ring-2 focus-visible:ring-electric-purple`.
+- **Modes:** Supports `type="single"` (default) or `type="multiple"`.
+- **Styling:** Subtle glassmorphic container with electric purple accent borders upon expansion.
+
+### Service Icon Mapper (`src/components/sections/service-icon.tsx`)
+- Maps service icon name strings (`"Globe"`, `"Smartphone"`, `"Code"`, `"Cpu"`, `"Bot"`, etc.) to Lucide React components with electric purple accents and fallback.
+
+### Services Filter (`src/components/sections/services-filter.tsx`)
+- Client-side category pill tabs and keyword search.
+- Responsive grid (1 col mobile, 2 cols tablet, 3 cols desktop).
+- INR starting price tags with plus signs.
+
+### Quick Inquiry (`src/components/sections/quick-inquiry.tsx`)
+- Direct email trigger and one-click copy to clipboard with feedback badge.
+- High-impact glassmorphic container with ambient radial glow.
