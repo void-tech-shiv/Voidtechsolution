@@ -9,10 +9,10 @@ export const siteConfig = {
   contactEmail: "contact@voidtechsolution.com",
   mainNav: [
     { title: "Home", href: "/" },
-    { title: "About", href: "/#about" },
+    { title: "About", href: "/about" },
     { title: "Services", href: "/#services" },
     { title: "Pricing", href: "/#pricing" },
-    { title: "Portfolio", href: "/#portfolio" },
+    { title: "Portfolio", href: "/portfolio" },
     { title: "Contact", href: "/#contact" },
   ] satisfies NavItem[],
   adminNav: [

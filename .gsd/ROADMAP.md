@@ -70,9 +70,11 @@ updated: 2026-11-11T23:54:45+05:30
 ---
 
 ### Phase 5: Public Marketing Pages — About, Portfolio & Case Studies (Milestone 3)
-**Status:** ⏸️ Pending
-**Objective:** Construct `/about` agency story, engineering philosophy, and the `/portfolio` showcase with interactive filtering by category, live preview links, and detailed case study pages.
-**Dependencies:** Phase 4 (Strictly pending user authorization)
+**Status:** ✅ Complete
+**Objective:** Construct `/about` agency story, engineering philosophy, 6 values, 6-stage approach, 7-domain tech stack matrix, `/portfolio` discovery page with client-side category filtering and search, and dynamic `/portfolio/[slug]` case study pages with architectural blueprints and simulated benchmarks.
+**Dependencies:** Phase 4
+**Plans:**
+- [x] Plan 5.1: About Page, Portfolio Discovery & Dynamic Case Studies Layouts
 
 ---
 

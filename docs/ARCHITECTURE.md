@@ -149,3 +149,45 @@ graph TD
 2. **Safe Fallback Resilience:** When database tables do not exist or are unpopulated, repositories catch query errors and immediately return static baseline configurations without crashing or throwing 500 errors.
 3. **Interactive Client Boundary Isolation:** Only interactive elements (`ServicesFilter`, `FaqAccordion`, `QuickInquiry`) are marked with `"use client"`. They receive plain JSON props from the server component.
 4. **Authenticity & Concept Isolation:** Internal prototypes are strictly tagged with `CONCEPT` badges to avoid misleading claims.
+
+---
+
+## 8. Phase 5: About, Portfolio & Dynamic Case Study Architecture
+
+### Page Structure & Routing
+- **`/about` (Server Component):** 7 structured sections: Hero, Who We Are narrative, Mission & Vision, 6 Core Values, 6-Stage Engineering Approach, 7-Domain Tech Stack Matrix, and Collaboration CTA.
+- **`/portfolio` (Server Component + Client Boundary):** Server component fetching all projects via `PortfolioRepo.getAllProjects()`, passing data into `PortfolioFilter` client component for interactive client-side category filtering, full-text search, and empty state rendering.
+- **`/portfolio/[slug]` (Dynamic Route):** Next.js 15 async route with `generateStaticParams()` and `generateMetadata()`, resolving `await params`, handling 404s via `notFound()`, and rendering 11 structured case study sections.
+
+### Architecture Topology
+
+```mermaid
+graph TD
+    P1["/about Page"] --> A1["Hero Section"]
+    P1 --> A2["Who We Are Narrative"]
+    P1 --> A3["Mission & Vision Cards"]
+    P1 --> A4["6 Core Values Grid"]
+    P1 --> A5["6-Stage Approach"]
+    P1 --> A6["Tech Stack Matrix (7 Domains)"]
+    P1 --> A7["Collaboration CTA"]
+
+    P2["/portfolio Page"] --> Repo["PortfolioRepo.getAllProjects()"]
+    Repo --> PF["PortfolioFilter (Client Boundary)"]
+    PF --> C1["Category Pills Filter"]
+    PF --> C2["Live Keyword Search"]
+    PF --> C3["Project Cards Grid (CONCEPT Badges & Metrics)"]
+    PF --> C4["Empty State"]
+
+    P3["/portfolio/[slug] Dynamic Route"] --> Static["generateStaticParams()"]
+    P3 --> Meta["generateMetadata()"]
+    P3 --> S1["Breadcrumbs"]
+    P3 --> S2["Hero Header & Quick Metadata"]
+    P3 --> S3["Concept Transparency Notice"]
+    P3 --> S4["Problem & Solution Cards"]
+    P3 --> S5["Architecture Blueprint Schematic"]
+    P3 --> S6["Simulated Benchmark Metrics"]
+    P3 --> S7["Tech Stack & Code Access Brief"]
+    P3 --> S8["Related Projects Grid"]
+    P3 --> S9["Conversion CTA"]
+```
+

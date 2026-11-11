@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.5.0] — 2026-11-12
+### Phase 5: About Page, Portfolio & Detailed Project Case Studies
+
+#### Added
+- **Dedicated About Page (`src/app/about/page.tsx`):**
+  - Section 1 (Hero): Approved headline *"Engineering Ideas Into Digital Reality."*, supporting statement, and dual CTA navigation to `/portfolio` and `/#contact`.
+  - Section 2 (Who We Are): Authentic statement establishing VOIDTECH SOLUTION's engineering-first focus with zero fabricated client counts, employee statistics, or awards.
+  - Section 3 (Mission & Vision): Approved mission (*"Transform ideas into reliable, useful and maintainable digital solutions."*) and vision (*"Make modern technology more accessible to businesses and innovators through thoughtful software engineering."*).
+  - Section 4 (Core Values): 6 fundamental pillars (Engineering Quality, Transparent Communication, Practical Innovation, Maintainable Architecture, User-Centered Design, Continuous Improvement).
+  - Section 5 (Our Approach): 6 structured engineering phases (Understand the requirement, Define the architecture, Design the experience, Develop the solution, Test thoroughly, Deliver and support).
+  - Section 6 (Technology Matrix): 7 categorized technical domains (Frontend, Backend, Database, AI & Automation, Mobile, Cloud & DevOps, Design) without unverified partner claims.
+  - Section 7 (Closing CTA): *"Have an idea worth building?"* linking directly to `/#contact`.
+- **Dedicated Portfolio Discovery Page (`src/app/portfolio/page.tsx`):**
+  - Hero header with approved headline *"Selected Work & Engineering Concepts."* and authentic lab prototype positioning.
+  - Server-side data retrieval via `PortfolioRepo.getAllProjects()` with resilient try/catch fallback.
+  - Client component `PortfolioFilter` (`src/components/sections/portfolio-filter.tsx`) with category pills, live keyword search, dynamic project counter, and accessible empty state.
+- **Dynamic Case Study Route (`src/app/portfolio/[slug]/page.tsx`):**
+  - Next.js 15 App Router dynamic route with asynchronous `params` resolution.
+  - Static generation via `generateStaticParams()` and dynamic SEO metadata via `generateMetadata()`.
+  - Safe 404 handling via `notFound()`.
+  - Comprehensive 11-section case study layout: Breadcrumb navigation, Hero with quick metadata banner, Concept transparency notice, Problem & Constraints, Design & Architecture, Architecture Blueprint schematic, Simulated Benchmark metrics, Tech Stack, Code Access Brief, Related Engineering Concepts, and Closing Conversion CTA.
+- **Data Layer Expansion (`src/server/repositories/portfolio.repo.ts`):**
+  - Expanded concept prototypes to 5 verified technical domains: FinTech, DevOps/AI, Data Engineering, Cybersecurity, and IoT/Embedded systems.
+- **Test Suite Expansion (`tests/unit/about-portfolio.test.tsx`):**
+  - Added 16 unit and integration tests covering the About page, Portfolio discovery and live filtering, dynamic case study rendering, and 404 handling.
+  - Test suite now stands at **112 passing tests** across 8 test suites.
+
+---
+
 ## [0.4.0] — 2026-11-12
 ### Phase 4: Public Marketing Website — Homepage, Services & Dynamic Showcase
 

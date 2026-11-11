@@ -82,7 +82,27 @@ npm run build
 
 ---
 
-## 4. Phase 4 Test Suite — Public Marketing Experience
+## 5. Phase 5 Test Suite — About, Portfolio & Case Studies
+
+- **Test File:** `tests/unit/about-portfolio.test.tsx` (16 tests)
+- **Total Project Tests:** 112 passing across 8 test suites.
+- **Coverage Areas:**
+  1. **About Page Hero:** Approved headline *"Engineering Ideas Into Digital Reality."*, subtext, and portfolio CTA.
+  2. **Who We Are Section:** Authentic studio statement without fabricated statistics, employee counts, or fake certifications.
+  3. **Mission & Vision Statements:** Exact verification of approved mission and vision copy.
+  4. **Core Values:** All 6 pillars (Engineering Quality, Transparent Communication, Practical Innovation, Maintainable Architecture, User-Centered Design, Continuous Improvement).
+  5. **Engineering Approach:** All 6 structured phases (Understand the requirement, Define the architecture, Design the experience, Develop the solution, Test thoroughly, Deliver and support).
+  6. **Technology Matrix:** Categorized 7-domain tech stack matrix without unauthorized partnerships.
+  7. **About Conversion CTA:** *"Have an idea worth building?"* linking to `/#contact`.
+  8. **Portfolio Hero:** Approved headline *"Selected Work & Engineering Concepts."* and lab prototype positioning.
+  9. **Portfolio Project Cards:** Prominent `CONCEPT` badges and simulated benchmark tags.
+  10. **Interactive Industry Filtering:** Client-side category pill selection and filtering.
+  11. **Live Keyword Search:** Full-text search across titles, summaries, and tech tags.
+  12. **Empty State:** Friendly empty state rendering when search matches 0 projects with reset filter trigger.
+  13. **Dynamic Route Static Params:** `generateStaticParams()` returns all known project slugs.
+  14. **Dynamic Metadata:** `generateMetadata()` produces dynamic titles, descriptions, and OpenGraph data.
+  15. **Full Case Study Layout:** Renders Breadcrumbs, Hero, Challenge, Solution, Architecture Blueprint, Simulated Benchmarks, Tech Stack, Related Concepts, and CTA.
+  16. **404 Handling:** `notFound()` correctly invoked when project slug does not exist.
 
 - **Test File:** `tests/unit/homepage.test.tsx` (14 tests)
 - **Total Project Tests:** 96 passing across 7 test suites.

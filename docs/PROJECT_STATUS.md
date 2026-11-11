@@ -1,8 +1,8 @@
 # PROJECT_STATUS.md — VOIDTECH SOLUTION Status Dashboard
 
 > **Current Status as of:** 2026-11-12  
-> **Active Milestone:** Milestone 3 — Phase 4: Public Marketing Website (Completed & Verified)  
-> **Strict Stop Condition:** STRICTLY DO NOT START PHASE 5 until user reviews and explicitly authorizes start.
+> **Active Milestone:** Milestone 3 — Phase 5: About Page, Portfolio & Detailed Project Case Studies (Completed & Verified)  
+> **Strict Stop Condition:** STRICTLY DO NOT START PHASE 6 until user reviews and explicitly authorizes start.
 
 ---
 
@@ -14,8 +14,8 @@
 | **Phase 2: Design System** | M2 | Brand tokens, typography, UI components, Header, Footer, Preview | ✅ Complete | Verified 32 tests, clean build |
 | **Phase 3: Database & Core Services** | M2 | All 10 models, 10 INR pricing packages, Nodemailer SMTP service, OTP engine, Repositories, Seeder, Credential Readiness | ✅ Complete | Verified 82 tests, clean build |
 | **Phase 4: Home & Services** | M3 | Hero, Brand Intro, 18-Service Catalog, Why Us, 7-Stage Process, Concept Lab, INR Pricing Preview, FAQ Accordion, Closing CTA | ✅ Complete | Verified 96 tests, clean build |
-| **Phase 5: About & Portfolio**| M3 | Agency narrative, deep case studies with tech stacks | ⏸️ Pending | Strictly awaiting user authorization |
-| **Phase 6: Pricing & Contact**| M4 | Tier selector, cost estimator, lead enquiry form | ⬜ Pending | Validation schemas registered |
+| **Phase 5: About & Portfolio**| M3 | Agency story, engineering approach, 6 values, tech matrix, interactive portfolio discovery, dynamic case studies | ✅ Complete | Verified 112 tests, clean build |
+| **Phase 6: Pricing & Contact**| M4 | Tier selector, cost estimator, lead enquiry form | ⏸️ Pending | Strictly awaiting user authorization |
 | **Phase 7: Authentication** | M5 | Admin login, sessions, CSRF, middleware security | ⬜ Pending | Security controls specified |
 | **Phase 8: Admin Shell** | M5 | Admin layout, navigation, analytics overview | ⬜ Pending | Architecture specified |
 | **Phase 9: Enquiry Pipeline**| M6 | Lead triage Kanban, status management, email triggers | ⬜ Pending | Data model specified |
@@ -25,36 +25,44 @@
 
 ---
 
-## 2. Phase 4 Deliverables Breakdown
+## 2. Phase 5 Deliverables Breakdown
 
 ### ✅ Completed & Empirically Verified
-- [x] **High-Impact 9-Section Homepage (`src/app/page.tsx`):**
-  - Section 1 — Hero: Headline "Turning Ideas Into Powerful Digital Products.", supporting copy, primary CTA "Start Your Project", secondary CTA "Explore Our Services", authentic technical highlights (18 Tracks, 100% Bespoke, Full Ownership, From ₹999).
-  - Section 2 — Brand Introduction: Authentic statement on practical engineering, purpose-driven architecture, zero vendor lock-in, and high-assurance code.
-  - Section 3 — Services Showcase: Data-driven service catalog rendering all 18 approved services via `ServicesRepo.getAllServices()` with safe fallback, category filter tabs, Lucide icons, and INR starting prices.
-  - Section 4 — Why Choose VoidTech: 6 practical engineering differentiators (custom requirements, modern stack, accessible UI, thoughtful process, direct communication, maintainable architecture).
-  - Section 5 — Development Process: 7-stage delivery lifecycle (Discovery, Planning, UI/UX Design, Development, Testing, Deployment, Support).
-  - Section 6 — Featured Projects: Sourced from `PortfolioRepo`, displaying verified internal CONCEPT prototypes (`algorithmic-liquidity-engine`, `autonomous-ai-ops-agent`) with prominent "CONCEPT" badge and simulated benchmarks.
-  - Section 7 — Pricing Preview: Sourced from `PricingRepo`, highlighting 10 approved starting price tiers in INR (₹999 to ₹59,999+) with "Starting from" notation and preserved `+` symbols.
-  - Section 8 — FAQ Preview: Sourced from `FaqRepo`, featuring an accessible keyboard-navigable accordion with ARIA attributes and smooth animations.
-  - Section 9 — Final CTA: Headline "Have an Idea? Let's Build It.", supporting copy, and direct inquiry CTA with copy-to-clipboard email utility.
-- [x] **Reusable Section & UI Components:**
-  - `src/components/ui/accordion.tsx`: Accessible WAI-ARIA compliant accordion with keyboard navigation and smooth height animations.
-  - `src/components/sections/service-icon.tsx`: Dynamic Lucide React icon mapper for all 18 services with fallback.
-  - `src/components/sections/services-filter.tsx`: Client-side interactive filter tabs and keyword search for services.
-  - `src/components/sections/faq-accordion.tsx`: Interactive FAQ accordion component with graceful empty state.
-  - `src/components/sections/quick-inquiry.tsx`: Direct email consultation component with copy-to-clipboard functionality and service guarantees.
+- [x] **Dedicated About Page (`src/app/about/page.tsx`):**
+  - Section 1 — Hero: Approved headline *"Engineering Ideas Into Digital Reality."*, supporting statement, *"Explore Our Work"* (`/portfolio`) and *"Start Your Project"* (`/#contact`) CTAs.
+  - Section 2 — Who We Are: Transparent statement establishing VOIDTECH SOLUTION as an engineering-first studio; zero fabricated employee counts, founding dates, or certifications.
+  - Section 3 — Mission & Vision: Exact approved mission (*"Transform ideas into reliable, useful and maintainable digital solutions."*) and vision (*"Make modern technology more accessible to businesses and innovators through thoughtful software engineering."*).
+  - Section 4 — Core Values: 6 pillars (Engineering Quality, Transparent Communication, Practical Innovation, Maintainable Architecture, User-Centered Design, Continuous Improvement).
+  - Section 5 — Engineering Approach: 6 structured phases (Understand the requirement, Define the architecture, Design the experience, Develop the solution, Test thoroughly, Deliver and support).
+  - Section 6 — Technology Stack Matrix: 7 categorized domains (Frontend, Backend, Database, AI & Automation, Mobile, Cloud & DevOps, Design) without unverified partnerships.
+  - Section 7 — Closing CTA: *"Have an idea worth building?"* linking to `/#contact`.
+- [x] **Dedicated Portfolio Listing Page (`src/app/portfolio/page.tsx`):**
+  - Hero: Approved headline *"Selected Work & Engineering Concepts."* with subtext.
+  - Integration with `PortfolioRepo.getAllProjects()` with resilient try/catch fallback.
+  - Interactive client-side filtering component (`src/components/sections/portfolio-filter.tsx`):
+    - Category pills: All Projects, FINTECH, DEV OPS AI, DATA ENGINEERING, CYBERSECURITY, IOT EMBEDDED.
+    - Live search input querying title, summary, and tech tags.
+    - Prominent `CONCEPT` classification badges and simulated benchmark tags.
+    - Accessible empty state with "Clear All Filters" action.
+- [x] **Dynamic Case Study Route (`src/app/portfolio/[slug]/page.tsx`):**
+  - Next.js 15 async `params` handling (`await params`).
+  - SSG static params generation via `generateStaticParams()`.
+  - SEO dynamic metadata via `generateMetadata()`.
+  - Proper 404 handling via `notFound()`.
+  - 11 strategic sections: Breadcrumbs, Hero with quick metadata banner, Concept transparency notice, Problem & Constraints, Design & Architecture, Architecture Blueprint schematic, Simulated Benchmark metrics, Tech Stack, Code Access Brief, Related Engineering Concepts, and Closing Conversion CTA.
+- [x] **Navigation Updates:**
+  - `siteConfig.mainNav` updated in `src/config/site.ts`: About points to `/about`, Portfolio points to `/portfolio`, keeping section anchors for Services, Pricing, and Contact.
 - [x] **Empirical Quality Gates:**
   - `tsc --noEmit`: 0 TypeScript compiler errors.
   - `next lint`: 0 ESLint warnings or errors.
-  - `vitest run`: 7 test files passed, 96/96 unit tests passed.
-  - `next build`: Next.js production build succeeded with clean static generation of all pages.
+  - `vitest run`: 8 test suites passed, 112/112 unit tests passed.
+  - `next build`: Next.js production build succeeded with clean static generation of `/about`, `/portfolio`, and dynamic `/portfolio/[slug]` routes.
 
 ---
 
 ## 3. Strict Stop Condition Enforced
-- Phase 4 has been completed and verified.
-- **Phase 5 has NOT been started.**
+- Phase 5 has been completed and verified.
+- **Phase 6 has NOT been started.**
 - No database migrations or schema modifications were run.
 - No real emails were dispatched.
-- Working tree on branch `session/phase-4-home-services`.
+- Working tree on branch `session/phase-5-about-portfolio`.

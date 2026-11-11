@@ -74,8 +74,37 @@
 - [x] Update GSD state and planning artifacts
 - [x] Enforce strict stop condition: Phase 5 NOT started, awaiting user authorization
 
+## Phase 5: About Page, Portfolio & Detailed Project Case Studies (Completed & Verified)
+- [x] Author Phase 5 GSD planning artifacts (`.gsd/phases/05-about-portfolio/DISCUSS.md`, `05-01-PLAN.md`)
+- [x] Expand `PortfolioRepo` fallback prototypes across 5 technical domains (`algorithmic-liquidity-engine`, `autonomous-ai-ops-agent`, `distributed-telemetry-data-mesh`, `decentralized-identity-vault`, `edge-iot-fleet-monitor`)
+- [x] Update `mainNav` in `src/config/site.ts` to link to `/about` and `/portfolio` directly
+- [x] Implement dedicated About page (`src/app/about/page.tsx`) with 7 strategic sections:
+  - [x] Section 1: Hero ("Engineering Ideas Into Digital Reality.", copy, CTAs)
+  - [x] Section 2: Who We Are (authentic studio narrative, zero fake stats)
+  - [x] Section 3: Mission & Vision (exact approved statements)
+  - [x] Section 4: 6 Core Value Pillars
+  - [x] Section 5: 6-Stage Engineering Approach
+  - [x] Section 6: Categorized 7-domain Technology Stack Matrix
+  - [x] Section 7: Closing Collaboration CTA
+- [x] Implement dedicated Portfolio listing page (`src/app/portfolio/page.tsx`):
+  - [x] Hero ("Selected Work & Engineering Concepts.")
+  - [x] Server-side data retrieval via `PortfolioRepo.getAllProjects()`
+  - [x] Interactive client component `PortfolioFilter` (`src/components/sections/portfolio-filter.tsx`)
+  - [x] Category pills filter & live keyword search
+  - [x] Explicit `CONCEPT` badges and simulated benchmark tags
+  - [x] Accessible empty state with filter reset action
+- [x] Implement dynamic project case study route (`src/app/portfolio/[slug]/page.tsx`):
+  - [x] Next.js 15 async `params` resolution (`await params`)
+  - [x] `generateStaticParams()` and `generateMetadata()`
+  - [x] `notFound()` for unknown slugs
+  - [x] 11 strategic sections (Breadcrumbs, Hero, Challenge, Solution, Architecture Blueprint, Benchmarks, Tech Stack, Code Access, Related Concepts, CTA)
+- [x] Author comprehensive test suite (`tests/unit/about-portfolio.test.tsx`, 16 tests)
+- [x] Run full quality gate: `tsc --noEmit` (0 errors), `next lint` (0 errors), `vitest run` (112 tests passed across 8 suites), `next build` (clean compilation)
+- [x] Author `.gsd/phases/05-about-portfolio/05-01-SUMMARY.md` and `VERIFICATION.md`
+- [x] Synchronize documentation (`PROJECT_STATUS.md`, `ARCHITECTURE.md`, `TESTING.md`, `CHANGELOG.md`, `README.md`)
+- [x] Enforce strict stop condition: Phase 6 NOT started, awaiting user authorization
+
 ## Future Phases (Pending Milestone Approvals)
-- [ ] Phase 5: Public Marketing Pages — About, Portfolio & Case Studies
 - [ ] Phase 6: Public Marketing Pages — Pricing Calculator, Contact & Enquiry Flow
 - [ ] Phase 7: Secure Admin authentication & session management
 - [ ] Phase 8: Admin dashboard shell & analytics overview
