@@ -94,8 +94,7 @@ export const enquiryFormSchema = z.object({
   additionalConfig: z.record(z.unknown()).optional().nullable(),
   referenceUrl: optionalUrlSchema,
   consentGiven: z
-    .boolean()
-    .default(true)
+    .boolean({ required_error: "You must accept the consultation review policy to proceed" })
     .refine((val) => val === true, "You must accept the consultation review policy to proceed"),
   // Honeypot field for bot detection (must remain empty)
   website_url: z

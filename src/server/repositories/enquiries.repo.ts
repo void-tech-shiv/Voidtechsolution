@@ -40,7 +40,7 @@ export async function createEnquiry(
         selectedPackage: input.selectedPackage || null,
         additionalConfig: input.additionalConfig || undefined,
         referenceUrl: input.referenceUrl || null,
-        consentGiven: input.consentGiven ?? true,
+        consentGiven: input.consentGiven !== undefined ? input.consentGiven : null,
         status: "NEW",
         ipHash: meta?.ipHash || null,
         userAgent: meta?.userAgent || null,

@@ -269,6 +269,7 @@ describe("Phase 4: Homepage & Marketing Experience", () => {
       expect(screen.getByRole("list", { name: "Footer Capabilities Links" })).toBeInTheDocument();
       expect(screen.getByText("Build. Launch. Grow Online.")).toBeInTheDocument();
       expect(screen.queryByText("contact@voidtechsolution.com")).not.toBeInTheDocument();
+      expect(screen.getByText("voidtechsolutionsupport@gmail.com")).toBeInTheDocument();
     });
 
     it("verifies that all navigation anchor links map to existing sections on the Homepage", async () => {

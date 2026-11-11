@@ -19,11 +19,11 @@ import { PricingCalculator } from "@/components/sections/pricing-calculator";
 export const metadata: Metadata = {
   title: "Transparent Pricing & Investment Tiers — VOIDTECH SOLUTION",
   description:
-    "Explore 10 transparent INR pricing packages from static landing pages to custom SaaS, ERP systems, and AI automation. Zero hidden fees, milestone billing, and full IP handover.",
+    "Explore 10 transparent INR pricing packages from static landing pages to custom SaaS, ERP systems, and AI automation. Zero hidden fees, structured 50/50 payment terms, and full IP handover.",
   openGraph: {
     title: "Transparent Pricing & Investment Tiers — VOIDTECH SOLUTION",
     description:
-      "Explore 10 transparent INR pricing packages from static landing pages to custom SaaS, ERP systems, and AI automation. Zero hidden fees, milestone billing, and full IP handover.",
+      "Explore 10 transparent INR pricing packages from static landing pages to custom SaaS, ERP systems, and AI automation. Zero hidden fees, structured 50/50 payment terms, and full IP handover.",
     url: `${siteConfig.url}/pricing`,
     siteName: siteConfig.name,
     locale: "en_US",
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Transparent Pricing & Investment Tiers — VOIDTECH SOLUTION",
     description:
-      "Explore 10 transparent INR pricing packages from static landing pages to custom SaaS, ERP systems, and AI automation. Zero hidden fees, milestone billing, and full IP handover.",
+      "Explore 10 transparent INR pricing packages from static landing pages to custom SaaS, ERP systems, and AI automation. Zero hidden fees, structured 50/50 payment terms, and full IP handover.",
   },
   alternates: {
     canonical: `${siteConfig.url}/pricing`,
@@ -78,7 +78,7 @@ export default async function PricingPage() {
           </h1>
 
           <p className="mt-6 text-base leading-relaxed text-void-light sm:text-lg max-w-2xl mx-auto">
-            Honest, transparent pricing strictly in Indian Rupees (INR). From ultra-fast static landing pages starting at ₹999 to custom multi-tenant platforms, our milestone-gated billing ensures you only pay for verified deliverables.
+            Honest, transparent pricing strictly in Indian Rupees (INR). From ultra-fast static landing pages starting at ₹999 to custom enterprise systems, our clear 50/50 payment terms ensure alignment at kickoff and final handover.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
@@ -190,10 +190,10 @@ export default async function PricingPage() {
               <ShieldCheck className="h-5 w-5" />
             </div>
             <h3 className="font-mono text-sm font-bold text-white mb-2">
-              30/40/30 Milestone Billing
+              50/50 Payment Terms
             </h3>
             <p className="text-xs text-void-muted leading-relaxed">
-              Structured risk-mitigated model: 30% kickoff deposit, 40% after interactive staging approval, and 30% upon verified production release and deployment.
+              Clear two-stage structure: 50% advance payment to initiate engineering, and the remaining 50% prior to final handover and repository release.
             </p>
           </div>
 
@@ -205,7 +205,7 @@ export default async function PricingPage() {
               Locked Scope & Change Orders
             </h3>
             <p className="text-xs text-void-muted leading-relaxed">
-              Every deliverable is documented in a detailed Statement of Work. Any future scope additions are quoted independently with zero surprise invoice charges.
+              Every deliverable is documented in a detailed Statement of Work with two revision rounds included. Any future scope additions are quoted independently with zero surprise charges.
             </p>
           </div>
 
@@ -214,10 +214,10 @@ export default async function PricingPage() {
               <HeartHandshake className="h-5 w-5" />
             </div>
             <h3 className="font-mono text-sm font-bold text-white mb-2">
-              30-Day Stability Warranty
+              30-Day Bug-Fix Warranty
             </h3>
             <p className="text-xs text-void-muted leading-relaxed">
-              Every production deliverable includes a complimentary 30-day warranty covering bug resolution, performance monitoring, and critical security patches.
+              Limited 30-day bug-fix warranty after final handover covering defects in functionality explicitly within agreed scope. Excludes new features, scope additions, client modifications, third-party outages, or external infrastructure issues.
             </p>
           </div>
         </div>
@@ -242,7 +242,7 @@ export default async function PricingPage() {
             Pricing & Commercial Inquiries
           </h2>
           <p className="mt-3 text-sm text-void-muted">
-            Direct answers on payment terms, currency formats, milestone sign-offs, and custom architectures.
+            Direct answers on payment terms, currency formats, scoping reviews, and custom architectures.
           </p>
         </div>
 
@@ -261,7 +261,7 @@ export default async function PricingPage() {
             Ready to Build Your Next Product?
           </h2>
           <p className="text-void-light text-sm sm:text-base leading-relaxed max-w-xl mx-auto mb-8">
-            Tell us about your technical specifications and goals. Our senior engineering leads will provide an architecture breakdown within 24 business hours.
+            Tell us about your technical specifications and goals. We review every enquiry and respond as soon as possible with an architectural breakdown.
           </p>
           <Link href="/contact">
             <Button size="lg" variant="glow" className="gap-2 px-8">

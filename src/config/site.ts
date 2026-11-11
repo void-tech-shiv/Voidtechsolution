@@ -6,7 +6,7 @@ export const siteConfig = {
   description:
     "Premium software development agency specializing in scalable web applications, mobile apps, custom APIs, autonomous AI agents, and enterprise automations.",
   url: process.env.NEXT_PUBLIC_SITE_URL || "https://voidtechsolution.com",
-  contactEmail: "contact@voidtechsolution.com",
+  contactEmail: "voidtechsolutionsupport@gmail.com",
   mainNav: [
     { title: "Home", href: "/" },
     { title: "About", href: "/about" },

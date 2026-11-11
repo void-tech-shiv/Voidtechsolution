@@ -9,7 +9,7 @@ export type SystemSetting = SiteSetting;
 const fallbackSettings: Record<string, string> = {
   site_name: "VOIDTECH SOLUTION",
   site_tagline: "Build. Launch. Grow Online.",
-  contact_email: "contact@voidtechsolution.com",
+  contact_email: "voidtechsolutionsupport@gmail.com",
   enquiry_auto_reply: "true",
   maintenance_mode: "false",
 };

@@ -117,7 +117,7 @@
 - [x] Implement interactive `PricingTable` (`src/components/sections/pricing-table.tsx`) with category filters
 - [x] Implement dedicated Pricing page (`src/app/pricing/page.tsx`) with all 10 approved tiers, calculator, and 4 guarantees
 - [x] Implement multi-step `ContactEnquiryForm` (`src/components/sections/contact-enquiry-form.tsx`) with URL pre-fill and data preservation
-- [x] Implement dedicated Contact page (`src/app/contact/page.tsx`) with remote-first availability standards and 24h SLA
+- [x] Implement dedicated Contact page (`src/app/contact/page.tsx`) with remote-first availability standards and responsive scoping review
 - [x] Update `mainNav` in `src/config/site.ts` to link to `/pricing` and `/contact`
 - [x] Author comprehensive test suite (`tests/unit/pricing-contact.test.tsx`, 18 tests)
 - [x] Run full quality gate: `tsc --noEmit` (0 errors), `next lint` (0 errors), `vitest run` (130 tests passed across 9 suites), `next build` (clean compilation)

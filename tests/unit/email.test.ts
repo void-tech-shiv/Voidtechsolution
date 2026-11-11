@@ -83,7 +83,7 @@ describe("Phase 3: Email Templates Visual Identity & Content Integrity", () => {
     expect(text).toContain(resetUrl);
   });
 
-  it("renders enquiry confirmation email with SLA guarantee", () => {
+  it("renders enquiry confirmation email with responsive review notice", () => {
     const { subject, html, text } = renderEnquiryConfirmationEmail({
       recipientName: "Kavita Sharma",
       serviceTitle: "Enterprise ERP & CRM Development",
@@ -92,7 +92,9 @@ describe("Phase 3: Email Templates Visual Identity & Content Integrity", () => {
 
     expect(subject).toContain("We've Received Your Project Enquiry");
     expect(html).toContain("Enterprise ERP & CRM Development");
-    expect(html).toContain("24 business hours");
+    expect(html).toContain("as soon as possible");
+    expect(html).not.toContain("24 business hours");
+    expect(html).toContain("voidtechsolutionsupport@gmail.com");
     expect(text).toContain("Kavita Sharma");
   });
 
@@ -131,6 +133,8 @@ describe("Phase 3: Email Templates Visual Identity & Content Integrity", () => {
     expect(html).toContain("IN_REVIEW");
     expect(html).toContain("Lead architect assigned");
     expect(text).toContain("IN_REVIEW");
+    expect(text).toContain("voidtechsolutionsupport@gmail.com");
+    expect(text).not.toContain("contact@voidtechsolution.com");
   });
 
   it("renders security notification email for account events", () => {

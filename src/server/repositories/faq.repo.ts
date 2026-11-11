@@ -47,8 +47,8 @@ const fallbackFaqs: FAQ[] = [
   },
   {
     id: "faq-05",
-    question: "Do you offer post-deployment support and maintenance SLAs?",
-    answer: "All production packages include dedicated post-launch support windows (ranging from 30 days to ongoing enterprise SLAs) covering security patches, uptime monitoring, and infrastructure optimizations.",
+    question: "What warranty or post-deployment support do you provide?",
+    answer: "All deliverables include a limited 30-day bug-fix warranty following final handover, covering defects in functionality explicitly within agreed project scope. New features, scope changes, client-side modifications, third-party service failures, and external infrastructure issues are excluded. Ongoing maintenance agreements are available upon request.",
     category: "SUPPORT",
     orderIndex: 5,
     isActive: true,

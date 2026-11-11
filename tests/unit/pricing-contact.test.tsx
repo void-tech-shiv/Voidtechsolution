@@ -206,12 +206,13 @@ describe("Phase 6: Multi-Step Contact Enquiry Form", () => {
     // Advance to Step 3
     fireEvent.click(screen.getByRole("button", { name: /Continue: Contact Info/i }));
 
-    // Attempt to submit without filling name or email
+    // Attempt to submit without filling name or email or consent
     const submitBtn = screen.getByRole("button", { name: /Submit Project Enquiry/i });
     fireEvent.click(submitBtn);
 
     expect(await screen.findByText("Full name must be at least 2 characters long")).toBeInTheDocument();
     expect(await screen.findByText("Please provide a valid work email address")).toBeInTheDocument();
+    expect(await screen.findByText("You must agree to consultation communications to proceed")).toBeInTheDocument();
   });
 
   it("displays success screen when enquiry is submitted successfully", async () => {
@@ -254,6 +255,7 @@ describe("Phase 6: Multi-Step Contact Enquiry Form", () => {
     fireEvent.change(screen.getByLabelText(/Full Name/i), { target: { value: "Siddharth Rao" } });
     fireEvent.change(screen.getByLabelText(/Work Email/i), { target: { value: "siddharth@startup.io" } });
     fireEvent.change(screen.getByLabelText(/Phone/i), { target: { value: "+91 9988776655" } });
+    fireEvent.click(screen.getByRole("checkbox"));
 
     // Submit
     fireEvent.click(screen.getByRole("button", { name: /Submit Project Enquiry/i }));
@@ -284,6 +286,7 @@ describe("Phase 6: Multi-Step Contact Enquiry Form", () => {
 
     fireEvent.change(screen.getByLabelText(/Full Name/i), { target: { value: "Anita Desai" } });
     fireEvent.change(screen.getByLabelText(/Work Email/i), { target: { value: "anita@enterprise.in" } });
+    fireEvent.click(screen.getByRole("checkbox"));
 
     fireEvent.click(screen.getByRole("button", { name: /Submit Project Enquiry/i }));
 

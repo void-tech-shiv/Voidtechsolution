@@ -79,7 +79,7 @@ export interface EnquiryInput {
   selectedPackage?: string;
   additionalConfig?: Prisma.InputJsonValue;
   referenceUrl?: string;
-  consentGiven?: boolean;
+  consentGiven?: boolean | null;
 }
 
 /**

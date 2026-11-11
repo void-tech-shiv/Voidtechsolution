@@ -52,7 +52,7 @@ model Enquiry {
   selectedPackage String?
   additionalConfig Json?
   referenceUrl    String?
-  consentGiven    Boolean         @default(true)
+  consentGiven    Boolean?
   status          EnquiryStatus   @default(NEW)
   internalNotes   String?         @db.Text
   ipHash          String?

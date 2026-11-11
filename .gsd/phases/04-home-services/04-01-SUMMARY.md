@@ -53,7 +53,7 @@ Phase 4 constructed the public marketing homepage for VOIDTECH SOLUTION ("Build.
 9. **Section 9 — Closing Conversion Banner:**
    - Headline: "Have an Idea? Let's Build It."
    - Supporting copy: "Tell us what you're planning. Let's explore how the right technology can bring it to life."
-   - One-click copy direct email utility (`contact@voidtechsolution.com`) and direct project inquiry action.
+   - One-click copy direct email utility (`voidtechsolutionsupport@gmail.com`) and direct project inquiry action.
 
 ---
 

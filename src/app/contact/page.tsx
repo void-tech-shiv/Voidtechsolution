@@ -56,7 +56,7 @@ export default function ContactPage() {
             variant="outline"
             className="mb-6 border-electric-purple/40 bg-electric-purple/10 text-electric-purple font-mono text-xs px-4 py-1.5 shadow-glow-xs"
           >
-            DIRECT ENGINEERING CONSULTATION &bull; 24H SLA
+            DIRECT ENGINEERING CONSULTATION &bull; TECHNICAL DISCOVERY
           </Badge>
 
           <h1
@@ -70,7 +70,7 @@ export default function ContactPage() {
           </h1>
 
           <p className="mt-6 text-base leading-relaxed text-void-light sm:text-lg max-w-2xl mx-auto">
-            Connect directly with our engineering team. Whether you need a high-converting web application, multi-tenant SaaS, custom API, or autonomous AI automation, we provide direct architectural scoping and transparent milestone estimates.
+            Connect directly with our engineering team. Whether you need a high-converting web application, multi-tenant SaaS, custom API, or autonomous AI automation, we provide direct architectural scoping and transparent project estimates.
           </p>
         </div>
       </section>
@@ -112,10 +112,10 @@ export default function ContactPage() {
               <ShieldCheck className="h-4 w-4" />
             </div>
             <h2 className="font-mono text-xs font-bold text-white mb-1 uppercase tracking-wider">
-              Scoping SLA
+              Scoping Review
             </h2>
             <p className="text-xs text-void-muted leading-relaxed">
-              Guaranteed technical lead response and feasibility review within 24 business hours.
+              We review every enquiry and respond as soon as possible with a detailed technical assessment.
             </p>
           </div>
 
@@ -127,7 +127,7 @@ export default function ContactPage() {
               Confidentiality
             </h2>
             <p className="text-xs text-void-muted leading-relaxed">
-              Mutual NDA executed upon request before review of proprietary specifications.
+              A non-disclosure agreement (NDA) can be discussed and signed upon request before confidential project materials are shared.
             </p>
           </div>
         </div>
@@ -184,18 +184,18 @@ export default function ContactPage() {
             Prefer Direct Email?
           </h2>
           <p className="text-void-light text-xs sm:text-sm max-w-lg mx-auto mb-6 leading-relaxed">
-            For complex enterprise tenders, requests for proposals (RFPs), or non-disclosure agreement (NDA) submissions, reach our engineering desk directly at:
+            For complex enterprise tenders, requests for proposals (RFPs), or non-disclosure agreement (NDA) requests, reach our support desk directly at:
           </p>
 
           <a
-            href="mailto:contact@voidtechsolution.com"
+            href="mailto:voidtechsolutionsupport@gmail.com"
             className="inline-flex items-center gap-2 rounded-xl border border-electric-purple/50 bg-electric-purple/20 px-6 py-3 font-mono text-sm font-semibold text-white transition-all hover:bg-electric-purple hover:shadow-glow-sm"
           >
-            <span>contact@voidtechsolution.com</span>
+            <span>voidtechsolutionsupport@gmail.com</span>
           </a>
 
           <p className="mt-4 text-[11px] font-mono text-void-muted">
-            All legitimate business inquiries are reviewed within one business day.
+            We review every enquiry and respond as soon as possible.
           </p>
         </div>
       </section>

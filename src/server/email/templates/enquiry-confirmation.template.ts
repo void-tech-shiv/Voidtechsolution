@@ -57,8 +57,8 @@ export function renderEnquiryConfirmationEmail(props: EnquiryConfirmationTemplat
       </table>
       <ul style="margin: 0; padding-left: 20px; color: #9ca3af; font-size: 14px; line-height: 1.8;">
         <li>A Senior Technical Solution Architect is reviewing your technical specifications.</li>
-        <li>We will provide an initial feasibility assessment, estimated milestone timeline, and architectural recommendation within <strong>24 business hours</strong>.</li>
-        <li>For urgent production requirements, reply directly to this email to coordinate an expedited architecture briefing.</li>
+        <li>We review every enquiry and respond as soon as possible with an initial feasibility assessment, estimated project schedule, and architectural recommendation.</li>
+        <li>For urgent questions or scope revisions, reply directly to this email or reach us at <a href="mailto:voidtechsolutionsupport@gmail.com" style="color: #8b5cf6; text-decoration: none;">voidtechsolutionsupport@gmail.com</a>.</li>
       </ul>
     </div>
   `;
@@ -69,9 +69,9 @@ Thank you for contacting VOIDTECH SOLUTION. We have received your project enquir
 ${props.selectedPackage ? `Selected Package: ${props.selectedPackage}\n` : ""}${props.enquiryId ? `Enquiry Reference ID: ${props.enquiryId}\n` : ""}
 NEXT STEPS:
 - A Senior Technical Solution Architect is reviewing your specifications.
-- We will deliver an initial feasibility assessment and timeline within 24 business hours.
+- We review every enquiry and respond as soon as possible with an initial feasibility assessment and timeline.
 
-If you have urgent questions, reply directly to this email.`;
+If you have urgent questions, reply directly to this email or reach us at voidtechsolutionsupport@gmail.com.`;
 
   const html = renderBaseEmailLayout({
     title: "Enquiry Confirmation",

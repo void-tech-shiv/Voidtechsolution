@@ -14,7 +14,7 @@ Phase 6 officially implements the commercial conversion core of the VOIDTECH SOL
    - Dynamic real-time estimation engine calculating starting investment ranges based on base product selection, architectural add-ons (Auth/RBAC, Payments, Microservices APIs, AI/LLM Vector Integration, Real-Time WebSockets, Localization), and delivery urgency multipliers.
    - Seamless scope transfer routing directly to `/contact` with pre-filled scope parameters.
 3. **Dedicated Contact Page (`/contact`)**:
-   - Hero and agency operations availability banner (Remote-First, Mon–Sat IST hours, 24-hour scoping SLA).
+   - Hero and agency operations availability banner (Remote-First, Mon–Sat IST hours, responsive technical review).
    - Responsive multi-step enquiry form (`src/components/sections/contact-enquiry-form.tsx`):
      - Step 1: Project Scope & Category (with URL param pre-fill support).
      - Step 2: Technical Specifications & Timeline (budget, urgency, requirements).

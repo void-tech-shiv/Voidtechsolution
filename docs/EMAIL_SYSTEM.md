@@ -65,7 +65,7 @@ All templates are designed in full alignment with VOIDTECH SOLUTION's dark desig
 | :-: | :--- | :--- | :--- | :--- |
 | **1** | `OTP_VERIFICATION` | Single-use authentication | User / Admin | 6-digit high-contrast mono code, 5m expiry, anti-phishing notice |
 | **2** | `PASSWORD_RESET` | Credential recovery | User / Admin | Direct action CTA button, raw URL fallback, 15m expiry window |
-| **3** | `ENQUIRY_CONFIRMATION` | Inbound lead acknowledgement | Client Prospect | Service category summary, 24h SLA review guarantee, ticket ref ID |
+| **3** | `ENQUIRY_CONFIRMATION` | Inbound lead acknowledgement | Client Prospect | Service category summary, responsive review notice, ticket ref ID |
 | **4** | `ENQUIRY_ADMIN_ALERT` | Internal lead dispatch | Agency Admin | Full lead brief: name, email, phone, company, budget, timeline, message |
 | **5** | `ENQUIRY_STATUS_UPDATE` | Lifecycle state progress | Client Prospect | Status transition pill badge, previous state, architect notes |
 | **6** | `SECURITY_NOTIFICATION` | Security anomaly detection | User / Admin | Event type, ISO timestamp, origin IP, user agent, system action |

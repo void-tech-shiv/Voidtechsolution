@@ -38,6 +38,15 @@ export function Footer() {
                 <span className="text-void-light">Commercial Intake:</span> Direct consultation via project brief
               </p>
               <p>
+                <span className="text-void-light">Support & Enquiries:</span>{" "}
+                <a
+                  href={`mailto:${siteConfig.contactEmail}`}
+                  className="text-electric-purple hover:underline"
+                >
+                  {siteConfig.contactEmail}
+                </a>
+              </p>
+              <p>
                 <span className="text-void-light">Operations:</span> Distributed / Remote-First Global Engineering
               </p>
             </div>

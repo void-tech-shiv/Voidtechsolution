@@ -12,10 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 - **Dedicated Pricing Page (`src/app/pricing/page.tsx`):**
-  - Hero header: *"Predictable Investment. Zero Hidden Costs."* with milestone billing breakdown.
+  - Hero header: *"Predictable Investment. Zero Hidden Costs."* with 50/50 payment terms breakdown.
   - Interactive Pricing Table (`<PricingTable />`) with category filter tabs (All, Websites, Platforms & E-Commerce, Enterprise & AI) rendering all 10 approved INR packages (₹999 to ₹59,999+) with deliverables and package selection CTAs.
   - Interactive Pricing Calculator (`<PricingCalculator />`) embedded at `#calculator`.
-  - 4 Engineering & Billing Guarantees: Full IP & Source Handover, 30/40/30 Milestone Billing, Locked Scope & Change Orders, 30-Day Stability Warranty.
+  - 4 Engineering & Billing Guarantees: Full IP & Source Handover, 50/50 Payment Terms (50% Advance / 50% Prior to Handover), Locked Scope & Change Orders (Two Revision Rounds), Limited 30-Day Bug-Fix Warranty.
   - Pricing FAQs powered by `FaqRepo.getActiveFaqs()` via `<FaqAccordion />`.
   - Dynamic SEO metadata for `/pricing`.
 - **Interactive Project Pricing Calculator (`src/components/sections/pricing-calculator.tsx`):**
@@ -23,14 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 10 Starting Package Baselines with real-time recalculation in Indian Rupees (INR ₹).
   - 8 Architectural Add-On Modules (Auth/RBAC, Payments, APIs, AI/RAG, WebSockets, Localization, Legacy Migration, WebGL).
   - Design Complexity selector (Standard Dark vs WebGL / 3D Custom Quote).
-  - Delivery Urgency selector (Standard Schedule vs Priority Sprint +25%).
+  - Delivery Urgency selector (Standard Schedule vs Priority Sprint +25% optional estimate, subject to availability).
   - Live estimate summary card with subtotal range, non-binding disclaimer, and direct "Continue to Enquiry Form" CTA serializing parameters to `/contact` query string.
   - Calculator Reset button restoring baseline state.
 - **Dedicated Contact Page (`src/app/contact/page.tsx`):**
   - Hero header: *"Let's Build Something Exceptional."*
-  - Agency Consultation Standards: Operating Model (Distributed/Remote-First), Working Hours (Mon–Sat 9AM–7PM IST), Scoping SLA (24 Business Hours), Confidentiality (Mutual NDA).
+  - Agency Consultation Standards: Operating Model (Distributed/Remote-First), Working Hours (Mon–Sat 9AM–7PM IST), Scoping Review (Responsive Enquiry Review), Confidentiality (NDA discussed & signed upon request).
   - Multi-Step Project Intake Form wrapped in Suspense boundary.
-  - Direct communication desk (`contact@voidtechsolution.com`).
+  - Direct communication desk (`voidtechsolutionsupport@gmail.com`).
   - Dynamic SEO metadata for `/contact`.
 - **Interactive Multi-Step Lead Intake Form (`src/components/sections/contact-enquiry-form.tsx`):**
   - 3-step progressive layout: Step 1 (Scope & Category), Step 2 (Technical Specifications & Timeline), Step 3 (Contact & Organization Details).

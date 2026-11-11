@@ -14,7 +14,7 @@ Phase 6 of VOIDTECH SOLUTION has successfully engineered and delivered the inter
 All requirements from the Phase 6 Master Execution Prompt were fulfilled with empirical validation:
 - **10 Approved Starting Price Tiers in INR (₹999 to ₹59,999+)** rendered across category filter tabs with full deliverables and package selection CTAs.
 - **Interactive Pricing Calculator (`PricingCalculator`)** supporting 8 disciplines, 10 package baselines, 8 architectural modules, design complexity, timeline urgency (+25% sprint acceleration), live calculation, and URL parameter serialization to `/contact`.
-- **Dedicated Contact Page (`/contact`)** showcasing remote-first operational standards, 24-business-hour scoping SLA, mutual NDA confidentiality policy, and direct RFP intake.
+- **Dedicated Contact Page (`/contact`)** showcasing remote-first operational standards, responsive scoping review, NDA policy upon request, and direct RFP intake.
 - **3-Step Lead Enquiry Intake Form (`ContactEnquiryForm`)** supporting URL pre-filling from the calculator, progressive Zod validation, complete client-side data preservation upon server interruption, accessible error retry, and an engaging success confirmation state with unique Reference ID.
 - **Server-Side Enquiry Engine** combining `submitEnquiryAction` and `POST /api/enquiries` with token-bucket rate limiting (5 per 10m), SHA-256 duplicate submission cooldown (60s), hidden honeypot bot trap, and safe database error handling.
 - **Nodemailer Transactional Email Dispatch** delivering automated prospect confirmation emails and internal administrator lead alerts with delivery audit logging.

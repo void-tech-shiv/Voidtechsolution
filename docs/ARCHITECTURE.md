@@ -206,15 +206,15 @@ flowchart TD
         P_Hero["Hero: Predictable Investment"]
         P_Table["PricingTable (10 Approved INR Tiers & Category Filters)"]
         P_Calc["PricingCalculator (Interactive Estimation Engine)"]
-        P_Guarantees["Commercial Protections (Full IP, 30/40/30, Warranty)"]
+        P_Guarantees["Commercial Protections (Full IP, 50/50 Payment Terms, 30-Day Bug-Fix Warranty)"]
         P_FAQ["FaqAccordion (Pricing Clarifications)"]
     end
 
     subgraph ContactArchitecture["/contact Route"]
         C_Hero["Hero: Let's Build Something Exceptional"]
-        C_Standards["Availability Standards (Remote-First, 24h SLA)"]
+        C_Standards["Availability Standards (Remote-First, Scoping Review)"]
         C_Form["ContactEnquiryForm (3-Step Lead Intake)"]
-        C_Alt["Direct Email Desk (contact@voidtechsolution.com)"]
+        C_Alt["Direct Email Desk (voidtechsolutionsupport@gmail.com)"]
     end
 
     subgraph BackendProcessing["Server-Side Intake Engine"]

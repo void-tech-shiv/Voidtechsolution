@@ -63,7 +63,7 @@ CURRENT STATUS: ${props.newStatus}
 PREVIOUS STATUS: ${props.oldStatus}
 ${props.notes ? `\nARCHITECT NOTES:\n${props.notes}\n` : ""}
 
-Reply to contact@voidtechsolution.com with any questions.`;
+Reply to voidtechsolutionsupport@gmail.com with any questions.`;
 
   const html = renderBaseEmailLayout({
     title: "Enquiry Status Update",

@@ -420,7 +420,7 @@ export function PricingCalculator() {
                   }`}
                 >
                   <span className="font-bold block">Priority Sprint</span>
-                  <span className="text-[10px] text-electric-purple">+25% Acceleration</span>
+                  <span className="text-[10px] text-electric-purple">+25% (Optional Estimate)</span>
                 </button>
               </div>
             </div>
@@ -486,7 +486,7 @@ export function PricingCalculator() {
               <div className="rounded-lg bg-void-surface/60 border border-void-border/70 p-3.5 flex items-start gap-2.5 text-[11px] text-void-muted leading-relaxed">
                 <AlertCircle className="h-4 w-4 text-electric-purple shrink-0 mt-0.5" />
                 <span>
-                  <strong>Non-binding estimation:</strong> This calculation provides a transparent baseline starting scope. Final commercial terms are formally determined upon detailed technical scoping.
+                  <strong>Non-binding estimation:</strong> This calculation provides a transparent baseline starting scope. Priority Sprint (+25%) is an optional acceleration estimate subject to availability and technical scope assessment; expedited delivery is not guaranteed until schedule confirmation. Final commercial terms are formally determined upon detailed technical scoping.
                 </span>
               </div>
 

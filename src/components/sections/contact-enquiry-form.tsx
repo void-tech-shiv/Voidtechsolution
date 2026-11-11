@@ -43,8 +43,8 @@ const BUDGET_RANGES = [
 ] as const;
 
 const TIMELINE_OPTIONS = [
-  { id: "URGENT_UNDER_1_MONTH", label: "Priority Sprint (< 1 Month)", desc: "Expedited kickoff & dedicated sprint" },
-  { id: "1_TO_3_MONTHS", label: "Standard Delivery (1 – 3 Months)", desc: "Structured milestone delivery" },
+  { id: "URGENT_UNDER_1_MONTH", label: "Priority Sprint (< 1 Month)", desc: "Optional +25% estimate (subject to availability)" },
+  { id: "1_TO_3_MONTHS", label: "Standard Delivery (1 – 3 Months)", desc: "Structured delivery schedule" },
   { id: "3_TO_6_MONTHS", label: "Phased Roadmap (3 – 6 Months)", desc: "Complex enterprise development" },
   { id: "FLEXIBLE", label: "Flexible Roadmap", desc: "Timeline guided by technical complexity" },
 ] as const;
@@ -87,7 +87,7 @@ export function ContactEnquiryForm() {
   const [phone, setPhone] = React.useState<string>("");
   const [companyName, setCompanyName] = React.useState<string>("");
   const [websiteUrlHoneypot, setWebsiteUrlHoneypot] = React.useState<string>("");
-  const [consentGiven, setConsentGiven] = React.useState<boolean>(true);
+  const [consentGiven, setConsentGiven] = React.useState<boolean>(false);
 
   // Submission / validation state
   const [errors, setErrors] = React.useState<Record<string, string>>({});
@@ -250,7 +250,7 @@ export function ContactEnquiryForm() {
     } catch (err) {
       console.error("[contact-enquiry-form] Submission error:", err);
       setSubmitError(
-        "A network or service interruption occurred. All entered project data is preserved. Please click 'Retry Submission' or contact us at contact@voidtechsolution.com."
+        "A network or service interruption occurred. All entered project data is preserved. Please click 'Retry Submission' or contact us at voidtechsolutionsupport@gmail.com."
       );
     } finally {
       setIsSubmitting(false);
@@ -271,6 +271,7 @@ export function ContactEnquiryForm() {
     setPhone("");
     setCompanyName("");
     setWebsiteUrlHoneypot("");
+    setConsentGiven(false);
     setErrors({});
     setSubmitError(null);
   };
@@ -286,7 +287,7 @@ export function ContactEnquiryForm() {
           </div>
 
           <Badge variant="outline" className="mb-4 border-electric-purple/40 text-electric-purple font-mono">
-            ENQUIRY RECORDED &bull; SLA 24H
+            ENQUIRY RECORDED &bull; UNDER REVIEW
           </Badge>
 
           <h2 className="font-mono text-2xl sm:text-3xl font-extrabold text-white mb-3">
@@ -320,7 +321,7 @@ export function ContactEnquiryForm() {
               </div>
               <h3 className="font-mono text-xs font-semibold text-white mb-1">Engineering Scoping</h3>
               <p className="text-[11px] text-void-muted leading-relaxed">
-                Our architects evaluate your architecture, tech stack, and deliverable timeline within 24 business hours.
+                Our architects evaluate your architecture, tech stack, and deliverable timeline and will respond as soon as possible.
               </p>
             </div>
 
@@ -330,7 +331,7 @@ export function ContactEnquiryForm() {
               </div>
               <h3 className="font-mono text-xs font-semibold text-white mb-1">Proposal & Kickoff</h3>
               <p className="text-[11px] text-void-muted leading-relaxed">
-                You receive a transparent milestone quotation, deliverable breakdown, and onboarding schedule.
+                You receive a transparent project quotation with 50/50 payment terms, deliverable breakdown, and onboarding schedule.
               </p>
             </div>
           </div>
@@ -419,12 +420,12 @@ export function ContactEnquiryForm() {
                   {isSubmitting ? "Retrying..." : "Retry Submission"}
                 </Button>
                 <a
-                  href={`mailto:contact@voidtechsolution.com?subject=Project Inquiry - ${encodeURIComponent(name || "Client")}&body=${encodeURIComponent(
+                  href={`mailto:voidtechsolutionsupport@gmail.com?subject=Project Inquiry - ${encodeURIComponent(name || "Client")}&body=${encodeURIComponent(
                     `Service: ${serviceCategory}\nPackage: ${selectedPackage}\nBrief: ${message}`
                   )}`}
                   className="text-xs text-red-300 underline hover:text-white"
                 >
-                  Email directly to contact@voidtechsolution.com
+                  Email directly to voidtechsolutionsupport@gmail.com
                 </a>
               </div>
             </div>
@@ -537,7 +538,7 @@ export function ContactEnquiryForm() {
                   1. Estimated Investment Range <span className="text-electric-neon">*</span>
                 </label>
                 <p className="text-xs text-void-muted mb-3">
-                  All investments are quoted in Indian Rupees (INR) with milestone-gated billing.
+                  All investments are quoted in Indian Rupees (INR) with 50% advance and 50% before final handover.
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
@@ -576,7 +577,7 @@ export function ContactEnquiryForm() {
                   2. Delivery Urgency & Timeline <span className="text-electric-neon">*</span>
                 </label>
                 <p className="text-xs text-void-muted mb-3">
-                  Target milestone timeframe from kickoff to staging approval.
+                  Target project timeframe from kickoff to final handover.
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">

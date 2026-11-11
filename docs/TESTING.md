@@ -61,7 +61,7 @@ npm run build
    - **Settings & Write Safety:** Verifies default value returns, tests fallback site settings map, verifies non-crashing database connection checks, verifies safe error throwing on database write failure without leaking credentials, and verifies enquiry stats aggregation without crashing.
 4. **`tests/unit/email.test.ts` (14 tests):**
    - **SMTP Configuration:** Zod validation of `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM_NAME`, `SMTP_FROM_EMAIL`, `ADMIN_ALERT_EMAIL`, and failure on invalid env inputs.
-   - **Template Rendering (6 Templates):** Renders OTP verification (with 6-digit code and VoidTech branding), password reset (with secure CTA link), enquiry confirmation (with 24h SLA review guarantee), new enquiry admin alert (with full structured lead brief), enquiry status update (with state pill badge), and security notification (with event details and IP).
+   - **Template Rendering (6 Templates):** Renders OTP verification (with 6-digit code and VoidTech branding), password reset (with secure CTA link), enquiry confirmation (with responsive review notice), new enquiry admin alert (with full structured lead brief), enquiry status update (with state pill badge), and security notification (with event details and IP).
    - **Transporter & Service:** Mocked SMTP connection verification, transient failure retry loop with bounded exponential backoff (retries = 2), permanent delivery failure logging (`status: "FAILED"`), and typed convenience dispatchers.
 5. **`tests/unit/otp.test.ts` (8 tests):**
    - **Generation & Hashing:** Cryptographically secure 6-digit numerical string verification (`^\d{6}$`), uniform distribution, deterministic HMAC-SHA256 hashing with salt and pepper isolation.
