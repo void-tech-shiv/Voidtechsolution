@@ -1,14 +1,14 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import * as navigation from "next/navigation";
-import AboutPage from "@/app/about/page.tsx";
-import PortfolioPage from "@/app/portfolio/page.tsx";
+import AboutPage from "@/app/about/page";
+import PortfolioPage from "@/app/portfolio/page";
 import ProjectCaseStudyPage, {
   generateStaticParams,
   generateMetadata,
-} from "@/app/portfolio/[slug]/page.tsx";
+} from "@/app/portfolio/[slug]/page";
 import { PortfolioFilter } from "@/components/sections/portfolio-filter";
-import { getAllProjects, getProjectBySlug } from "@/server/repositories/portfolio.repo";
+import { getAllProjects } from "@/server/repositories/portfolio.repo";
 
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
