@@ -129,3 +129,4 @@ export async function createFaq(data: Prisma.FAQCreateInput): Promise<FAQ> {
     throw new Error("Failed to create FAQ: Database write operation failed.");
   }
 }
+

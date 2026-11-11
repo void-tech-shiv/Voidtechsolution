@@ -66,3 +66,4 @@ If you did not request this password reset, please ignore this email or notify s
 
   return { subject, html, text };
 }
+

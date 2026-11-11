@@ -68,3 +68,4 @@ If you have urgent questions, reply directly to contact@voidtechsolution.com.`;
 
   return { subject, html, text };
 }
+

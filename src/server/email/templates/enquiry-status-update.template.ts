@@ -75,3 +75,4 @@ Reply to contact@voidtechsolution.com with any questions.`;
 
   return { subject, html, text };
 }
+

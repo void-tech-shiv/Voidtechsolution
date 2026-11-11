@@ -84,3 +84,4 @@ If this was not you, please contact security@voidtechsolution.com immediately.`;
 
   return { subject, html, text };
 }
+

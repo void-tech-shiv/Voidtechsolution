@@ -81,3 +81,4 @@ The email system is comprehensively covered by automated Vitest unit tests in `t
 - Mocked successful delivery tracking (`PENDING` -> `SENT`).
 - Transient failure retry loop verification with exponential backoff.
 - Permanent delivery exhaustion error handling (`PENDING` -> `FAILED`).
+

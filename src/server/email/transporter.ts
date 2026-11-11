@@ -57,3 +57,4 @@ export async function verifySmtpConnection(transporter?: Transporter): Promise<b
     return false;
   }
 }
+

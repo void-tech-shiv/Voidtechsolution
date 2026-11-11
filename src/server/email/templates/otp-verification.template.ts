@@ -66,3 +66,4 @@ If you did not request this verification, please contact security@voidtechsoluti
 
   return { subject, html, text };
 }
+

@@ -47,3 +47,4 @@ export function getEmailConfig(overrides?: Partial<Record<string, string | undef
 
   return parsed.data;
 }
+

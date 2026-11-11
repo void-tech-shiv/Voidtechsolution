@@ -98,3 +98,4 @@ ${props.message}
 
   return { subject, html, text };
 }
+
