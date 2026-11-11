@@ -1,0 +1,151 @@
+// ==============================================================================
+// VOIDTECH SOLUTION — Prisma Schema
+// Provider: PostgreSQL
+// Phase: Phase 1 (Foundation Specification)
+// Note: Physical migrations & database connection are scheduled for Phase 3.
+// ==============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ------------------------------------------------------------------------------
+// 1. INBOUND CLIENT ENQUIRIES
+// ------------------------------------------------------------------------------
+enum EnquiryStatus {
+  NEW
+  IN_REVIEW
+  CONTACTED
+  CONVERTED
+  ARCHIVED
+}
+
+enum ServiceCategory {
+  WEB_DEVELOPMENT
+  MOBILE_DEVELOPMENT
+  API_BACKEND
+  AI_AUTOMATION
+  BOTS_AUTOMATION
+  DESIGN_CREATIVE
+  ENTERPRISE_SYSTEMS
+  FINTECH_PAYMENTS
+  CLOUD_HOSTING
+  OTHER
+}
+
+model Enquiry {
+  id              String          @id @default(cuid())
+  name            String
+  email           String
+  phone           String?
+  companyName     String?
+  serviceCategory ServiceCategory @default(WEB_DEVELOPMENT)
+  budgetRange     String?
+  timeline        String?
+  message         String          @db.Text
+  status          EnquiryStatus   @default(NEW)
+  internalNotes   String?         @db.Text
+  ipHash          String?
+  userAgent       String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([status])
+  @@index([email])
+  @@index([createdAt])
+  @@map("enquiries")
+}
+
+// ------------------------------------------------------------------------------
+// 2. AGENCY SERVICE CATALOG (18 Offerings)
+// ------------------------------------------------------------------------------
+model Service {
+  id              String          @id @default(cuid())
+  slug            String          @unique
+  title           String
+  shortDesc       String
+  fullDesc        String          @db.Text
+  icon            String          @default("Code")
+  category        ServiceCategory
+  deliverables    String[]
+  technologies    String[]
+  startingPriceUsd Int?
+  isFeatured      Boolean         @default(false)
+  isActive        Boolean         @default(true)
+  orderIndex      Int             @default(0)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([category])
+  @@index([isActive, orderIndex])
+  @@map("services")
+}
+
+// ------------------------------------------------------------------------------
+// 3. PORTFOLIO & CASE STUDIES
+// ------------------------------------------------------------------------------
+model PortfolioProject {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  clientName  String
+  industry    String
+  summary     String
+  challenge   String   @db.Text
+  solution    String   @db.Text
+  results     String   @db.Text
+  techStack   String[]
+  metrics     Json?    // e.g. [{"label": "Uptime", "value": "99.99%"}, {"label": "Speed", "value": "+300%"}]
+  heroImage   String?
+  liveUrl     String?
+  githubUrl   String?
+  isFeatured  Boolean  @default(false)
+  orderIndex  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isFeatured, orderIndex])
+  @@map("portfolio_projects")
+}
+
+// ------------------------------------------------------------------------------
+// 4. ADMIN USERS & SESSIONS
+// ------------------------------------------------------------------------------
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  EDITOR
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         UserRole  @default(ADMIN)
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("admin_users")
+}
+
+// ------------------------------------------------------------------------------
+// 5. SYSTEM SETTINGS & CONFIGURATION
+// ------------------------------------------------------------------------------
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String   @db.Text
+  description String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("system_settings")
+}
