@@ -64,3 +64,4 @@ WHERE table_name = 'enquiries'
 4. **Current Application State**:
    - Application code in `EnquiriesRepo`, server actions, and API routes handles these fields safely.
    - If the remote PostgreSQL database has not run this migration, write operations fail safely and throw descriptive errors without leaking credentials or crashing the Node process.
+

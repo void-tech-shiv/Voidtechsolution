@@ -85,3 +85,4 @@ Route (app)                                          Size  First Load JS
 2. **Email Safety**: No live emails sent to external inboxes during automated test verification; Nodemailer transport was safely mocked.
 3. **Currency & Starting Prices**: All prices presented in INR (₹). Starting prices for 10 tiers strictly match approved catalog (₹999 to ₹59,999+).
 4. **Scope Control**: Stopped strictly at Phase 6. Phase 7 (Admin Authentication) has not been started.
+
