@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   getAllServices,
   getActiveServices,
@@ -23,7 +23,7 @@ import {
   getFaqsByCategory,
 } from "@/server/repositories/faq.repo";
 import { getEnquiryStats, createEnquiry } from "@/server/repositories/enquiries.repo";
-import { checkDatabaseConnection } from "@/lib/prisma";
+import { prisma, checkDatabaseConnection } from "@/lib/prisma";
 
 describe("Phase 3: Services Repository & INR Pricing Catalog", () => {
   it("retrieves all 18 registered business services with complete metadata and INR currency", async () => {
@@ -198,6 +198,12 @@ describe("Phase 3: Site Settings & Database Resilience", () => {
   });
 
   it("enforces safe write error throwing on database failure without leaking credentials", async () => {
+    const spy = vi
+      .spyOn(prisma.enquiry, "create")
+      .mockRejectedValueOnce(
+        new Error("FATAL: connection to postgresql://user:secret@host/db failed")
+      );
+
     await expect(
       createEnquiry({
         name: "Test Prospect",
@@ -206,11 +212,19 @@ describe("Phase 3: Site Settings & Database Resilience", () => {
         message: "Hello VoidTech",
       })
     ).rejects.toThrow("Database write operation failed");
+
+    spy.mockRestore();
   });
 
   it("retrieves enquiry metrics without crashing when DB is offline", async () => {
+    const spy = vi
+      .spyOn(prisma.enquiry, "groupBy")
+      .mockRejectedValueOnce(new Error("Connection refused"));
+
     const stats = await getEnquiryStats();
     expect(stats.NEW).toBe(0);
     expect(stats.CONVERTED).toBe(0);
+
+    spy.mockRestore();
   });
 });

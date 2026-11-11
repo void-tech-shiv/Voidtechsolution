@@ -64,7 +64,7 @@ export function renderBaseEmailLayout(options: EmailLayoutOptions): string {
                 Premium software development, web applications, autonomous AI automations & scalable cloud systems.
               </p>
               <p style="margin: 0; font-size: 11px; color: #4b5563;">
-                This is an automated operational notification dispatched from a verified system endpoint. If you did not initiate or authorize this action, please contact our security team immediately at <a href="mailto:security@voidtechsolution.com" style="color: #8b5cf6; text-decoration: none;">security@voidtechsolution.com</a>.
+                This is an automated operational notification dispatched from a verified system endpoint. If you did not initiate this action, please contact VOIDTECH SOLUTION support at <a href="mailto:voidtechsolutionsupport@gmail.com" style="color: #8b5cf6; text-decoration: none;">voidtechsolutionsupport@gmail.com</a>.
               </p>
             </td>
           </tr>
@@ -91,7 +91,7 @@ ${bodyText}
 ------------------------------------------------------------
 (c) ${new Date().getFullYear()} VOIDTECH SOLUTION. All rights reserved.
 Official Website: https://voidtechsolution.com
-Security: security@voidtechsolution.com
+If you did not initiate this action, please contact VOIDTECH SOLUTION support at voidtechsolutionsupport@gmail.com.
 ============================================================`;
 }
 

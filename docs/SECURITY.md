@@ -83,7 +83,7 @@ frame-ancestors 'none';
 ---
 
 ## 7. Security Incident Response
-Any identified vulnerabilities should be reported directly to `security@voidtechsolution.com`. Patches are prioritized and released following strict semantic versioning and verification test suites.
+Any identified vulnerabilities should be reported directly to `voidtechsolutionsupport@gmail.com`. Patches are prioritized and released following strict semantic versioning and verification test suites.
 
 ---
 

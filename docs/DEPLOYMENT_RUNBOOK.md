@@ -237,3 +237,4 @@ Once `npm run db:verify` passes:
 > `prisma/migrations/20261112000000_init/down.sql` executes cascading `DROP TABLE` statements across all 10 tables and 5 enums.
 > **DO NOT EXECUTE IN PRODUCTION.**
 > This script is restricted to local test environments or disaster-recovery teardowns prior to production launch.
+

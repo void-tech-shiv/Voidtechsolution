@@ -39,7 +39,7 @@ export function renderOtpVerificationEmail(props: OtpVerificationTemplateProps):
     </div>
 
     <div style="margin: 24px 0 0 0; padding: 14px 18px; background-color: #1a1625; border-left: 3px solid #8b5cf6; border-radius: 4px; font-size: 13px; color: #c4b5fd;">
-      <strong>Security Notice:</strong> Never share this code with anyone. VOIDTECH SOLUTION engineers and support personnel will never request your code via email, phone, or chat.
+      <strong>Security Notice:</strong> Never share this code with anyone. VOIDTECH SOLUTION engineers and support personnel will never request your code via email, phone, or chat. If you did not initiate this action, please contact VOIDTECH SOLUTION support at <a href="mailto:voidtechsolutionsupport@gmail.com" style="color: #c4b5fd; text-decoration: underline;">voidtechsolutionsupport@gmail.com</a>.
     </div>
   `;
 
@@ -54,7 +54,7 @@ This code is single-use and will expire in ${expiry} minutes.
 
 SECURITY NOTICE:
 Never share this code with anyone. VOIDTECH SOLUTION engineers will never ask for your code.
-If you did not request this verification, please contact security@voidtechsolution.com.`;
+If you did not initiate this action, please contact VOIDTECH SOLUTION support at voidtechsolutionsupport@gmail.com.`;
 
   const html = renderBaseEmailLayout({
     title: "Account Verification Code",

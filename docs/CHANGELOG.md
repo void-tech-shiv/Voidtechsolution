@@ -48,9 +48,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Prisma Schema Update & Migration Proposal:**
   - Extended `Enquiry` model with `selectedPackage`, `additionalConfig`, `referenceUrl`, `consentGiven`.
   - Authored `.gsd/phases/06-pricing-contact/MIGRATION_PROPOSAL.md` with exact SQL and zero remote execution.
-- **Test Suite Expansion (`tests/unit/pricing-contact.test.tsx`):**
+- **Test Suite Expansion (`tests/unit/pricing-contact.test.tsx` & `tests/unit/email.test.ts`):**
   - Added 18 comprehensive unit tests covering the pricing table, interactive calculator, multi-step contact form, server action, rate limiting, duplicate rejection, and API routes.
-  - Test suite now stands at **130 passing tests** across 9 test suites (100% passing).
+  - Added automated security guard tests across all customer-facing email templates (Enquiry Confirmation, Enquiry Status Update, OTP Verification, Password Reset, Security Notification) enforcing `voidtechsolutionsupport@gmail.com` and guaranteeing zero unverified addresses (`security@...`, `contact@...`, etc.) exist in either HTML or plain-text.
+  - Test suite now stands at **136 passing tests** across 9 test suites (100% passing).
+- **Email Security Footer Consolidation:**
+  - Standardized security footer message across all customer-facing email templates: *"If you did not initiate this action, please contact VOIDTECH SOLUTION support at voidtechsolutionsupport@gmail.com."*
+  - Updated `src/server/email/templates/base-layout.ts`, `otp-verification.template.ts`, `password-reset.template.ts`, `security-notification.template.ts`, and `docs/SECURITY.md`.
 
 ---
 

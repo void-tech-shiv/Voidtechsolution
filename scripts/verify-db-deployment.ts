@@ -304,3 +304,4 @@ main().catch((e) => {
   console.error("Unhandled verification exception:", sanitizeError(e));
   process.exit(1);
 });
+
