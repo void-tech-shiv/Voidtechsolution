@@ -1,90 +1,126 @@
-# Phase 6: Database Migration Proposal — Enquiry Extended Metadata (Corrected Consent Safety)
+# Phase 6: Database Readiness Audit & Initial Schema Migration Proposal
 
-## 1. Executive Summary
-
-This proposal outlines the required PostgreSQL schema enhancements for Phase 6 to support:
-- Package selection tracking from the approved Pricing tier catalog.
-- Selected calculator architectural add-on configurations (`additionalConfig` JSONB).
-- Optional reference project/website URLs (`referenceUrl`).
-- **Privacy-Safe Consent Tracking (`consentGiven` Nullable Boolean)**.
-
-> **CRITICAL BOUNDARY ENFORCEMENT:**
-> In accordance with the project authorization boundary, **this migration is PROPOSED ONLY**.
-> It has **NOT** been applied to the live remote database and will not be applied until separate, explicit user authorization is provided.
+**Document Version:** 2.0.0 (Post-Diagnostic Verification)  
+**Target Environment:** Remote PostgreSQL Database  
+**Diagnostic Date:** 2026-11-12  
+**Status:** PROPOSED ONLY — Strictly Read-Only Investigation (Zero Remote Migrations Executed)
 
 ---
 
-## 2. Consent Safety Correction Analysis
+## 1. Executive Summary & Root Cause Diagnosis
 
-### The Flaw in `BOOLEAN NOT NULL DEFAULT true`
-The initial draft proposed:
-```sql
-ALTER TABLE "enquiries" ADD COLUMN IF NOT EXISTS "consentGiven" BOOLEAN NOT NULL DEFAULT true;
-```
-**Privacy & Regulatory Failure Mode:**
-Executing `ADD COLUMN NOT NULL DEFAULT true` causes PostgreSQL to backfill all pre-existing historical rows with `true`. This creates a false legal record attributing affirmative consent to individuals who never submitted a consent checkbox.
+### The Observed Failure: Contact Form "Database Service Interruption"
+When attempting to submit a project enquiry on `/contact`, the application displayed:
+> *"A network or service interruption occurred. All entered project data is preserved. Please click 'Retry Submission' or contact us at voidtechsolutionsupport@gmail.com."*
 
-### The Corrected Architecture: Nullable Boolean
-By defining `consentGiven` as `BOOLEAN DEFAULT NULL`:
-1. **Historical Enquiries (`NULL`)**: Clearly demarcated as legacy records submitted prior to consent tracking. Zero false attribution of consent.
-2. **New Verified Enquiries (`true`)**: Strictly enforced by the application layer. The client intake form (`ContactEnquiryForm`) starts with the checkbox unchecked, and the server-side Zod validation schema (`enquirySubmissionSchema`) requires `consentGiven === true`.
-3. **Revoked / Denied Consent (`false`)**: Allows future status transitions or explicit opt-outs without schema changes.
+### Empirical Root Cause
+Our live, read-only database diagnostic confirmed:
+1. **Connectivity**: PostgreSQL connection is active, authenticated, and responsive.
+   - Engine: `PostgreSQL 18.6 (ac70818) on aarch64-unknown-linux-gnu`
+   - Harmless queries (`SELECT 1;`, `SELECT version();`, `SELECT schema_name FROM information_schema.schemata;`) execute with sub-millisecond response times.
+2. **Schema State**:
+   - Total tables in `public` schema: **0**
+   - Total custom PostgreSQL enums: **0**
+   - Migration history table (`_prisma_migrations`): **Does not exist**
+   - Target table `public.enquiries`: **Does not exist**
+3. **Execution Failure Mode**:
+   - `EnquiriesRepo.createEnquiry()` calls `prisma.enquiry.create()`.
+   - The remote PostgreSQL engine rejects the query with PostgreSQL error `42P01` (`relation "enquiries" does not exist`).
+   - Prisma Client intercepts this and raises `PrismaClientKnownRequestError` with code `P2021` (`The table public.enquiries does not exist in the current database.`).
+4. **Resilience & Safety Verification**:
+   - `EnquiriesRepo.createEnquiry()` caught the `P2021` exception, logged a sanitized message to server logs, and re-threw a generic safe error without exposing connection strings or credentials.
+   - `submitEnquiryAction` caught the error, aborted email notification dispatch, and returned `{ success: false, error: "Unable to record enquiry due to database service interruption." }`.
+   - The user was **NEVER** shown a success confirmation, **NEVER** received a fake reference ID, and **NEVER** received an erroneous email notification.
+   - All entered form fields (category, package, budget, timeline, message, name, email, phone, company, consent) were 100% preserved in the React component state.
 
 ---
 
-## 3. Proposed Schema Alterations
+## 2. Remote Database Schema vs Approved Prisma Schema
 
-### Target Table: `enquiries` (`public.enquiries`)
-
-| Column Name | Type | Constraints | Semantic States | Purpose |
+| Model Name | Target Table | Remote DB Status | Columns in Schema | Key Constraints |
 |---|---|---|---|---|
-| `selectedPackage` | `TEXT` | `NULL` | Slug string or `NULL` | Selected tier slug (e.g. `basic-static`, `saas`, `ai-powered`) |
-| `additionalConfig` | `JSONB` | `NULL` | JSON Object or `NULL` | Detailed calculator configuration (category, add-on IDs, urgency) |
-| `referenceUrl` | `TEXT` | `NULL` | URL string or `NULL` | Optional reference website or specification document link |
-| `consentGiven` | `BOOLEAN` | `DEFAULT NULL` | `NULL` = Historical/Unknown<br>`true` = Explicitly Granted<br>`false` = Revoked/Denied | Explicit consent to consultation communications |
+| `Enquiry` | `public.enquiries` | **Missing (0 tables)** | 19 | PK (`id`), indexes on `status`, `email`, `createdAt`. `consentGiven` is nullable. |
+| `Service` | `public.services` | **Missing (0 tables)** | 15 | PK (`id`), Unique (`slug`), indexes on `category`, `(isActive, orderIndex)`. |
+| `PortfolioProject` | `public.portfolio_projects` | **Missing (0 tables)** | 17 | PK (`id`), Unique (`slug`), indexes on `(isFeatured, orderIndex)`, `projectType`. |
+| `AdminUser` | `public.admin_users` | **Missing (0 tables)** | 9 | PK (`id`), Unique (`email`). |
+| `PricingPackage` | `public.pricing_packages` | **Missing (0 tables)** | 13 | PK (`id`), Unique (`slug`), indexes on `(isActive, orderIndex)`, `category`. |
+| `FAQ` | `public.faqs` | **Missing (0 tables)** | 8 | PK (`id`), indexes on `category`, `(isActive, orderIndex)`. |
+| `SiteSetting` | `public.site_settings` | **Missing (0 tables)** | 5 | PK (`id`), Unique (`key`). |
+| `AuditLog` | `public.audit_logs` | **Missing (0 tables)** | 10 | PK (`id`), indexes on `action`, `(entity, entityId)`, `actorId`, `createdAt`. |
+| `OtpVerification` | `public.otp_verifications` | **Missing (0 tables)** | 12 | PK (`id`), indexes on `(identifier, purpose)`, `expiresAt`, `createdAt`. |
+| `EmailDelivery` | `public.email_deliveries` | **Missing (0 tables)** | 12 | PK (`id`), indexes on `recipient`, `status`, `template`, `createdAt`. |
 
 ---
 
-## 4. Migration SQL (`prisma/migrations/20261112_phase6_enquiry_extended_metadata/migration.sql`)
+## 3. Custom Enums Required
+
+The approved Prisma schema requires the following 5 custom PostgreSQL ENUM types:
+1. `EnquiryStatus`: `'NEW'`, `'IN_REVIEW'`, `'CONTACTED'`, `'CONVERTED'`, `'ARCHIVED'`
+2. `ServiceCategory`: `'WEB_DEVELOPMENT'`, `'MOBILE_DEVELOPMENT'`, `'API_BACKEND'`, `'AI_AUTOMATION'`, `'BOTS_AUTOMATION'`, `'DESIGN_CREATIVE'`, `'ENTERPRISE_SYSTEMS'`, `'FINTECH_PAYMENTS'`, `'CLOUD_HOSTING'`, `'OTHER'`
+3. `UserRole`: `'SUPER_ADMIN'`, `'ADMIN'`, `'EDITOR'`
+4. `OtpPurpose`: `'LOGIN'`, `'PASSWORD_RESET'`, `'ENQUIRY_VERIFICATION'`, `'ADMIN_ACTION'`
+5. `EmailDeliveryStatus`: `'PENDING'`, `'SENT'`, `'FAILED'`
+
+---
+
+## 4. Complete Initial Migration Plan (`20261112000000_init`)
+
+Because the remote database is completely empty, an incremental `ALTER TABLE` cannot run. A complete initial schema migration has been staged at:
+[`prisma/migrations/20261112000000_init/migration.sql`](file:///d:/voidtechsolution/prisma/migrations/20261112000000_init/migration.sql)
+
+### Privacy-Safe Consent Guarantee
+```sql
+CREATE TABLE "enquiries" (
+    ...
+    "consentGiven" BOOLEAN, -- Explicitly nullable; NULL preserves legacy records without false attribution
+    ...
+);
+```
+- Historical records instantiated without consent records remain `NULL` (no false attribution).
+- All new submissions validated by `src/validations/enquiry.ts` strictly enforce `consentGiven === true`.
+
+---
+
+## 5. Rollback Plan (`down.sql`)
+
+Staged at: [`prisma/migrations/20261112000000_init/down.sql`](file:///d:/voidtechsolution/prisma/migrations/20261112000000_init/down.sql)
 
 ```sql
--- Phase 6: Enquiry Extended Metadata Migration (Corrected Privacy-Safe Consent)
--- Target: public.enquiries
--- Non-destructive, additive schema evolution
+-- Reversible DDL Execution
+DROP TABLE IF EXISTS "email_deliveries" CASCADE;
+DROP TABLE IF EXISTS "otp_verifications" CASCADE;
+DROP TABLE IF EXISTS "audit_logs" CASCADE;
+DROP TABLE IF EXISTS "site_settings" CASCADE;
+DROP TABLE IF EXISTS "faqs" CASCADE;
+DROP TABLE IF EXISTS "pricing_packages" CASCADE;
+DROP TABLE IF EXISTS "admin_users" CASCADE;
+DROP TABLE IF EXISTS "portfolio_projects" CASCADE;
+DROP TABLE IF EXISTS "services" CASCADE;
+DROP TABLE IF EXISTS "enquiries" CASCADE;
 
-ALTER TABLE "enquiries" ADD COLUMN IF NOT EXISTS "selectedPackage" TEXT;
-ALTER TABLE "enquiries" ADD COLUMN IF NOT EXISTS "additionalConfig" JSONB;
-ALTER TABLE "enquiries" ADD COLUMN IF NOT EXISTS "referenceUrl" TEXT;
-
--- Safe consent column: Default NULL preserves historical record integrity
-ALTER TABLE "enquiries" ADD COLUMN IF NOT EXISTS "consentGiven" BOOLEAN DEFAULT NULL;
-
--- Verification query
-SELECT column_name, data_type, is_nullable, column_default 
-FROM information_schema.columns 
-WHERE table_name = 'enquiries' 
-  AND column_name IN ('selectedPackage', 'additionalConfig', 'referenceUrl', 'consentGiven');
+DROP TYPE IF EXISTS "EmailDeliveryStatus" CASCADE;
+DROP TYPE IF EXISTS "OtpPurpose" CASCADE;
+DROP TYPE IF EXISTS "UserRole" CASCADE;
+DROP TYPE IF EXISTS "ServiceCategory" CASCADE;
+DROP TYPE IF EXISTS "EnquiryStatus" CASCADE;
 ```
 
 ---
 
-## 5. Impact Assessment & Risk Mitigation
+## 6. Seed Data Execution Plan
 
-1. **Non-Destructive Guarantee**:
-   - Every added column is explicitly nullable (`NULL`).
-   - Zero locks or rewrites that could disrupt concurrent transactions.
-   - Zero retroactive alteration of historical enquiry data.
-2. **Backward Compatibility**:
-   - Legacy records instantiate safely in Prisma Client (`consentGiven: null`).
-   - Offline fallback repositories handle `consentGiven` gracefully.
-3. **Rollback Strategy**:
-   If rollback is required, execute the following reversible DDL:
-   ```sql
-   ALTER TABLE "enquiries" DROP COLUMN IF EXISTS "selectedPackage";
-   ALTER TABLE "enquiries" DROP COLUMN IF EXISTS "additionalConfig";
-   ALTER TABLE "enquiries" DROP COLUMN IF EXISTS "referenceUrl";
-   ALTER TABLE "enquiries" DROP COLUMN IF EXISTS "consentGiven";
-   ```
-4. **Application Layer Safety**:
-   - `src/validations/enquiry.ts`: Rejects any new submission where `consentGiven !== true`.
-   - `src/server/repositories/enquiries.repo.ts`: Explicitly preserves `input.consentGiven` and defaults to `null` if omitted.
+Following authorized execution of the initial migration, the database can be populated with baseline seed data by running `npm run db:seed`:
+- **18 Agency Services** (with full deliverables, tech stacks, and starting INR prices)
+- **10 Approved Pricing Packages** (Basic Static ₹999 to AI-Powered ₹59,999+)
+- **5 Portfolio Projects** (with simulated benchmark metrics and Concept Lab tags)
+- **5 Baseline FAQs** (including updated 50/50 payment terms and limited 30-day warranty)
+- **Site Settings Key-Values** (defaulting to official support email `voidtechsolutionsupport@gmail.com`)
+
+---
+
+## 7. Strict Authorization Boundary
+
+> **MANDATORY ENFORCEMENT:**
+> In accordance with instructions, this investigation was **100% read-only**.
+> Zero tables were created, zero DDL statements were executed against the remote PostgreSQL database, and zero emails were sent.
+> The initial migration files and rollback scripts are prepared and verified locally, ready for deployment upon owner authorization.
