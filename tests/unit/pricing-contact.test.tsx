@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { approvedPricingPackages } from "@/config/pricing";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { NextRequest } from "next/server";
 import { PricingTable } from "@/components/sections/pricing-table";
 import { PricingCalculator } from "@/components/sections/pricing-calculator";
 import { ContactEnquiryForm } from "@/components/sections/contact-enquiry-form";
@@ -230,8 +230,9 @@ describe("Phase 6: Multi-Step Contact Enquiry Form", () => {
       referenceUrl: null,
       consentGiven: true,
       status: "NEW",
-      source: "WEBSITE",
-      assignedToId: null,
+      ipHash: null,
+      userAgent: null,
+      internalNotes: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -320,7 +321,7 @@ describe("Phase 6: Server Action & API Route Processing", () => {
     const payload = {
       name: "Coordinated Lead",
       email: `lead_${Date.now()}@testcorp.com`,
-      serviceCategory: "API_BACKEND",
+      serviceCategory: "API_BACKEND" as const,
       message: "Testing duplicate rate limiter prevention window.",
       selectedPackage: "premium-custom",
       consentGiven: true,
@@ -336,8 +337,9 @@ describe("Phase 6: Server Action & API Route Processing", () => {
       additionalConfig: null,
       referenceUrl: null,
       status: "NEW",
-      source: "WEBSITE",
-      assignedToId: null,
+      ipHash: null,
+      userAgent: null,
+      internalNotes: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -353,8 +355,9 @@ describe("Phase 6: Server Action & API Route Processing", () => {
 
   it("submitEnquiryAction dispatches emails non-blockingly upon database persistence", async () => {
     const emailSpy = vi.spyOn(emailService, "dispatchEnquiryNotifications").mockResolvedValue({
-      customerEmailSent: true,
-      adminEmailSent: true,
+      customerEmailSuccess: true,
+      adminEmailSuccess: true,
+      errors: [],
     });
 
     const uniqueEmail = `real_lead_${Date.now()}@agency.com`;
@@ -373,8 +376,9 @@ describe("Phase 6: Server Action & API Route Processing", () => {
       referenceUrl: null,
       consentGiven: true,
       status: "NEW",
-      source: "WEBSITE",
-      assignedToId: null,
+      ipHash: null,
+      userAgent: null,
+      internalNotes: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -414,13 +418,14 @@ describe("Phase 6: Server Action & API Route Processing", () => {
       referenceUrl: null,
       consentGiven: true,
       status: "NEW",
-      source: "WEBSITE",
-      assignedToId: null,
+      ipHash: null,
+      userAgent: null,
+      internalNotes: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
 
-    const req = new Request("http://localhost:3000/api/enquiries", {
+    const req = new NextRequest("http://localhost:3000/api/enquiries", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -445,7 +450,7 @@ describe("Phase 6: Server Action & API Route Processing", () => {
   });
 
   it("POST /api/enquiries returns 400 on malformed schema payload", async () => {
-    const req = new Request("http://localhost:3000/api/enquiries", {
+    const req = new NextRequest("http://localhost:3000/api/enquiries", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
