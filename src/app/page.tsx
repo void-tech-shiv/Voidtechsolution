@@ -94,13 +94,13 @@ export default async function HomePage() {
 
           {/* Primary & Secondary Action CTAs */}
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-            <Link href="#contact" tabIndex={-1}>
+            <Link href="/#contact" tabIndex={-1}>
               <Button size="lg" variant="glow" className="gap-2">
                 <span>Start Your Project</span>
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Button>
             </Link>
-            <Link href="#services" tabIndex={-1}>
+            <Link href="/#services" tabIndex={-1}>
               <Button size="lg" variant="outline">
                 Explore Our Services
               </Button>
@@ -114,12 +114,12 @@ export default async function HomePage() {
               <span className="text-[11px] text-void-muted">Web, Mobile, AI & APIs</span>
             </div>
             <div className="flex flex-col items-center justify-center p-3 rounded-lg border border-void-border/40 bg-void-surface/30">
-              <span className="font-mono text-lg font-bold text-electric-purple">100% Bespoke</span>
-              <span className="text-[11px] text-void-muted">Zero Template Bloat</span>
+              <span className="font-mono text-lg font-bold text-electric-purple">Custom Build</span>
+              <span className="text-[11px] text-void-muted">Tailored Architecture</span>
             </div>
             <div className="flex flex-col items-center justify-center p-3 rounded-lg border border-void-border/40 bg-void-surface/30">
-              <span className="font-mono text-lg font-bold text-white">Full Ownership</span>
-              <span className="text-[11px] text-void-muted">Complete Codebase & IP</span>
+              <span className="font-mono text-lg font-bold text-white">Code Delivery</span>
+              <span className="text-[11px] text-void-muted">Full Repository Handover</span>
             </div>
             <div className="flex flex-col items-center justify-center p-3 rounded-lg border border-void-border/40 bg-void-surface/30">
               <span className="font-mono text-lg font-bold text-electric-neon">From ₹999</span>
@@ -173,9 +173,9 @@ export default async function HomePage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-void-surface border border-electric-purple/30 text-electric-purple mb-4">
               <ShieldCheck className="h-5 w-5" aria-hidden="true" />
             </div>
-            <h3 className="font-mono text-base font-semibold text-white mb-2">Zero Vendor Lock-In</h3>
+            <h3 className="font-mono text-base font-semibold text-white mb-2">Direct Code Handover</h3>
             <p className="text-xs text-void-muted leading-relaxed">
-              You own 100% of the repository, assets, documentation, and infrastructure configuration. Clean, standards-compliant code with full portability.
+              Clean, standards-compliant source code, documentation, and deployment assets delivered directly to your organization with full code ownership.
             </p>
           </div>
 
@@ -262,7 +262,7 @@ export default async function HomePage() {
             <span className="font-mono text-xs font-bold text-electric-purple">03</span>
             <h3 className="mt-2 text-base font-semibold text-white">Responsive & Accessible</h3>
             <p className="mt-2 text-xs text-void-muted leading-relaxed">
-              Mobile-first responsive layouts with clean semantic markup, fast Core Web Vitals, and WCAG AA accessibility compliance across all viewports.
+              Mobile-first responsive layouts with clean semantic markup, fast loading, and accessible UI patterns across all viewports.
             </p>
           </div>
 
@@ -431,7 +431,7 @@ export default async function HomePage() {
                   </div>
 
                   <Link
-                    href="#contact"
+                    href="/#contact"
                     className="inline-flex w-full items-center justify-between rounded-lg border border-void-border/70 bg-void-surface/50 px-4 py-2.5 text-xs font-medium text-void-light transition-all hover:border-electric-purple hover:bg-electric-purple/10 hover:text-white"
                   >
                     <span>Request Architecture Brief</span>
@@ -481,6 +481,7 @@ export default async function HomePage() {
                 isPopular={pkg.popular}
                 features={pkg.features}
                 ctaText="Select Package"
+                href="/#contact"
                 className="h-full"
               />
             );
@@ -518,11 +519,11 @@ export default async function HomePage() {
       {/* SECTION 9: FINAL CLOSING CTA BANNER                                       */}
       {/* ========================================================================= */}
       <section
-        id="closing-cta"
+        id="contact"
         className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8 border-t border-void-border/60"
         aria-label="Direct Project Inquiry"
       >
-        <QuickInquiry contactEmail={siteConfig.contactEmail} />
+        <QuickInquiry />
       </section>
     </div>
   );

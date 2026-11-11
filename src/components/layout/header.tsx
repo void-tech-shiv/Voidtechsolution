@@ -82,9 +82,9 @@ export function Header() {
 
         {/* Action Controls & Mobile Trigger */}
         <div className="flex items-center gap-3">
-          <Link href="/contact" tabIndex={-1} className="hidden sm:inline-flex">
+          <Link href="/#contact" tabIndex={-1} className="hidden sm:inline-flex">
             <Button size="sm" variant="glow">
-              Get Started
+              Start Your Project
             </Button>
           </Link>
 
@@ -125,16 +125,13 @@ export function Header() {
 
               <nav className="flex flex-col gap-3" aria-label="Mobile Navigation">
                 {siteConfig.mainNav.map((item) => {
-                  const isActive = pathname === item.href;
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
                       className={cn(
-                        "flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                        isActive
-                          ? "bg-electric-purple/15 text-electric-purple font-semibold border border-electric-purple/30"
-                          : "text-void-light hover:bg-void-surface hover:text-white"
+                        "flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors text-void-light hover:bg-void-surface hover:text-white"
                       )}
                     >
                       <span>{item.title}</span>
@@ -146,9 +143,9 @@ export function Header() {
             </div>
 
             <div className="pt-6 border-t border-void-border/60 flex flex-col gap-3">
-              <Link href="/contact" tabIndex={-1}>
+              <Link href="/#contact" tabIndex={-1} onClick={() => setMobileMenuOpen(false)}>
                 <Button size="md" variant="primary" className="w-full">
-                  Start Project Enquiry
+                  Start Your Project
                 </Button>
               </Link>
               <p className="text-[11px] text-center text-void-muted">

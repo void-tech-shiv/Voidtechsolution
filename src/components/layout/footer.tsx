@@ -5,18 +5,12 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   const featuredServices = [
-    { title: "Website Development", href: "/services" },
-    { title: "App Development", href: "/services" },
-    { title: "Custom API Development", href: "/services" },
-    { title: "AI Automation & Workflows", href: "/services" },
-    { title: "Autonomous AI Agents", href: "/services" },
-    { title: "SaaS Development", href: "/services" },
-  ];
-
-  const socialLinks = [
-    { title: "GitHub", href: "https://github.com", placeholderNote: "(Official Repo)" },
-    { title: "LinkedIn", href: "https://linkedin.com", placeholderNote: "(Company Page)" },
-    { title: "X (Twitter)", href: "https://x.com", placeholderNote: "(Announcements)" },
+    { title: "Website Development", href: "/#services" },
+    { title: "App Development", href: "/#services" },
+    { title: "Custom API Development", href: "/#services" },
+    { title: "AI Automation & Workflows", href: "/#services" },
+    { title: "Autonomous AI Agents", href: "/#services" },
+    { title: "SaaS Development", href: "/#services" },
   ];
 
   return (
@@ -41,10 +35,7 @@ export function Footer() {
             </p>
             <div className="mt-2 flex flex-col gap-1 text-[11px] text-void-muted/80">
               <p>
-                <span className="text-void-light">Commercial Intake:</span>{" "}
-                <a href={`mailto:${siteConfig.contactEmail}`} className="text-electric-purple hover:underline">
-                  {siteConfig.contactEmail}
-                </a>
+                <span className="text-void-light">Commercial Intake:</span> Direct consultation via project brief
               </p>
               <p>
                 <span className="text-void-light">Operations:</span> Distributed / Remote-First Global Engineering
@@ -95,26 +86,24 @@ export function Footer() {
             <h4 className="font-mono text-xs font-semibold uppercase tracking-wider text-void-white">
               Connect & Verify
             </h4>
-            <ul className="flex flex-col gap-2 text-xs" aria-label="Footer Social Links">
-              {socialLinks.map((social) => (
-                <li key={social.title}>
-                  <a
-                    href={social.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 hover:text-electric-purple transition-colors"
-                  >
-                    <span>{social.title}</span>
-                    <span className="text-[10px] text-void-muted/60">{social.placeholderNote}</span>
-                  </a>
-                </li>
-              ))}
-              <li className="pt-2">
+            <p className="text-[11px] leading-relaxed text-void-muted">
+              Official community channels and code repositories will be announced at public release.
+            </p>
+            <ul className="flex flex-col gap-2 text-xs pt-1" aria-label="Footer Verification Links">
+              <li>
                 <Link
                   href="/design-system"
                   className="font-mono text-[11px] text-electric-purple hover:underline"
                 >
-                  Inspect Design System &rarr;
+                  Inspect Design System Tokens &rarr;
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/api/health"
+                  className="font-mono text-[11px] text-electric-purple hover:underline"
+                >
+                  System Health API &rarr;
                 </Link>
               </li>
             </ul>

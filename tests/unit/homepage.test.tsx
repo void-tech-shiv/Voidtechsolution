@@ -25,13 +25,13 @@ describe("Phase 4: Homepage & Marketing Experience", () => {
       "Turning Ideas Into Powerful Digital Products."
     );
     expect(screen.getByText(/We design, develop, and deliver modern digital solutions/i)).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /Start Your Project/i }).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByRole("button", { name: /Start Your Project/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Explore Our Services/i })).toBeInTheDocument();
 
     // Section 2: Brand Introduction
     expect(screen.getByText(/Technology should move your business forward/i)).toBeInTheDocument();
     expect(screen.getByText(/Purpose-Driven Design/i)).toBeInTheDocument();
-    expect(screen.getByText(/Zero Vendor Lock-In/i)).toBeInTheDocument();
+    expect(screen.getByText(/Direct Code Handover/i)).toBeInTheDocument();
     expect(screen.getByText(/High-Assurance Code/i)).toBeInTheDocument();
 
     // Section 3: Services Showcase Heading
@@ -73,7 +73,7 @@ describe("Phase 4: Homepage & Marketing Experience", () => {
     expect(container.querySelector("#portfolio")).toBeInTheDocument();
     expect(container.querySelector("#pricing")).toBeInTheDocument();
     expect(container.querySelector("#faq")).toBeInTheDocument();
-    expect(container.querySelector("#closing-cta")).toBeInTheDocument();
+    expect(container.querySelector("#contact")).toBeInTheDocument();
   });
 
   it("verifies all 10 approved pricing packages render with accurate INR formatting and plus signs", async () => {
@@ -227,44 +227,59 @@ describe("Phase 4: Homepage & Marketing Experience", () => {
   });
 
   describe("QuickInquiry Component", () => {
-    it("renders direct email CTA with copy functionality", () => {
-      render(<QuickInquiry contactEmail="contact@voidtechsolution.com" />);
+    it("renders consultation intake banner with functional CTA navigation", () => {
+      render(<QuickInquiry />);
       
       expect(screen.getByText("Have an Idea? Let's Build It.")).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /Copy Direct Email/i })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /Start Your Project/i })).toBeInTheDocument();
-    });
-
-    it("copies email to clipboard on button click", async () => {
-      const writeTextMock = vi.fn().mockResolvedValue(undefined);
-      Object.assign(navigator, {
-        clipboard: {
-          writeText: writeTextMock,
-        },
-      });
-
-      render(<QuickInquiry contactEmail="contact@voidtechsolution.com" />);
-      const copyBtn = screen.getByRole("button", { name: /Copy Direct Email/i });
-      fireEvent.click(copyBtn);
-
-      expect(writeTextMock).toHaveBeenCalledWith("contact@voidtechsolution.com");
-      expect(await screen.findByText("Email Copied!")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Explore Services & Capabilities/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Review Pricing Tiers/i })).toBeInTheDocument();
+      expect(screen.getByText("Structured Requirements Scoping")).toBeInTheDocument();
+      expect(screen.getByText("Full Repository Handover")).toBeInTheDocument();
+      expect(screen.getByText("Clear Milestone Pricing")).toBeInTheDocument();
     });
   });
 
   describe("Header & Footer Shared Navigation", () => {
-    it("renders Header brand, navigation items, and project CTA", () => {
+    it("renders Header brand, 6 section anchor navigation items, and project CTA", () => {
       render(<Header />);
       expect(screen.getByLabelText("VOIDTECH SOLUTION Home")).toBeInTheDocument();
       expect(screen.getByRole("navigation", { name: "Desktop Navigation" })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Get Started" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Start Your Project" })).toBeInTheDocument();
+
+      // Verify all 6 navigation anchor links
+      const expectedNav = [
+        { name: "Home", href: "/" },
+        { name: "About", href: "/#about" },
+        { name: "Services", href: "/#services" },
+        { name: "Pricing", href: "/#pricing" },
+        { name: "Portfolio", href: "/#portfolio" },
+        { name: "Contact", href: "/#contact" },
+      ];
+
+      for (const item of expectedNav) {
+        const link = screen.getByRole("link", { name: item.name });
+        expect(link).toBeInTheDocument();
+        expect(link).toHaveAttribute("href", item.href);
+      }
     });
 
-    it("renders Footer with commercial intake email and capabilities", () => {
+    it("renders Footer with valid navigation and capability anchors", () => {
       render(<Footer />);
-      expect(screen.getByText("contact@voidtechsolution.com")).toBeInTheDocument();
+      expect(screen.getByText("VOIDTECH SOLUTION")).toBeInTheDocument();
       expect(screen.getByRole("list", { name: "Footer Capabilities Links" })).toBeInTheDocument();
       expect(screen.getByText("Build. Launch. Grow Online.")).toBeInTheDocument();
+      expect(screen.queryByText("contact@voidtechsolution.com")).not.toBeInTheDocument();
+    });
+
+    it("verifies that all navigation anchor links map to existing sections on the Homepage", async () => {
+      const pageComponent = await HomePage();
+      const { container } = render(pageComponent);
+
+      const sectionAnchors = ["about", "services", "pricing", "portfolio", "contact"];
+      for (const anchor of sectionAnchors) {
+        const el = container.querySelector(`#${anchor}`);
+        expect(el).not.toBeNull();
+      }
     });
   });
 });

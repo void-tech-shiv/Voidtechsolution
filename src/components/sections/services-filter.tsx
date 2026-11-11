@@ -189,7 +189,7 @@ export function ServicesFilter({ initialServices }: ServicesFilterProps) {
                 )}
 
                 <Link
-                  href={`#contact`}
+                  href="/#contact"
                   className="inline-flex w-full items-center justify-between rounded-lg border border-void-border/70 bg-void-surface/50 px-3.5 py-2 text-xs font-medium text-void-light transition-all hover:border-electric-purple hover:bg-electric-purple/10 hover:text-white group/btn"
                 >
                   <span>Inquire for {service.title}</span>
