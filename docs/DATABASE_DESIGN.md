@@ -1,8 +1,8 @@
 # DATABASE_DESIGN.md — PostgreSQL Entity-Relationship Specification & Data Layer
 
-> **Implementation Status:** `SCHEMAS, REPOSITORIES & SEEDING ENGINE IMPLEMENTED`
+> **Implementation Status:** `VERIFIED & AUDITED (ALL 10 MODELS IMPLEMENTED)`
 >
-> ⚠️ **Database Migration Readiness:** The database schema has been verified with Prisma (`npx prisma validate`), Prisma Client generated (`npx prisma generate`), five domain repository abstractions built in `src/server/repositories/`, and an automated seed script authored in `prisma/seed.ts`. When connecting a live hosted PostgreSQL instance (e.g. Neon, Supabase, AWS RDS), execute `npx prisma migrate dev --name init` or `npx prisma db push` followed by `npm run db:seed`.
+> ⚠️ **Database Migration Readiness:** The database schema has been verified with Prisma (`npx prisma validate`), Prisma Client generated (`npx prisma generate`), domain repository abstractions built in `src/server/repositories/`, and an automated seed script authored in `prisma/seed.ts`. When connecting a live hosted PostgreSQL instance (e.g. Neon, Supabase, AWS RDS), execute `npx prisma migrate dev --name init` or `npx prisma db push` followed by `npm run db:seed`.
 
 ---
 
@@ -38,7 +38,8 @@ erDiagram
         enum category
         string[] deliverables
         string[] technologies
-        int startingPriceUsd
+        int startingPriceInr
+        string currency
         boolean isFeatured
         boolean isActive
         int orderIndex
@@ -61,6 +62,7 @@ erDiagram
         string heroImage
         string liveUrl
         string githubUrl
+        string projectType
         boolean isFeatured
         int orderIndex
         datetime createdAt
@@ -79,61 +81,134 @@ erDiagram
         datetime updatedAt
     }
 
-    SYSTEM_SETTING {
+    PRICING_PACKAGE {
+        string id PK
+        string slug UK
+        string name
+        enum category
+        int priceInr
+        string currency
+        boolean isStartingPrice
+        string billingPeriod
+        string[] features
+        boolean popular
+        int orderIndex
+        boolean isActive
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    FAQ {
+        string id PK
+        string question
+        text answer
+        string category
+        int orderIndex
+        boolean isActive
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    SITE_SETTING {
         string id PK
         string key UK
         text value
         string description
         datetime updatedAt
     }
+
+    AUDIT_LOG {
+        string id PK
+        string action
+        string entity
+        string entityId
+        string actorId
+        string actorEmail
+        string ipAddress
+        string userAgent
+        json details
+        datetime createdAt
+    }
+
+    OTP_VERIFICATION {
+        string id PK
+        string identifier
+        string codeHash
+        enum purpose
+        datetime expiresAt
+        int attempts
+        int maxAttempts
+        datetime resendAvailableAt
+        boolean isUsed
+        datetime verifiedAt
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    EMAIL_DELIVERY {
+        string id PK
+        string recipient
+        string subject
+        string template
+        enum status
+        string providerMessageId
+        string failureCode
+        text errorMessage
+        int retryCount
+        datetime sentAt
+        datetime createdAt
+        datetime updatedAt
+    }
 ```
 
 ---
 
-## 2. Repository Pattern Abstraction Layer
+## 2. Approved INR Pricing Structure (10 Tiers)
+
+All VoidTech Solution packages are strictly stored and presented in **INR (₹)**. Starting prices represent base kickoff tiers:
+
+| Package Slug | Name | Track | Starting Price (INR) | Billing Model | Highlights |
+| :--- | :--- | :--- | :-: | :--- | :--- |
+| `basic-static` | Basic Static | Web Development | **₹999** | One-time | 1-3 Pages, Mobile-first, Contact form, Fast LCP |
+| `standard-business` | Standard Business | Web Development | **₹2,999** | One-time | Up to 5 Pages, Charcoal/Neon UI, Maps, 30d Support |
+| `professional` | Professional | Web Development | **₹5,999** | One-time | Up to 10 Pages, CMS, Email alerts, 90+ Lighthouse |
+| `premium-custom` | Premium Custom | Enterprise Systems | **₹12,999+** | Starting | Custom Next.js Web App, Client portal, Custom APIs |
+| `e-commerce` | E-commerce | Web Development | **₹19,999+** | Starting | Full catalog, Razorpay/UPI intent checkout, Invoicing |
+| `saas` | SaaS | Enterprise Systems | **₹24,999+** | Starting | Multi-tenant architecture, Subscriptions, RBAC |
+| `lms` | LMS | Enterprise Systems | **₹29,999+** | Starting | Course builder, Video DRM streaming, Certificates |
+| `marketplace` | Marketplace | Enterprise Systems | **₹34,999+** | Starting | Multi-vendor storefronts, Split payouts, Escrow |
+| `erp-crm` | ERP & CRM | Enterprise Systems | **₹49,999+** | Starting | Custom business pipelines, Inventory, Audit logs |
+| `ai-powered` | AI-Powered | AI & Automation | **₹59,999+** | Starting | Autonomous multi-agent pipelines, Enterprise RAG |
+
+---
+
+## 3. Portfolio Data Integrity
+
+Seeded portfolio items are explicitly designated as internal **DEMO / CONCEPT** architectural prototypes (`projectType: "CONCEPT"`). Fabricated client names and unverified production metrics have been completely eradicated:
+- `algorithmic-liquidity-engine`: Client designated as `"VoidTech Concept Lab (Architecture Prototype)"` with simulated latency benchmarks (`< 2ms`).
+- `autonomous-ai-ops-agent`: Client designated as `"VoidTech Concept Lab (Research Prototype)"` with simulated MTTR evaluation benchmarks.
+
+---
+
+## 4. Repository Pattern Abstraction Layer
 
 All database queries are encapsulated in strongly-typed repository modules in `src/server/repositories/`:
 
 | Repository | Path | Core Functions | Resilient Fallback |
 |---|---|---|---|
-| **`EnquiriesRepo`** | `src/server/repositories/enquiries.repo.ts` | `createEnquiry`, `getEnquiries`, `getEnquiryById`, `updateEnquiryStatus`, `appendEnquiryNote`, `deleteEnquiry`, `getEnquiryStats` | Database transaction |
-| **`ServicesRepo`** | `src/server/repositories/services.repo.ts` | `getAllServices`, `getActiveServices`, `getServiceBySlug`, `getFeaturedServices`, `createService`, `updateService`, `deleteService` | Falls back to static `servicesRegistry` if DB is offline |
-| **`PortfolioRepo`** | `src/server/repositories/portfolio.repo.ts` | `getAllProjects`, `getFeaturedProjects`, `getProjectBySlug`, `getProjectsByIndustry`, `createProject`, `updateProject`, `deleteProject` | Falls back to static case studies if DB is offline |
-| **`UsersRepo`** | `src/server/repositories/users.repo.ts` | `getAdminByEmail`, `getAdminById`, `createAdminUser`, `updateLastLogin`, `getAllAdmins` | Strict DB operations with email normalization |
-| **`SettingsRepo`** | `src/server/repositories/settings.repo.ts` | `getSetting<T>`, `setSetting`, `getAllSettings` | Default value fallback if key is unseeded |
+| **`EnquiriesRepo`** | `src/server/repositories/enquiries.repo.ts` | `createEnquiry`, `getEnquiries`, `getEnquiryById`, `updateEnquiryStatus`, `appendEnquiryNote`, `deleteEnquiry`, `getEnquiryStats` | Write ops strictly throw descriptive errors without leaking DB credentials |
+| **`ServicesRepo`** | `src/server/repositories/services.repo.ts` | `getAllServices`, `getActiveServices`, `getServiceBySlug`, `getFeaturedServices`, `createService`, `updateService`, `deleteService` | Falls back to static `servicesRegistry` (INR) if DB is offline |
+| **`PortfolioRepo`** | `src/server/repositories/portfolio.repo.ts` | `getAllProjects`, `getFeaturedProjects`, `getProjectBySlug`, `getProjectsByIndustry`, `upsertProject` | Falls back to verified internal concept prototypes |
+| **`PricingRepo`** | `src/server/repositories/pricing.repo.ts` | `getAllPricingPackages`, `getActivePricingPackages`, `getPricingPackageBySlug`, `createPricingPackage` | Falls back to 10 approved INR packages |
+| **`FaqRepo`** | `src/server/repositories/faq.repo.ts` | `getAllFaqs`, `getActiveFaqs`, `getFaqsByCategory`, `createFaq` | Falls back to baseline categorized FAQs |
+| **`SettingsRepo`** | `src/server/repositories/settings.repo.ts` | `getSetting`, `setSetting`, `getAllSettings` | Falls back to default site configuration map |
+| **`UsersRepo`** | `src/server/repositories/users.repo.ts` | `getAdminByEmail`, `createAdminUser`, `updateAdminLastLogin`, `getAllAdminUsers` | Database authentication |
+| **`AuditRepo`** | `src/server/repositories/audit.repo.ts` | `createAuditLog`, `getRecentAuditLogs`, `getAuditLogsByEntity` | Immutable audit trail |
+| **`DeliveryRepo`** | `src/server/repositories/delivery.repo.ts` | `createEmailDelivery`, `updateEmailDeliveryStatus`, `getRecentEmailDeliveries` | Persistent delivery log |
 
 ---
 
-## 3. Database Seeding Engine (`prisma/seed.ts`)
+## 5. Security & Write Safety Guardrails
 
-The database seed engine programmatically populates:
-1. **All 18 Registered Business Services:** Populates titles, short & full descriptions, categories, deliverables, technologies, and display order from `src/config/site.ts`.
-2. **Default System Settings:** Populates agency brand name, tagline, commercial contact inbox, automated lead reply flags, and maintenance mode toggle.
-3. **Initial Case Studies:** Populates verified baseline portfolio projects (`algorithmic-liquidity-engine` and `autonomous-ai-ops-agent`) with quantified metrics.
-
-### Seeding Command
-```bash
-npm run db:seed
-# Or: npx prisma db seed
-```
-
----
-
-## 4. Migration & Deployment Playbook
-
-When provisioning a new PostgreSQL database instance:
-
-```bash
-# 1. Ensure .env contains valid DATABASE_URL and DIRECT_URL
-DATABASE_URL="postgresql://user:password@host:port/db?schema=public&pgbouncer=true"
-DIRECT_URL="postgresql://user:password@host:port/db?schema=public"
-
-# 2. Run initial Prisma migration
-npx prisma migrate dev --name init_voidtech_schema
-
-# 3. Seed initial 18 services and configuration
-npm run db:seed
-
-# 4. For production deployments on Vercel
-npx prisma migrate deploy
-```
+- **No Credential Leakage:** Catch blocks sanitize error details so internal database hostnames, usernames, and connection strings are never exposed in user-facing exceptions.
+- **Fail-Safe Fallbacks:** Read queries for public content gracefully return static registries if PostgreSQL is temporarily unreachable. Write operations throw explicit, observable errors rather than faking success.

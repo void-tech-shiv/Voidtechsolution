@@ -1,8 +1,8 @@
 // ==============================================================================
 // VOIDTECH SOLUTION — Prisma Schema
 // Provider: PostgreSQL
-// Phase: Phase 1 (Foundation Specification)
-// Note: Physical migrations & database connection are scheduled for Phase 3.
+// Phase: Phase 3 (Database Architecture & Data Layer)
+// Brand Tagline: Build. Launch. Grow Online.
 // ==============================================================================
 
 generator client {
@@ -66,21 +66,22 @@ model Enquiry {
 // 2. AGENCY SERVICE CATALOG (18 Offerings)
 // ------------------------------------------------------------------------------
 model Service {
-  id              String          @id @default(cuid())
-  slug            String          @unique
-  title           String
-  shortDesc       String
-  fullDesc        String          @db.Text
-  icon            String          @default("Code")
-  category        ServiceCategory
-  deliverables    String[]
-  technologies    String[]
-  startingPriceUsd Int?
-  isFeatured      Boolean         @default(false)
-  isActive        Boolean         @default(true)
-  orderIndex      Int             @default(0)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id               String          @id @default(cuid())
+  slug             String          @unique
+  title            String
+  shortDesc        String
+  fullDesc         String          @db.Text
+  icon             String          @default("Code")
+  category         ServiceCategory
+  deliverables     String[]
+  technologies     String[]
+  startingPriceInr Int?
+  currency         String          @default("INR")
+  isFeatured       Boolean         @default(false)
+  isActive         Boolean         @default(true)
+  orderIndex       Int             @default(0)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
   @@index([category])
   @@index([isActive, orderIndex])
@@ -88,7 +89,7 @@ model Service {
 }
 
 // ------------------------------------------------------------------------------
-// 3. PORTFOLIO & CASE STUDIES
+// 3. PORTFOLIO & CASE STUDIES (DEMO / CONCEPT LAB BENCHMARKS)
 // ------------------------------------------------------------------------------
 model PortfolioProject {
   id          String   @id @default(cuid())
@@ -101,21 +102,23 @@ model PortfolioProject {
   solution    String   @db.Text
   results     String   @db.Text
   techStack   String[]
-  metrics     Json?    // e.g. [{"label": "Uptime", "value": "99.99%"}, {"label": "Speed", "value": "+300%"}]
+  metrics     Json?    // e.g. [{"label": "Simulated Latency", "value": "< 2ms"}, {"label": "Benchmark Uptime", "value": "99.99%"}]
   heroImage   String?
   liveUrl     String?
   githubUrl   String?
+  projectType String   @default("CONCEPT") // "CONCEPT" | "INTERNAL_PROTOTYPE" | "PRODUCTION"
   isFeatured  Boolean  @default(false)
   orderIndex  Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([isFeatured, orderIndex])
+  @@index([projectType])
   @@map("portfolio_projects")
 }
 
 // ------------------------------------------------------------------------------
-// 4. ADMIN USERS & SESSIONS
+// 4. ADMIN USERS & ACCESS CONTROL
 // ------------------------------------------------------------------------------
 enum UserRole {
   SUPER_ADMIN
@@ -138,15 +141,138 @@ model AdminUser {
 }
 
 // ------------------------------------------------------------------------------
-// 5. SYSTEM SETTINGS & CONFIGURATION
+// 5. PRICING PACKAGES (INR PRICING TIERS)
 // ------------------------------------------------------------------------------
-model SystemSetting {
+model PricingPackage {
+  id              String          @id @default(cuid())
+  slug            String          @unique
+  name            String
+  category        ServiceCategory @default(WEB_DEVELOPMENT)
+  priceInr        Int
+  currency        String          @default("INR")
+  isStartingPrice Boolean         @default(true)
+  billingPeriod   String?         // "one-time" | "starting" | "monthly"
+  features        String[]
+  popular         Boolean         @default(false)
+  orderIndex      Int             @default(0)
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([isActive, orderIndex])
+  @@index([category])
+  @@map("pricing_packages")
+}
+
+// ------------------------------------------------------------------------------
+// 6. FREQUENTLY ASKED QUESTIONS (FAQ)
+// ------------------------------------------------------------------------------
+model FAQ {
+  id         String   @id @default(cuid())
+  question   String
+  answer     String   @db.Text
+  category   String   @default("GENERAL")
+  orderIndex Int      @default(0)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([category])
+  @@index([isActive, orderIndex])
+  @@map("faqs")
+}
+
+// ------------------------------------------------------------------------------
+// 7. SITE SETTINGS & CONFIGURATION
+// ------------------------------------------------------------------------------
+model SiteSetting {
   id          String   @id @default(cuid())
   key         String   @unique
   value       String   @db.Text
   description String?
   updatedAt   DateTime @updatedAt
 
-  @@map("system_settings")
+  @@map("site_settings")
 }
 
+// ------------------------------------------------------------------------------
+// 8. AUDIT LOGS
+// ------------------------------------------------------------------------------
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String   // e.g. "USER_LOGIN", "ENQUIRY_STATUS_UPDATE", "SETTINGS_CHANGE", "PASSWORD_RESET"
+  entity     String   // e.g. "AdminUser", "Enquiry", "SiteSetting", "PricingPackage"
+  entityId   String?
+  actorId    String?
+  actorEmail String?
+  ipAddress  String?
+  userAgent  String?
+  details    Json?
+  createdAt  DateTime @default(now())
+
+  @@index([action])
+  @@index([entity, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ------------------------------------------------------------------------------
+// 9. OTP VERIFICATIONS
+// ------------------------------------------------------------------------------
+enum OtpPurpose {
+  LOGIN
+  PASSWORD_RESET
+  ENQUIRY_VERIFICATION
+  ADMIN_ACTION
+}
+
+model OtpVerification {
+  id                String     @id @default(cuid())
+  identifier        String     // e.g. Email or phone number
+  codeHash          String     // Cryptographic SHA-256 hash of OTP code + salt
+  purpose           OtpPurpose @default(LOGIN)
+  expiresAt         DateTime
+  attempts          Int        @default(0)
+  maxAttempts       Int        @default(5)
+  resendAvailableAt DateTime
+  isUsed            Boolean    @default(false)
+  verifiedAt        DateTime?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  @@index([identifier, purpose])
+  @@index([expiresAt])
+  @@index([createdAt])
+  @@map("otp_verifications")
+}
+
+// ------------------------------------------------------------------------------
+// 10. EMAIL DELIVERY TRACKING
+// ------------------------------------------------------------------------------
+enum EmailDeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model EmailDelivery {
+  id                String              @id @default(cuid())
+  recipient         String
+  subject           String
+  template          String              // e.g. "OTP_VERIFICATION", "PASSWORD_RESET", "ENQUIRY_CONFIRMATION"
+  status            EmailDeliveryStatus @default(PENDING)
+  providerMessageId String?
+  failureCode       String?
+  errorMessage      String?             @db.Text
+  retryCount        Int                 @default(0)
+  sentAt            DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([recipient])
+  @@index([status])
+  @@index([template])
+  @@index([createdAt])
+  @@map("email_deliveries")
+}

@@ -41,9 +41,27 @@ export interface ServiceDefinition {
   fullDescription: string;
   deliverables: string[];
   technologies: string[];
-  startingPriceUsd?: number;
+  startingPriceInr?: number;
+  currency?: string;
   iconName: string;
   isFeatured: boolean;
+}
+
+/**
+ * Approved Pricing Package definition
+ */
+export interface PricingPackageDefinition {
+  id?: string;
+  slug: string;
+  name: string;
+  category: ServiceCategory;
+  priceInr: number;
+  currency: string;
+  isStartingPrice: boolean;
+  billingPeriod?: string;
+  features: string[];
+  popular: boolean;
+  orderIndex: number;
 }
 
 /**

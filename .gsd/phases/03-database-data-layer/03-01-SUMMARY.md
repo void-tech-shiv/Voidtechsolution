@@ -25,3 +25,4 @@
 - `tsc --noEmit`: 0 TypeScript compiler errors.
 - `next lint`: 0 ESLint warnings or errors.
 - `next build`: Successfully generated production bundles for static and dynamic routes.
+

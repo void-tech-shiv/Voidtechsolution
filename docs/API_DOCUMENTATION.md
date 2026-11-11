@@ -1,4 +1,4 @@
-# API_DOCUMENTATION.md — Backend Endpoints & Route Handlers Specification
+# API_DOCUMENTATION.md — Backend Endpoints & Server-Side Services Specification
 
 ## 1. API Architecture Principles
 - **Base URL:** `/api`
@@ -24,7 +24,7 @@ interface ApiResponse<T> {
 
 ---
 
-## 2. Implemented Endpoints (Phase 1)
+## 2. Implemented Endpoints
 
 ### `GET /api/health`
 Health check route handler verifying system uptime, environment, and deployment readiness.
@@ -52,7 +52,48 @@ Health check route handler verifying system uptime, environment, and deployment 
 
 ---
 
-## 3. Planned Endpoints (Future Phases)
+## 3. Server-Side Service APIs (Phase 3 Implemented)
+
+### A. Reusable Nodemailer Transactional Email Service (`src/server/email/`)
+
+#### `sendEmail(options: SendEmailOptions): Promise<SendEmailResult>`
+Dispatches an email with automated `EmailDelivery` database tracking and bounded retries.
+```typescript
+interface SendEmailOptions {
+  to: string | string[];
+  subject: string;
+  html: string;
+  text: string;
+  templateName?: string;
+  replyTo?: string;
+  maxRetries?: number;
+  initialBackoffMs?: number;
+}
+```
+
+#### Typed Dispatchers:
+- `sendOtpEmail(to, { code, recipientName, purpose, expiresInMinutes })`
+- `sendPasswordResetEmail(to, { resetUrl, recipientName, expiresInMinutes })`
+- `sendEnquiryConfirmationEmail(to, { recipientName, serviceTitle, enquiryId })`
+- `sendEnquiryAdminAlertEmail({ enquiryId, prospectName, email, phone, companyName, serviceCategory, budgetRange, timeline, message })`
+- `sendEnquiryStatusUpdateEmail(to, { recipientName, enquiryId, oldStatus, newStatus, notes })`
+- `sendSecurityNotificationEmail(to, { recipientName, eventType, timestamp, ipAddress, userAgent, actionTaken })`
+
+### B. Cryptographic OTP Verification Service (`src/server/security/`)
+
+#### `createOtp(options: CreateOtpOptions): Promise<CreateOtpResult>`
+Generates a cryptographically secure 6-digit numerical token, stores its HMAC-SHA256 hash, invalidates prior tokens for `(identifier, purpose)`, and enforces a 60-second cooldown.
+- Returns `{ success: true, code, expiresAt, resendAvailableAt }`
+- On cooldown: `{ success: false, error: "RESEND_COOLDOWN_ACTIVE", waitSeconds }`
+
+#### `verifyOtp(identifier: string, code: string, purpose?: OtpPurpose): Promise<VerifyOtpResult>`
+Validates an OTP using constant-time comparison (`crypto.timingSafeEqual`), checks 5-minute expiry, increments attempts, locks out after 5 attempts, and enforces single-use consumption.
+- Returns `{ success: true, verifiedAt }`
+- On error: `{ success: false, error: "INVALID_CODE" | "MAX_ATTEMPTS_EXCEEDED" | "OTP_EXPIRED" | "OTP_NOT_FOUND", remainingAttempts }`
+
+---
+
+## 4. Planned Endpoints (Future Phases)
 
 ### A. Lead Capture & Enquiries (Phase 6 & 9)
 
@@ -69,7 +110,7 @@ Submits a client enquiry into the database pipeline.
   "phone": "+1-555-0199",
   "companyName": "Vance Corp",
   "serviceCategory": "AI_AUTOMATION",
-  "budgetRange": "15K_TO_50K",
+  "budgetRange": "50K+",
   "timeline": "1_TO_3_MONTHS",
   "message": "We need an autonomous AI multi-agent workflow integrated with our ERP."
 }
@@ -106,7 +147,6 @@ Authenticates administrator credentials and sets an encrypted HTTP-only cookie.
 
 - **Access:** Public (Strict rate limiting: max 5 attempts per 15 minutes)
 - **Request:** `{ "email": "admin@voidtechsolution.com", "password": "..." }`
-- **Response:** `{ "success": true, "data": { "user": { "id": "...", "email": "...", "role": "ADMIN" } } }`
 
 #### `POST /api/auth/logout`
 Terminates admin session and expires the auth cookie.
@@ -122,9 +162,3 @@ Retrieves public list of all active services (cached via Next.js ISR / tag reval
 
 #### `GET /api/portfolio`
 Retrieves published case studies with tech stack filters.
-
-#### `POST /api/admin/portfolio`
-Creates a new client case study.
-
-- **Access:** Authenticated Admin only
-

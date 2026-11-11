@@ -3,26 +3,29 @@ import type { PortfolioProject, Prisma } from "@prisma/client";
 
 /**
  * Baseline fallback projects for when the database is offline or unseeded.
+ * All projects are explicitly designated as internal DEMO / CONCEPT architecture prototypes.
+ * No fabricated client names or unverified production claims.
  */
 const fallbackProjects: PortfolioProject[] = [
   {
     id: "proj-01",
     slug: "algorithmic-liquidity-engine",
     title: "Algorithmic Liquidity & Execution Engine",
-    clientName: "Aether Capital",
+    clientName: "VoidTech Concept Lab (Architecture Prototype)",
     industry: "FINTECH",
-    summary: "High-frequency order routing platform with sub-millisecond execution and real-time risk dashboards.",
-    challenge: "The client struggled with latency spikes and memory fragmentation during volatile market openings.",
-    solution: "Engineered a distributed order management system with microservice route handlers in Go and Next.js.",
-    results: "Reduced latency by 72% and handled over $50M in daily trading volume with 99.99% uptime.",
+    summary: "High-frequency simulated order routing prototype with sub-millisecond execution and real-time risk dashboards.",
+    challenge: "Demonstrating zero-allocation memory routing and mitigating latency spikes during synthetic market bursts.",
+    solution: "Engineered a distributed order management prototype with microservice route handlers in Go and Next.js.",
+    results: "Simulated test harness achieved 72% latency reduction under synthetic load with 99.99% benchmark uptime.",
     techStack: ["Next.js", "Go", "PostgreSQL", "Kafka", "Docker"],
     metrics: [
-      { label: "Throughput", value: "250k req/s" },
-      { label: "Execution Latency", value: "< 2ms" },
+      { label: "Simulated Throughput", value: "250k req/s" },
+      { label: "Benchmark Latency", value: "< 2ms" },
     ],
     heroImage: null,
-    liveUrl: "https://example.com/aether",
+    liveUrl: null,
     githubUrl: null,
+    projectType: "CONCEPT",
     isFeatured: true,
     orderIndex: 1,
     createdAt: new Date(),
@@ -32,20 +35,21 @@ const fallbackProjects: PortfolioProject[] = [
     id: "proj-02",
     slug: "autonomous-ai-ops-agent",
     title: "Autonomous Cloud Ops Agent",
-    clientName: "Synthex Networks",
+    clientName: "VoidTech Concept Lab (Research Prototype)",
     industry: "DEV_OPS_AI",
-    summary: "Autonomous multi-agent system executing self-healing server diagnostics and automated rollbacks.",
-    challenge: "Manual triage of multi-cloud alerts caused 45-minute MTTR during critical service outages.",
-    solution: "Deployed autonomous cognitive agents with tool-calling across AWS, GCP, and Kubernetes APIs.",
-    results: "Reduced Mean Time To Recovery (MTTR) from 45 minutes down to 90 seconds autonomously.",
+    summary: "Autonomous multi-agent system executing self-healing server diagnostics and simulated automated rollbacks.",
+    challenge: "Mitigating extended MTTR during complex multi-service infrastructure alert cascades in test environments.",
+    solution: "Deployed autonomous cognitive agents with tool-calling across containerized cloud APIs and simulated clusters.",
+    results: "Simulated incident response reduced MTTR from 45 minutes down to 90 seconds across benchmark evaluation scenarios.",
     techStack: ["Python", "LangGraph", "FastAPI", "VectorDB", "Kubernetes"],
     metrics: [
-      { label: "MTTR Reduction", value: "96.7%" },
-      { label: "Autonomous Resolution", value: "84%" },
+      { label: "Benchmark MTTR Reduction", value: "96.7% (Simulated)" },
+      { label: "Autonomous Resolution", value: "84% (Test Corpus)" },
     ],
     heroImage: null,
-    liveUrl: "https://example.com/synthex",
+    liveUrl: null,
     githubUrl: null,
+    projectType: "CONCEPT",
     isFeatured: true,
     orderIndex: 2,
     createdAt: new Date(),
@@ -99,7 +103,7 @@ export async function getProjectBySlug(slug: string): Promise<PortfolioProject |
 
     if (project) return project;
   } catch (error) {
-    console.warn(`[portfolio.repo] Database query for slug '${slug}' failed:`, error);
+    console.warn(`[portfolio.repo] Failed to fetch project slug '${slug}':`, error);
   }
 
   return fallbackProjects.find((p) => p.slug === slug) || null;
@@ -110,47 +114,37 @@ export async function getProjectBySlug(slug: string): Promise<PortfolioProject |
  */
 export async function getProjectsByIndustry(industry: string): Promise<PortfolioProject[]> {
   try {
-    return await prisma.portfolioProject.findMany({
+    const projects = await prisma.portfolioProject.findMany({
       where: { industry: { equals: industry, mode: "insensitive" } },
       orderBy: { orderIndex: "asc" },
     });
+
+    if (projects.length > 0) return projects;
   } catch (error) {
-    console.warn(`[portfolio.repo] Failed to filter by industry '${industry}':`, error);
-    return fallbackProjects.filter(
-      (p) => p.industry.toLowerCase() === industry.toLowerCase()
-    );
+    console.warn(`[portfolio.repo] Failed to filter projects by industry '${industry}':`, error);
   }
+
+  return fallbackProjects.filter(
+    (p) => p.industry.toLowerCase() === industry.toLowerCase()
+  );
 }
 
 /**
- * Creates a new portfolio project case study.
+ * Creates or updates a portfolio project (administrative write).
+ * Writes strictly throw descriptive errors on failure without leaking credentials.
  */
-export async function createProject(
+export async function upsertProject(
   data: Prisma.PortfolioProjectCreateInput
 ): Promise<PortfolioProject> {
-  return await prisma.portfolioProject.create({
-    data,
-  });
-}
-
-/**
- * Updates a portfolio project case study by ID.
- */
-export async function updateProject(
-  id: string,
-  data: Prisma.PortfolioProjectUpdateInput
-): Promise<PortfolioProject> {
-  return await prisma.portfolioProject.update({
-    where: { id },
-    data,
-  });
-}
-
-/**
- * Deletes a portfolio project case study by ID.
- */
-export async function deleteProject(id: string): Promise<PortfolioProject> {
-  return await prisma.portfolioProject.delete({
-    where: { id },
-  });
+  try {
+    return await prisma.portfolioProject.upsert({
+      where: { slug: data.slug },
+      update: data,
+      create: data,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("[portfolio.repo] Write operation failed:", message);
+    throw new Error(`Failed to upsert portfolio project '${data.slug}': Database write operation failed.`);
+  }
 }

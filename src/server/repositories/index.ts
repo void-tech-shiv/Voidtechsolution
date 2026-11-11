@@ -3,3 +3,7 @@ export * as ServicesRepo from "./services.repo";
 export * as PortfolioRepo from "./portfolio.repo";
 export * as UsersRepo from "./users.repo";
 export * as SettingsRepo from "./settings.repo";
+export * as PricingRepo from "./pricing.repo";
+export * as FaqRepo from "./faq.repo";
+export * as AuditRepo from "./audit.repo";
+export * as DeliveryRepo from "./delivery.repo";

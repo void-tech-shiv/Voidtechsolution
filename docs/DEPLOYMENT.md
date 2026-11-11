@@ -10,18 +10,18 @@ flowchart LR
     VercelCI -->|Static Assets| EdgeCDN["Vercel Global Edge Network"]
     VercelCI -->|Serverless Functions| NodeServerless["Next.js Route Handlers / Server Actions"]
     NodeServerless -->|Connection Pooler (PgBouncer)| PostgresDB["Hosted PostgreSQL (Neon / Supabase)"]
-    NodeServerless -->|Transactional Mail API| Resend["Email Provider (Resend / SES)"]
+    NodeServerless -->|Standard SMTP Protocol| SmtpHost["SMTP Mail Server (Nodemailer)"]
 ```
 
 ---
 
-## 2. Platform Providers & Free-Tier Operational Bounds
+## 2. Platform Providers & Operational Bounds
 
-| Layer | Provider | Free-Tier Limits | Production Upgrade Trigger |
+| Layer | Provider | Operational Bounds | Production Upgrade Trigger |
 |---|---|---|---|
 | **Frontend & Edge API** | Vercel | 100 GB bandwidth/mo, 100k edge invocations/day | > 100k visits/mo or team collaboration seats |
 | **Relational Database** | Neon / Supabase | 0.5 GB storage, auto-suspend after inactivity (Neon) | Sustained traffic requiring 24/7 warm connections |
-| **Email Dispatch** | Resend / SendGrid | 100 emails/day (Resend: 3,000/mo) | Inbound lead volume > 100 submissions/day |
+| **Email Dispatch** | Standard SMTP (Nodemailer) | Depends on SMTP server quotas | Inbound lead volume > SMTP provider daily limit |
 | **DNS & Edge Protection**| Cloudflare / Vercel DNS| Unlimited DDoS protection, free SSL certificates | Advanced WAF custom rules |
 
 > [!WARNING]
@@ -36,7 +36,7 @@ Continuous Integration pipeline on every Pull Request to `main`:
 2. **Quality Gate:**
    - `npm run typecheck` (`tsc --noEmit`)
    - `npm run lint` (`next lint`)
-   - `npm test` (Vitest unit and RTL suite)
+   - `npm test` (Vitest unit and RTL suite — 73 passing tests)
    - `npm run build` (Next.js production build check)
 3. **Automated Deployment:** Merges to `main` trigger instant production deployment with atomic rollback capabilities.
 
@@ -44,15 +44,21 @@ Continuous Integration pipeline on every Pull Request to `main`:
 
 ## 4. Production Environment Variables Checklist
 
-Ensure the following variables are configured in the Vercel Project Settings:
+Ensure the following variables are configured in the Production Host Settings:
 
-- [ ] `DATABASE_URL` (Pooled PostgreSQL connection string)
+### Database & Authentication:
+- [ ] `DATABASE_URL` (Pooled PostgreSQL connection string for Prisma Client)
 - [ ] `DIRECT_URL` (Direct connection string for Prisma migrations)
 - [ ] `AUTH_SECRET` (Cryptographic secret >= 32 characters)
-- [ ] `ADMIN_EMAIL` (Verified administrator email)
-- [ ] `ADMIN_PASSWORD` (Initial secure hashed password)
-- [ ] `EMAIL_PROVIDER_API_KEY` (Resend or SendGrid API key)
-- [ ] `EMAIL_FROM` (Verified sending domain address)
-- [ ] `ENQUIRY_NOTIFICATION_RECIPIENT` (Primary agency intake email)
-- [ ] `NEXT_PUBLIC_SITE_URL` (Production canonical URL, e.g. `https://voidtechsolution.com`)
+- [ ] `OTP_PEPPER_SECRET` (Cryptographic pepper for OTP SHA-256 HMAC hashing)
+- [ ] `NEXT_PUBLIC_SITE_URL` (Production canonical URL: `https://voidtechsolution.com`)
 
+### SMTP & Transactional Email (Nodemailer):
+- [ ] `SMTP_HOST` (e.g. `smtp.mailgun.org` or `smtp.sendgrid.net`)
+- [ ] `SMTP_PORT` (e.g. `587` or `465`)
+- [ ] `SMTP_SECURE` (`true` for port 465 SSL, `false` for 587 STARTTLS)
+- [ ] `SMTP_USER` (Authenticated SMTP username / API credential)
+- [ ] `SMTP_PASS` (Authenticated SMTP password / API secret key)
+- [ ] `SMTP_FROM_NAME` (`VOIDTECH SOLUTION`)
+- [ ] `SMTP_FROM_EMAIL` (Verified sending domain, e.g. `notifications@voidtechsolution.com`)
+- [ ] `ADMIN_ALERT_EMAIL` (Primary administrative alerts inbox, e.g. `admin@voidtechsolution.com`)

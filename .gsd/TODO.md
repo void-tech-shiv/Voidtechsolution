@@ -30,18 +30,19 @@
 
 ## Phase 3: Database & Data Layer (Completed & Verified)
 - [x] Finalize and optimize PostgreSQL Prisma schema (`prisma/schema.prisma`)
+- [x] Add all 10 required domain models (`Enquiry`, `Service`, `PortfolioProject`, `AdminUser`, `PricingPackage`, `FAQ`, `SiteSetting`, `AuditLog`, `OtpVerification`, `EmailDelivery`)
 - [x] Generate Prisma Client types (`npx prisma generate`)
-- [x] Implement resilient PrismaClient singleton with health check helper (`src/lib/prisma.ts`)
-- [x] Implement Enquiries repository (`src/server/repositories/enquiries.repo.ts`)
-- [x] Implement Services repository (`src/server/repositories/services.repo.ts`) with static fallback
-- [x] Implement Portfolio repository (`src/server/repositories/portfolio.repo.ts`) with static fallback
-- [x] Implement Users repository (`src/server/repositories/users.repo.ts`) with email normalization
-- [x] Implement Settings repository (`src/server/repositories/settings.repo.ts`) with type-safe getter
-- [x] Build automated database seeding script (`prisma/seed.ts`) populating all 18 business services
-- [x] Configure `db:seed` and `db:validate` npm scripts with `tsx`
-- [x] Author database unit tests in `tests/unit/database.test.ts` (11 tests, 43 total passing)
-- [x] Run full verification suite (`tsc`, `lint`, `test`, `build`)
-- [x] Update documentation in `docs/` and GSD Mission Control files
+- [x] Establish approved INR pricing structure with 10 tiers in `src/config/pricing.ts` (₹999 to ₹59,999)
+- [x] Implement Nodemailer + standard SMTP transactional email service (`src/server/email/`)
+- [x] Build 6 dark-styled email templates with plain-text fallbacks (OTP, Reset, Confirmation, Alert, Status, Security)
+- [x] Implement cryptographic OTP verification engine (`src/server/security/otp.service.ts`) with 6-digit code, HMAC-SHA256 hash storage, 5m expiry, max 5 attempts lockout, 60s cooldown
+- [x] Audit portfolio case studies: mark as `CONCEPT` prototypes; remove fake clients and unverified metrics
+- [x] Implement resilient repositories with fail-safe read fallbacks and safe write error handling
+- [x] Update database seeder (`prisma/seed.ts`) to seed all 18 services, 10 INR packages, site settings, FAQs, and concept prototypes
+- [x] Author comprehensive unit tests (`tests/unit/email.test.ts`, `tests/unit/otp.test.ts`, `tests/unit/database.test.ts` — 73 total passing)
+- [x] Author `docs/EMAIL_SYSTEM.md` and synchronize all architectural documentation
+- [x] Run full verification suite (`tsc`, `lint`, `test`, `build`) with 100% clean results
+- [x] Enforce strict stop condition: Phase 4 NOT started, awaiting user authorization
 
 ## Future Phases (Pending Milestone Approvals)
 - [ ] Phase 4: Public Marketing Pages — Home, Services & Dynamic Showcase

@@ -87,3 +87,4 @@ export async function getAllAdmins(): Promise<Omit<AdminUser, "passwordHash">[]>
     orderBy: { createdAt: "desc" },
   });
 }
+

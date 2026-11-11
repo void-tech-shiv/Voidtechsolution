@@ -48,3 +48,4 @@ Establish the robust, type-safe data access layer for VOIDTECH SOLUTION utilizin
 - **Prisma Datasource Configuration:**
   - `url = env("DATABASE_URL")` (Pooled connection string e.g. PgBouncer on port 6543)
   - `directUrl = env("DIRECT_URL")` (Direct connection string on port 5432 for migrations)
+

@@ -44,17 +44,39 @@ frame-ancestors 'none';
 | **Brute Force & DoS** | Credential stuffing on `/admin/login` | Sliding-window IP rate limiting via Upstash Redis or Edge KV. Max 5 attempts per 15m. |
 | **Data Scraping & Form Spam** | Automated bot enquiry flooding | Hidden honeypot fields, Cloudflare Turnstile verification, and IP hash throttling. |
 | **Privilege Escalation** | Admin route tampering | Next.js Edge Middleware intercepts `/admin/*`, validating cryptographically signed sessions before page rendering. |
+| **OTP Brute Force** | Rapid sequence guessing of 6-digit codes | Cryptographic SHA-256 HMAC storage, maximum 5 attempts lockout, 60s cooldown, constant-time `crypto.timingSafeEqual`. |
+| **Credential / Log Leakage** | Database or SMTP passwords printed in stack traces | Catch blocks intercept database & SMTP errors, masking credentials and recipients prior to console output. |
 
 ---
 
-## 4. Credential & Environment Variable Hygiene
-- `.env` and `.env*.local` are explicitly ignored in `.gitignore`.
-- `.env.example` provides an audited template with no real API keys or passwords.
-- `AUTH_SECRET` must be a high-entropy string (minimum 32 bytes).
-- Admin bootstrap passwords must be rotated immediately upon initial system deployment.
+## 4. Cryptographic OTP Verification Policies
+
+1. **Generation:** Cryptographically secure 6-digit numerical codes using `crypto.randomInt(100000, 1000000)`.
+2. **Hash Storage:** Tokens are hashed using HMAC-SHA256 with an isolated salt and server-side pepper (`OTP_PEPPER`). The plain-text code is NEVER persisted to the database.
+3. **Expiration Window:** Strict 5-minute lifespan (`expiresAt = now + 5m`). Expired tokens are immediately invalidated.
+4. **Lockout Policy:** Maximum 5 verification attempts. On the 5th failed attempt, the token is permanently locked (`isUsed: true`), requiring a new issuance.
+5. **Anti-Spam Cooldown:** 60-second cooldown between issuances (`resendAvailableAt = now + 60s`).
+6. **Single-Use Consumption:** Successful verification instantly sets `isUsed: true` and marks `verifiedAt: now`, preventing replay attacks.
+7. **Purpose Isolation:** Tokens issued for `LOGIN` cannot be verified for `PASSWORD_RESET` or other scopes.
+8. **Invalidation:** Requesting a new OTP for `(identifier, purpose)` immediately invalidates all prior unconsumed tokens for that pair.
 
 ---
 
-## 5. Security Incident Response
+## 5. SMTP & Transactional Email Security
+
+- **Server-Only Execution:** Nodemailer is strictly executed in Node.js server route handlers and server actions.
+- **Credential Masking:** SMTP user credentials and passwords are validated via Zod and never leaked to frontend client bundles or log outputs.
+- **Delivery Audit Trail:** Outbound transactional emails are persisted to `EmailDelivery` with delivery state transitions (`PENDING`, `SENT`, `FAILED`).
+- **Bounded Retries:** Outbound transient failures are limited to 3 attempts with exponential backoff before transitioning to `FAILED`.
+
+---
+
+## 6. Audit Logging & Database Write Integrity
+
+- **Immutable Audit Trail:** Sensitive state transitions (admin logins, settings adjustments, status changes) are recorded in `AuditLog` (`action`, `entity`, `actorId`, `ipAddress`, `details`).
+- **Fail-Safe Write Guardrails:** Database write operations strictly catch exceptions and throw clean, descriptive domain errors (`"Database write operation failed"`) without leaking internal connection strings, hostnames, or database credentials.
+
+---
+
+## 7. Security Incident Response
 Any identified vulnerabilities should be reported directly to `security@voidtechsolution.com`. Patches are prioritized and released following strict semantic versioning and verification test suites.
-

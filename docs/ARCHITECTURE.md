@@ -1,7 +1,7 @@
 # ARCHITECTURE.md — System Architecture & Technology Blueprint
 
 ## 1. System Overview
-**VOIDTECH SOLUTION** is built as a unified full-stack web application on the **Next.js App Router** paradigm, combining React Server Components (RSC) for zero-client-bundle rendering, Next.js Route Handlers for RESTful API services, Server Actions for transactional form processing, a **Repository Pattern Abstraction Layer**, and **Prisma ORM** interacting with a hosted **PostgreSQL** database.
+**VOIDTECH SOLUTION** is built as a unified full-stack web platform on the **Next.js App Router** paradigm, combining React Server Components (RSC) for zero-client-bundle rendering, Next.js Route Handlers for RESTful API services, Server Actions for transactional mutations, a **Repository Pattern Abstraction Layer**, a dedicated **Nodemailer SMTP Transactional Email Subsystem**, a **Cryptographic OTP Verification Engine**, and **Prisma ORM** interacting with a hosted **PostgreSQL** database.
 
 ```mermaid
 flowchart TD
@@ -11,29 +11,37 @@ flowchart TD
     subgraph NextServer["Next.js App Router Runtime"]
         Middleware["Edge Middleware (Auth & Rate Limit)"]
         RSC["React Server Components (HTML Streaming)"]
-        DesignPreview["Internal Design Preview (/design-system)"]
         Routes["API Route Handlers (/api/*)"]
         Actions["Server Actions (Mutation Layer)"]
         Validation["Zod Validation Layer"]
+        EmailService["Nodemailer Email Service (src/server/email)"]
+        OtpService["Cryptographic OTP Engine (src/server/security)"]
     end
 
     subgraph DataLayer["Persistence & Repository Layer"]
         Repo["Domain Repositories (src/server/repositories)"]
         PrismaClient["Prisma ORM Client Singleton (src/lib/prisma.ts)"]
         Postgres["PostgreSQL Database (Neon / Supabase / RDS)"]
-        StaticFallback["Static Fallback (src/config/site.ts)"]
+        StaticFallback["Static Fallback (src/config/site.ts, src/config/pricing.ts)"]
+    end
+
+    subgraph External["External Infrastructure"]
+        SmtpServer["SMTP Server (Port 587/465 TLS)"]
     end
 
     Client -->|HTTPS / WSS| CDN
     CDN --> NextServer
     NextServer --> Middleware
     Middleware --> RSC
-    Middleware --> DesignPreview
     Middleware --> Routes
     Middleware --> Actions
     Routes --> Validation
     Actions --> Validation
+    Validation --> OtpService
     Validation --> Repo
+    Actions --> EmailService
+    Routes --> EmailService
+    EmailService --> SmtpServer
     Repo --> PrismaClient
     Repo -.->|Offline / Build-Time Fallback| StaticFallback
     PrismaClient --> Postgres
@@ -56,25 +64,39 @@ src/
 │   ├── layout/           # Container, Section, SectionHeading, Header, Footer
 │   ├── sections/         # Feature blocks (scaffolded for future phases)
 │   └── ui/               # Atomic primitives (Button, Card, Form, Badge)
-├── config/               # Static configuration (siteConfig, servicesRegistry, nav)
+├── config/               # Static configuration & catalogs
+│   ├── pricing.ts        # Approved INR Pricing Packages (10 Tiers)
+│   └── site.ts           # siteConfig, servicesRegistry, navigation
 ├── hooks/                # Custom client-side React hooks
 ├── lib/                  # Shared utilities (cn, formatters, prisma singleton)
 │   ├── prisma.ts         # Resilient PrismaClient singleton & health check
 │   └── utils.ts
-├── server/               # Server-only business logic & repositories
-│   └── repositories/     # Type-safe domain repositories
-│       ├── enquiries.repo.ts
-│       ├── services.repo.ts
-│       ├── portfolio.repo.ts
-│       ├── users.repo.ts
-│       ├── settings.repo.ts
-│       └── index.ts      # Barrel export
+├── server/               # Server-only business logic & subsystems
+│   ├── email/            # Reusable Nodemailer + SMTP Transactional Service
+│   │   ├── config.ts     # Zod-validated SMTP environment variables
+│   │   ├── transporter.ts # Singleton connection pool & verifySmtpConnection
+│   │   ├── email.service.ts # sendEmail with bounded retries & delivery tracking
+│   │   └── templates/    # 6 Dark-styled HTML & plain-text email templates
+│   ├── repositories/     # Type-safe domain repositories
+│   │   ├── audit.repo.ts
+│   │   ├── delivery.repo.ts
+│   │   ├── enquiries.repo.ts
+│   │   ├── faq.repo.ts
+│   │   ├── portfolio.repo.ts
+│   │   ├── pricing.repo.ts
+│   │   ├── services.repo.ts
+│   │   ├── settings.repo.ts
+│   │   ├── users.repo.ts
+│   │   └── index.ts      # Barrel export
+│   └── security/         # Security operations & authentication helpers
+│       ├── otp.service.ts # Cryptographic 6-digit OTP engine & rate limiting
+│       └── index.ts
 ├── types/                # Domain types, Prisma re-exports, API envelopes
 └── validations/          # Zod validation schemas (enquiry, auth, content)
 
 prisma/
-├── schema.prisma         # Declarative PostgreSQL schema definitions
-└── seed.ts               # Programmatic seeder (18 services, settings, projects)
+├── schema.prisma         # Declarative PostgreSQL schema definitions (10 models)
+└── seed.ts               # Programmatic seeder (18 services, 10 packages, FAQs, settings)
 
 docs/                     # Architectural, system & operational documentation
 tests/                    # Vitest unit/component tests & Playwright E2E suites
@@ -82,9 +104,9 @@ tests/                    # Vitest unit/component tests & Playwright E2E suites
 
 ---
 
-## 3. Data Access & Repository Layer (Phase 3 Additions)
+## 3. Data Access & Repository Layer
 
-- **Decoupling from Direct ORM Calls:** Route Handlers and Server Components never query `prisma` directly. They import domain repositories (`EnquiriesRepo`, `ServicesRepo`, `PortfolioRepo`, `UsersRepo`, `SettingsRepo`).
-- **Offline & Build-Time Resilience:** Next.js static page generation (`next build`) runs deterministically even without live PostgreSQL credentials. Repositories catch initialization exceptions and seamlessly supply typed static fallback data.
-- **Connection Pooling:** Datasource supports pooled connection strings via `DATABASE_URL` (PgBouncer/Prisma Accelerate) alongside direct migration connections via `DIRECT_URL`.
-- **Seeding Engine:** `prisma/seed.ts` upserts all 18 business services, initial portfolio projects, and default system settings.
+- **Decoupling from Direct ORM Calls:** Route Handlers and Server Actions never invoke Prisma directly. All access flows through domain repositories.
+- **Offline & Build-Time Resilience:** Next.js static page generation runs deterministically without live PostgreSQL. Read queries catch connection errors and supply structured fallbacks.
+- **Strict Write Error Guarantees:** Database write failures strictly throw observable, descriptive errors without leaking connection credentials.
+- **Auditing & Delivery Logs:** Every transactional email and critical administrative action is recorded via `EmailDelivery` and `AuditLog` models.

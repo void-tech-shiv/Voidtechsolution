@@ -16,7 +16,8 @@ function mapStaticToServiceModel(def: (typeof servicesRegistry)[number], index: 
     category: def.category as ServiceCategory,
     deliverables: def.deliverables,
     technologies: def.technologies,
-    startingPriceUsd: def.startingPriceUsd || null,
+    startingPriceInr: def.startingPriceInr || null,
+    currency: def.currency || "INR",
     isFeatured: def.isFeatured,
     isActive: true,
     orderIndex: index + 1,
@@ -112,32 +113,51 @@ export async function getFeaturedServices(): Promise<Service[]> {
 }
 
 /**
- * Creates a new service offering in the database.
+ * Creates a new service offering in the database (administrative write).
+ * Writes strictly throw descriptive errors on failure without leaking credentials.
  */
 export async function createService(data: Prisma.ServiceCreateInput): Promise<Service> {
-  return await prisma.service.create({
-    data,
-  });
+  try {
+    return await prisma.service.create({
+      data,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("[services.repo] Write operation failed:", message);
+    throw new Error("Failed to create service: Database write operation failed.");
+  }
 }
 
 /**
- * Updates an existing service by ID.
+ * Updates an existing service by ID (administrative write).
  */
 export async function updateService(
   id: string,
   data: Prisma.ServiceUpdateInput
 ): Promise<Service> {
-  return await prisma.service.update({
-    where: { id },
-    data,
-  });
+  try {
+    return await prisma.service.update({
+      where: { id },
+      data,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("[services.repo] Update operation failed:", message);
+    throw new Error(`Failed to update service '${id}': Database write operation failed.`);
+  }
 }
 
 /**
- * Deletes a service by ID.
+ * Deletes a service by ID (administrative write).
  */
 export async function deleteService(id: string): Promise<Service> {
-  return await prisma.service.delete({
-    where: { id },
-  });
+  try {
+    return await prisma.service.delete({
+      where: { id },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("[services.repo] Delete operation failed:", message);
+    throw new Error(`Failed to delete service '${id}': Database write operation failed.`);
+  }
 }
