@@ -15,7 +15,8 @@
     "test:e2e": "playwright test",
     "prisma:generate": "prisma generate",
     "db:validate": "prisma validate",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "verify:env": "tsx scripts/verify-live-env.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
