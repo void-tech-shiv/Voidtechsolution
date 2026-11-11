@@ -131,12 +131,35 @@ In the event of database connectivity interruption (such as during cold starts o
 - **XSS Limits & Clarification:** `HttpOnly` prevents client-side JavaScript (`document.cookie`) from reading the raw session token. However, `HttpOnly` does not prevent request-hijacking attacks if an XSS vulnerability exists. Therefore, deep defenses include context-aware output encoding (React JSX automatic HTML escaping), strict Zod schema validation on all inputs, strict Content Security Policy (CSP), and independent server-side authorization checks on all actions.
 
 ### C. CSRF & Origin Validation (`src/server/security/origin.ts`)
-- `SameSite=Lax` is reinforced with explicit server-side Origin verification.
-- All state-changing administrative operations are restricted strictly to HTTP POST Server Actions. No mutations are permitted via GET endpoints.
-- `validateRequestOrigin` verifies incoming `Origin` (with `Referer` fallback) against the authoritative request `Host`.
+- `SameSite=Lax` is reinforced with explicit server-side Origin verification for all state-changing mutations (Server Actions, POST requests).
+- **Authoritative Trusted Host Allowlist:** `validateRequestOrigin` resolves trusted hostnames strictly from configuration (`NEXT_PUBLIC_SITE_URL`, `APP_URL`, `ALLOWED_HOSTS`) with local development defaults (`localhost:3000`, `127.0.0.1:3000`).
+- **Host Header Injection Defense:** The incoming host header is matched against the authoritative allowlist. An attacker cannot bypass CSRF defense by spoofing both `Host` and `Origin` headers to an arbitrary attacker-controlled domain.
+- **Reverse Proxy Boundaries:** The `x-forwarded-host` header is ONLY evaluated when `trustProxy` is explicitly enabled (e.g. `TRUST_PROXY=true` behind a verified reverse proxy like Cloudflare, AWS ALB, or Vercel). In direct-to-origin or unconfigured setups, client-supplied `x-forwarded-host` headers are completely ignored, falling back safely to the direct `Host` header.
+- **Strict Origin/Referer Requirement:** State-changing mutations without an `Origin` or `Referer` header are rejected. Cross-origin origins are strictly blocked.
 
-### D. Session Rotation & Revocation Lifecycle
-- **Rotation:** Session tokens are rotated immediately upon successful authentication.
-- **Revocation on Logout:** Session row is deleted from `admin_sessions` and client cookie is cleared.
-- **Global Revocation:** Deactivating an account or resetting credentials revokes all active sessions for that user (`DELETE FROM admin_sessions WHERE userId = ?`).
+### D. Session Rotation, Revocation & Write Amplification Defense (`src/server/security/session.ts`)
+- **Raw Token Isolation:** 256-bit cryptographically secure raw tokens NEVER enter the database. Only deterministic SHA-256 hashes (`sessionToken`) are persisted in PostgreSQL.
+- **Client & Log Sanitization:** Session tokens and secrets never enter console logs, audit logs, or client-side JSON response payloads.
+- **Database Write Amplification Protection:** To avoid saturating PostgreSQL connection pools (PgBouncer, Neon) during continuous administrative activity, session `lastActiveAt` database updates are throttled via `TOUCH_INTERVAL_MS = 5 * 60 * 1000` (5 minutes). A user performing dozens of actions per minute triggers at most one write per 5 minutes, reducing database write volume by over 90% while strictly enforcing the 30-minute idle timeout window.
+- **Session Rotation:** Session tokens are rotated immediately upon successful login.
+- **Revocation on Logout:** Calling `logoutAction` / `revokeAdminSession` deletes the session row from `admin_sessions` and clears the cookie.
+- **Session Revocation on Privilege & Credential Changes:**
+  - Password updates (`updateAdminPassword`) immediately purge all active sessions for the user (`DELETE FROM admin_sessions WHERE userId = ?`), preventing hijacked cookies from remaining active.
+  - Role modifications (`updateAdminRole`) immediately purge all active sessions for the user, forcing re-authentication with updated privileges.
+  - Account deactivations (`setAdminActiveStatus(false)`) purge all active sessions in PostgreSQL, and any lingering session attempt is immediately blocked by `validateAdminSession` with `USER_INACTIVE`.
+
+### E. Rate Limiting Assessment & Production Architecture (`src/server/security/rate-limiter.ts`)
+- **Process-Local Memory:** The sliding-window rate limiter is stored in Node.js process memory (`Map<string, RateLimitRecord>`).
+- **Serverless / Multi-Instance Limitation:** In multi-instance or serverless deployments (such as Vercel Edge / Lambda functions or multi-container clusters), this memory is NOT shared across distributed instances.
+- **Process Lifetime:** Counters reset whenever a process restarts, cold-starts, or scales.
+- **Production Requirement:** While fully sufficient for local development, CI test runners, and single-container execution, process-local rate limiting is **NOT** sufficient as the sole brute-force defense in multi-instance production. Production multi-instance deployments require a shared distributed store (such as Upstash Redis or Vercel KV) or edge-tier infrastructure rate limiting (Cloudflare Rate Limiting, AWS WAF).
+
+---
+
+## 10. Approved Administrative Role-Based Access Control (RBAC)
+The approved administrative access model is restricted strictly to three defined roles:
+1. `SUPER_ADMIN`: Unrestricted platform governance, role assignment, admin management, lead deletion, and audit log inspection.
+2. `ADMIN`: Full operational capabilities (lead status updates, service catalog management, pricing management, case study publishing, site settings). No lead deletion or admin permission modification.
+3. `EDITOR`: Content editing privileges (portfolio updates, FAQ management, service copywriting). Read-only access to inbound enquiries; zero administrative settings or user management permissions.
+*No additional or unapproved roles (such as SUPPORT or VIEWER) exist within the system.*
 

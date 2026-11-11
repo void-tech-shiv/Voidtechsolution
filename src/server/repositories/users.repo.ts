@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { AdminUser, UserRole, Prisma } from "@prisma/client";
+import { revokeAllUserSessions } from "@/server/security/session";
 
 /**
  * Retrieves an administrator user by email (case-insensitive).
@@ -57,6 +58,56 @@ export async function updateLastLogin(id: string): Promise<AdminUser> {
 }
 
 /**
+ * Updates an admin user's password and revokes all active sessions.
+ * Security: Prevents compromised accounts from retaining active sessions after a password change.
+ */
+export async function updateAdminPassword(
+  userId: string,
+  newPasswordHash: string
+): Promise<AdminUser> {
+  const updated = await prisma.adminUser.update({
+    where: { id: userId },
+    data: { passwordHash: newPasswordHash },
+  });
+  await revokeAllUserSessions(userId);
+  return updated;
+}
+
+/**
+ * Updates an admin user's role and revokes all active sessions.
+ * Security: Guarantees that privilege elevation or demotion takes effect immediately.
+ */
+export async function updateAdminRole(
+  userId: string,
+  role: UserRole
+): Promise<AdminUser> {
+  const updated = await prisma.adminUser.update({
+    where: { id: userId },
+    data: { role },
+  });
+  await revokeAllUserSessions(userId);
+  return updated;
+}
+
+/**
+ * Updates an admin user's active status.
+ * Security: When deactivated, all active sessions are immediately revoked in PostgreSQL.
+ */
+export async function setAdminActiveStatus(
+  userId: string,
+  isActive: boolean
+): Promise<AdminUser> {
+  const updated = await prisma.adminUser.update({
+    where: { id: userId },
+    data: { isActive },
+  });
+  if (!isActive) {
+    await revokeAllUserSessions(userId);
+  }
+  return updated;
+}
+
+/**
  * Updates an admin user's details.
  */
 export async function updateAdminUser(
@@ -87,4 +138,3 @@ export async function getAllAdmins(): Promise<Omit<AdminUser, "passwordHash">[]>
     orderBy: { createdAt: "desc" },
   });
 }
-

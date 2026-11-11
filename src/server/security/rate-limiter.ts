@@ -5,7 +5,29 @@ interface RateLimitRecord {
   resetAt: number;
 }
 
-// In-memory token bucket / sliding counter
+/**
+ * VOIDTECH SOLUTION — Sliding Window Rate Limiter (Process-Local)
+ * 
+ * ARCHITECTURE & PRODUCTION ASSESSMENT:
+ * -----------------------------------------------------------------------------
+ * 1. Process-Local Storage:
+ *    The `rateLimitMap` and `duplicateMap` are held in Node.js process memory.
+ * 2. Serverless / Multi-Instance Limitation:
+ *    In multi-instance production environments (e.g., Vercel serverless functions,
+ *    AWS Lambda, multi-container ECS/Kubernetes), this state is NOT shared across
+ *    different running instances or regions.
+ * 3. Process Lifetime & Volatility:
+ *    The in-memory counters reset whenever the process restarts, scales down,
+ *    or cold-starts a new serverless container.
+ * 4. Production Security Requirement:
+ *    While acceptable for local development, CI test suites, and single-instance
+ *    deployments, this process-local limiter is NOT sufficient as the sole
+ *    production brute-force defense. Production deployments require a shared
+ *    distributed store (e.g., Upstash Redis, Vercel KV, Redis cluster) or
+ *    infrastructure-level Edge WAF rate-limiting (e.g., Cloudflare Rate Limiting,
+ *    AWS WAF) to throttle distributed dictionary attacks across serverless workers.
+ * -----------------------------------------------------------------------------
+ */
 const rateLimitMap = new Map<string, RateLimitRecord>();
 
 // Duplicate submission fingerprints (hash -> expiry timestamp)
@@ -78,8 +100,7 @@ export function isDuplicateSubmission(fingerprint: string, cooldownMs = 60 * 100
 /**
  * Cleanup helper for unit tests
  */
-export function resetRateLimiter(): void {
+export function resetRateLimits(): void {
   rateLimitMap.clear();
   duplicateMap.clear();
 }
-

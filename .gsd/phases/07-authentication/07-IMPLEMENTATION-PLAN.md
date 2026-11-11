@@ -15,14 +15,15 @@ Phase 7 will be implemented in strict sequential milestones. Each milestone defi
 
 ## 2. Milestone Execution Roadmap
 
-### Milestone 7.1 — Admin Authentication & Validation Layer
+### Milestone 7.1 — Admin Authentication & Validation Layer [COMPLETED & VERIFIED]
 * **Objective:** Implement server-side credentials authentication with Zod validation, scrypt verification, rate limiting, and generic error handling.
 * **Deliverables:**
-  * `src/validations/auth.ts`: Zod validation schemas for login and password reset.
-  * `src/server/actions/auth.actions.ts`: `loginAction` Server Action.
-  * Integration with `src/server/repositories/users.repo.ts` (`getAdminByEmail`, `updateLastLogin`).
-  * Rate limiting integration: 5 failed attempts per 15 minutes per IP/email.
-  * Audit logging: Immutable records for `AUTH_LOGIN_SUCCESS` and `AUTH_LOGIN_FAILED`.
+  * `src/validations/auth.ts`: Zod validation schemas for login and password reset with strict length bounds.
+  * `src/server/actions/auth.actions.ts`: `loginAction`, `logoutAction`, `getCurrentAdmin`.
+  * `src/server/security/origin.ts`: Hardened `validateRequestOrigin` with config allowlist, anti-host injection, and proxy boundaries.
+  * Integration with `src/server/repositories/users.repo.ts` (`getAdminByEmail`, `updateLastLogin`, `updateAdminPassword`, `updateAdminRole`, `setAdminActiveStatus`).
+  * Rate limiting integration: 5 failed attempts per 15 minutes per IP/email (process-local for dev/tests; Redis/KV assessed for serverless production).
+  * Audit logging: Immutable records for `AUTH_LOGIN_SUCCESS`, `AUTH_LOGIN_FAILED`, and `AUTH_LOGOUT`.
 * **Security Criteria:**
   * Constant-time scrypt password comparison.
   * Zero account enumeration (identical generic message for unknown email and wrong password).
@@ -30,19 +31,19 @@ Phase 7 will be implemented in strict sequential milestones. Each milestone defi
 
 ---
 
-### Milestone 7.2 — Secure Database Session Engine
+### Milestone 7.2 — Secure Database Session Engine [COMPLETED & VERIFIED]
 * **Objective:** Design and implement revocable, database-backed session management.
 * **Deliverables:**
   * Prisma schema update: Add `AdminSession` model with cascade delete to `AdminUser`.
   * Staged incremental migration SQL: `prisma/migrations/20261112000001_add_admin_sessions/migration.sql` and `down.sql`.
   * `src/server/security/session.ts`:
-    * `generateSessionToken()`: 32 bytes cryptographically secure random token.
-    * `hashSessionToken()`: SHA-256 token hashing for database storage.
+    * `generateRawSessionToken()`: 32 bytes (256-bit) cryptographically secure random token.
+    * `hashSessionToken()`: Deterministic SHA-256 token hashing for database storage (raw tokens never enter database).
     * `signSessionCookie()` & `verifySessionCookie()`: Web Crypto API (HMAC-SHA256) for Edge compatibility.
-    * `createSession()`: Writes to `AdminSession` in PostgreSQL.
-    * `validateSession()`: Validates token against database, checks expiration, updates `lastActiveAt`.
-    * `revokeSession()`: Deletes session token from database.
-    * `revokeAllUserSessions()`: Deletes all active sessions for a user upon security events.
+    * `createAdminSession()`: Writes to `AdminSession` in PostgreSQL.
+    * `validateAdminSession()`: Authoritative validation against PostgreSQL, checks 8-hour absolute expiry, 30-minute idle timeout, user active status, and throttles `lastActiveAt` touches (`TOUCH_INTERVAL_MS = 5 * 60 * 1000`) for database write amplification protection.
+    * `revokeAdminSession()`: Deletes session token from database upon logout.
+    * `revokeAllUserSessions()`: Deletes all active sessions for a user upon password/role change or deactivation.
   * Cookie options: `name: "vts_session"`, `httpOnly: true`, `secure: production`, `sameSite: "lax"`, `path: "/"`, `maxAge: 28800` (8 hours).
 
 ---

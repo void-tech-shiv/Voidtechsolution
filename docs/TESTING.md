@@ -145,3 +145,37 @@ npm run build
   16. **Non-Blocking Email Notifications:** Asynchronously invokes `dispatchEnquiryNotifications()`.
   17. **API Route Status 201:** `POST /api/enquiries` returns created status and enquiry ID.
   18. **API Route Status 400:** `POST /api/enquiries` returns structured validation error envelope.
+
+---
+
+## 7. Phase 7 Test Suite — Authentication, Session Engine & CSRF Security
+
+- **Test File:** `tests/unit/auth.test.ts` (35 tests)
+- **Total Project Tests:** 171 passing across 10 test suites (100% pass rate).
+- **Coverage Areas:**
+  1. **Zod Input Validation:** Valid credentials parsing, email format checks, min 8-character password enforcement, and max 128-character cap to mitigate algorithmic scrypt/bcrypt CPU DoS attacks.
+  2. **Scrypt Password Verification:** Formatted `salt:hash` generation with 16-byte random salt, constant-time `crypto.timingSafeEqual` comparison, incorrect password rejection, and malformed hash string tolerance.
+  3. **High-Entropy Token Generation:** Cryptographically secure 256-bit random session tokens (`generateRawSessionToken`).
+  4. **SHA-256 Token Storage Security:** Deterministic SHA-256 hashing (`hashSessionToken`) ensuring raw tokens are never stored in PostgreSQL.
+  5. **Web Crypto Dual-Layer Cookie Signing:** HMAC-SHA256 signing (`signSessionCookie`) and verification (`verifySessionCookie`) via Web Crypto API (`crypto.subtle`), payload tampering detection, incorrect secret rejection, and cryptographic timestamp expiration.
+  6. **Authoritative Server-Side Validation:** Validates active session against PostgreSQL, enforces 8-hour absolute maximum lifetime, enforces 30-minute server-side idle timeout (`lastActiveAt`), and checks administrator active status (`user.isActive`).
+  7. **CSRF & Origin Security:**
+     - Accepts legitimate same-origin requests in development (`localhost:3000`) and production (`voidtechsolution.com`).
+     - Rejects forged `Origin` headers from unauthorized domains.
+     - Rejects missing `Origin` and `Referer` headers on state-changing operations.
+     - Rejects cross-origin Server Action requests.
+     - Rejects forged `Host` headers where an attacker crafts matching `Host` and `Origin` (host injection defense).
+     - Rejects untrusted `x-forwarded-host` headers when reverse proxy trust is unconfigured or disabled.
+     - Accepts properly configured trusted proxy arrangements with validated application hostnames.
+     - Rejects untrusted forwarded hostnames even when proxy trust is enabled.
+     - Accepts legitimate `Referer` fallback when browser omits `Origin`.
+  8. **Session Invalidation & Revocation Lifecycle:**
+     - Guarantees raw tokens never enter database records.
+     - Rejects nonexistent or revoked database sessions (`SESSION_NOT_FOUND`).
+     - Rejects absolute lifetime expiration (`ABSOLUTE_TIMEOUT`) and purges database record.
+     - Revokes database session upon logout (`revokeAdminSession`).
+     - Revokes all active sessions upon password modification (`updateAdminPassword`).
+     - Revokes all active sessions upon role modification (`updateAdminRole`).
+     - Revokes all active sessions upon account deactivation (`setAdminActiveStatus`).
+     - Throttles session `lastActiveAt` touch to prevent database write amplification within `TOUCH_INTERVAL_MS` (5 minutes).
+  9. **Sliding-Window Rate Limiting:** Verifies initial attempt allowances and throttles upon 5 failed attempts with active cooldown window.

@@ -14,7 +14,9 @@ import type { AdminUser, AdminSession } from "@prisma/client";
 export const SESSION_COOKIE_NAME = "vts_session";
 export const ABSOLUTE_SESSION_LIFETIME_MS = 8 * 60 * 60 * 1000; // 8 hours
 export const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
-export const TOUCH_INTERVAL_MS = 60 * 1000; // 1 minute throttle for DB touch
+// Write Amplification Protection:
+// Throttled to at most once per 5 minutes to prevent saturating PostgreSQL / PgBouncer connection pools
+export const TOUCH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes throttle for DB touch
 
 /**
  * Generates a 256-bit cryptographically secure pseudorandom opaque session token.
@@ -201,7 +203,8 @@ export async function validateAdminSession(cookieValue: string): Promise<Session
     return { isValid: false, reason: "USER_INACTIVE" };
   }
 
-  // Idle touch: update lastActiveAt if more than 1 minute has elapsed
+  // Idle touch: update lastActiveAt if more than TOUCH_INTERVAL_MS has elapsed
+  // Write Amplification Protection: Throttled to at most once per 5 minutes
   if (idleElapsed > TOUCH_INTERVAL_MS) {
     try {
       await prisma.adminSession.update({
@@ -258,3 +261,4 @@ export async function rotateAdminSession(
   await revokeAdminSession(oldCookieValue);
   return await createAdminSession(userId, metadata);
 }
+

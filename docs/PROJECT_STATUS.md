@@ -16,7 +16,7 @@
 | **Phase 4: Home & Services** | M3 | Hero, Brand Intro, 18-Service Catalog, Why Us, 7-Stage Process, Concept Lab, INR Pricing Preview, FAQ Accordion, Closing CTA | ✅ Complete | Verified 96 tests, clean build |
 | **Phase 5: About & Portfolio**| M3 | Agency story, engineering approach, 6 values, tech matrix, interactive portfolio discovery, dynamic case studies | ✅ Complete | Verified 112 tests, clean build |
 | **Phase 6: Pricing & Contact**| M4 | 10 approved INR packages, interactive cost calculator, 3-step lead enquiry intake, Nodemailer transactional mailer, rate limiting & anti-spam | ✅ Complete | Verified 130 tests (9 suites), clean build |
-| **Phase 7: Authentication** | M5 | Admin login, sessions, CSRF, middleware security | ⏸️ Pending | Strictly awaiting user authorization |
+| **Phase 7: Authentication** | M5 | Admin login, dual-layer sessions, CSRF & Origin defense, RBAC foundation | ⏸️ In Progress | Milestones 7.1 & 7.2 Completed & Verified (171 tests, 10 suites) |
 | **Phase 8: Admin Shell** | M5 | Admin layout, navigation, analytics overview | ⬜ Pending | Architecture specified |
 | **Phase 9: Enquiry Pipeline**| M6 | Lead triage Kanban, status management, email triggers | ⬜ Pending | Data model specified |
 | **Phase 10: Admin CMS** | M6 | Portfolio, Service, and Pricing administration | ⬜ Pending | Repositories implemented |
@@ -78,7 +78,32 @@
 
 ---
 
-## 3. Strict Stop Boundary Enforced
-- **Zero Real Remote Migrations:** Documented in `.gsd/phases/06-pricing-contact/MIGRATION_PROPOSAL.md`. Remote PostgreSQL database untouched.
+## 3. Phase 7: Administrative Authentication & Session Engine (Milestones 7.1 & 7.2)
+
+### ✅ Completed & Empirically Verified
+- [x] **Strict Three-Role Model:** Preserved exactly `SUPER_ADMIN`, `ADMIN`, `EDITOR` per owner requirements. Zero unapproved roles (`SUPPORT`, `VIEWER`) in schemas or codebase.
+- [x] **Sliding-Window Rate Limiting Assessment:** Documented process-local nature in `src/server/security/rate-limiter.ts` and `docs/SECURITY.md`, highlighting production shared-store requirement (Redis/KV).
+- [x] **Hardened Request Origin & CSRF Defense (`src/server/security/origin.ts`):**
+  - Authoritative config allowlist derived from `NEXT_PUBLIC_SITE_URL`, `APP_URL`, `ALLOWED_HOSTS`.
+  - Host Header Injection defense blocking matching forged Host + Origin combinations.
+  - Proxy trust boundaries strictly isolating `x-forwarded-host` unless `trustProxy` is explicitly enabled.
+- [x] **Dual-Layer Database Session Engine (`src/server/security/session.ts`):**
+  - 256-bit cryptographically secure raw tokens (`generateRawSessionToken`).
+  - Stored strictly as SHA-256 hashes in PostgreSQL `admin_sessions` (raw tokens never persisted).
+  - Web Crypto HMAC-SHA256 cookie signing (`signSessionCookie`, `verifySessionCookie`).
+  - Absolute 8-hour session lifetime and server-side 30-minute idle timeout.
+  - Write amplification defense: `TOUCH_INTERVAL_MS = 5 * 60 * 1000` (5 minutes) throttles session touches to protect PostgreSQL connection poolers.
+  - Automatic session invalidation: Password updates, role updates, and account deactivations call `revokeAllUserSessions(userId)` immediately.
+- [x] **Empirical Quality Gates:**
+  - `tsc --noEmit`: 0 TypeScript compiler errors.
+  - `next lint`: 0 ESLint warnings or errors.
+  - `vitest run`: 10 test suites passed, 171/171 unit tests passed (100%).
+  - `next build`: Next.js production build succeeded with clean static generation of 13 routes.
+
+---
+
+## 4. Strict Stop Boundary Enforced
+- **Zero Real Remote Migrations:** Local migration script staged (`20261112000001_add_admin_sessions`). Remote PostgreSQL database untouched.
+- **Zero Admin Accounts Created:** No production administrative credentials generated or stored.
 - **Zero Real Emails:** Real SMTP mocked in automated verification test suites.
-- **Strict Stop Condition:** Phase 6 complete. Strictly awaiting user approval before starting Phase 7.
+- **Strict Stop Condition:** Stopped after Milestone 7.1 & 7.2 Security Closure Review. Strictly awaiting user approval before starting Milestone 7.3.
