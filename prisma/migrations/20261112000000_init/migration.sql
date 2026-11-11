@@ -275,3 +275,4 @@ CREATE INDEX "email_deliveries_recipient_idx" ON "email_deliveries"("recipient")
 CREATE INDEX "email_deliveries_status_idx" ON "email_deliveries"("status");
 CREATE INDEX "email_deliveries_template_idx" ON "email_deliveries"("template");
 CREATE INDEX "email_deliveries_createdAt_idx" ON "email_deliveries"("createdAt");
+
