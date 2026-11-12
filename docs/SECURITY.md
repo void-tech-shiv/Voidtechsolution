@@ -246,7 +246,12 @@ The approved administrative access model is restricted strictly to three defined
 
 ### A. Controlled Bootstrap CLI Architecture (`scripts/create-admin.ts`)
 - **Explicit Operator Action Required:** The initial master account can only be created by manually running `npm run admin:create`. No automated execution during installation, container builds, or database seeding.
-- **Hidden Terminal Input:** Passwords and confirmations are typed invisibly in raw terminal mode (`stdin.setRawMode(true)`), suppressing all terminal echoing and eliminating shell history credential leakage.
+- **Hidden Terminal Input & Strict Interactive TTY Enforcement:**
+  - Passwords and confirmations are typed invisibly using raw terminal mode (`process.stdin.setRawMode(true)`), suppressing all character echoing.
+  - **Strict TTY Requirement:** Hidden input strictly requires an interactive TTY terminal. If stdin is piped, redirected, or running in a headless non-TTY environment, the script aborts immediately with exit code 1 (`NonInteractiveTerminalError`) before prompting for credentials.
+  - **Zero Visible Fallback:** Visible `readline` input is **never** used as a fallback for passwords.
+  - **Safe Terminal Mode Restoration:** Terminal raw mode and echo settings are reliably restored upon Enter, Backspace, Ctrl+C (`\u0003`), unhandled errors, and process termination via a registered exit handler and `finally` semantics.
+  - **Zero Memory or Environment Exposure:** Passwords are not accepted via CLI arguments or environment variables. Credentials in memory are zeroed immediately after hash derivation.
 - **Strict Master Password Standard:** Enforces minimum 12 characters with mandatory uppercase, lowercase, digit, and symbol character sets (`bootstrapInputSchema`).
 - **Cryptographic Key Derivation:** Uses Node.js native `crypto.scryptSync` with a unique 16-byte random salt and 64-byte derived key.
 - **Advisory Transaction Lock Serialization:**
@@ -256,12 +261,14 @@ The approved administrative access model is restricted strictly to three defined
 - **Sanitized Failure Reporting:** Connection errors strip database URLs and passwords (`[REDACTED_CREDENTIALS]`), ensuring operator logs never leak credentials.
 
 ### B. Centralized Append-Only Audit Logging Engine (`src/server/security/audit.ts`)
-- **Immutability & Zero Mutation Interfaces:** The audit engine exposes strictly creation (`recordAuditEvent`) and read-only query methods (`getAuditHistory`, `getAuditLogById`). Zero update, edit, truncate, or delete functions exist.
-- **Decoupled Relational Schema:** The `AuditLog` Prisma model stores scalar strings for `actorId` and `actorEmail` without cascading foreign keys (`onDelete: Cascade`), guaranteeing audit records persist permanently even if an administrator account is deleted.
+- **Audit Log Integrity Taxonomy & Realistic Security Boundaries:**
+  - **1. Application-Level Append-Only Enforcement:** The audit engine exposes strictly creation (`recordAuditEvent`, `createAuditLog`) and read-only query methods (`getAuditHistory`, `getAuditLogById`). Zero update, edit, truncate, or delete functions exist in the application runtime.
+  - **2. Database-Level Protections & Historical Record Preservation:** The `AuditLog` Prisma model stores scalar strings for `actorId` and `actorEmail` without cascading foreign keys (`onDelete: Cascade`), guaranteeing audit records persist permanently even if an administrator account is deleted. In production, database roles should revoke destructive privileges: `REVOKE UPDATE, DELETE, TRUNCATE ON TABLE "audit_logs" FROM app_role;`.
+  - **3. Protection Against Unrestricted Database Administrators:** Application-level and table-level controls protect against application vulnerabilities and compromised web sessions. However, an unrestricted database administrator (PostgreSQL superuser, Neon console administrator, or cloud account owner) with direct SQL access can bypass table rules. Therefore, absolute tamper-proofing is **not** claimed at the application or local database layer alone. True high-assurance audit immutability in production requires external forward-secure logging (e.g. WORM storage, AWS S3 Object Lock, external syslog aggregation to Datadog/CloudWatch, or cryptographic hash-chained ledgers).
 - **Automated Credential Redaction (`sanitizeAuditDetails`):**
   - All audit details payloads undergo recursive sanitization before insertion.
   - Sensitive keys (`password`, `passwordHash`, `rawToken`, `sessionToken`, `secret`, `cookie`, `otp`, `databaseUrl`, etc.) are automatically scrubbed and replaced with `"[REDACTED]"`.
-  - Recursion depth is capped to defend against circular or oversized payload DoS.
+  - Recursion depth is capped at 6 levels to defend against circular or oversized payload DoS.
 - **Transactional Consistency:** `recordAuditEvent` accepts an optional `Prisma.TransactionClient`, enabling atomic state mutations where administrative actions and their audit logs commit or roll back together.
 
 

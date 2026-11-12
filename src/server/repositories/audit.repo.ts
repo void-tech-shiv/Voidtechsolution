@@ -15,7 +15,14 @@ export interface CreateAuditLogParams {
 
 /**
  * Creates an immutable audit log entry.
- * Sanitizes details to ensure credentials/tokens are never persisted unredacted.
+ * 
+ * Security Invariants & Integrity Boundaries:
+ * - Application-level: Append-only write interface. No update or delete operations are exposed.
+ * - Credential protection: Automatic recursive scrubbing redacts passwords, tokens, and secrets.
+ * - Transaction support: Accepts optional Prisma.TransactionClient for atomic rollbacks.
+ * - Historical preservation: Stores scalar actorId/actorEmail without cascading foreign keys,
+ *   ensuring records remain intact even if user records are deleted.
+ * - Tamper-proofing reality: Does not protect against unrestricted database superusers with direct SQL access.
  */
 export async function createAuditLog(
   params: CreateAuditLogParams,

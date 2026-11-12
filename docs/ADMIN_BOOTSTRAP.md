@@ -119,11 +119,13 @@ You can now sign in at:
 
 ## 5. Password Security & Input Guidelines
 
-### Hidden Terminal Input
-The CLI uses raw terminal input mode to ensure passwords are typed **invisibly**:
-* No characters or asterisks (`*`) are echoed to the console screen.
-* Passwords are never written to shell history files (`.bash_history`, PowerShell PSReadLine).
-* Passwords are not accepted as CLI arguments (`--password`) or environment variables, eliminating `/proc` inspection risks.
+### Hidden Terminal Input & Strict TTY Enforcement
+The CLI uses raw terminal input mode (`process.stdin.setRawMode(true)`) to ensure master passwords are typed **invisibly**:
+* **Strict Interactive TTY Requirement:** Hidden password entry strictly requires a supported interactive TTY terminal. If hidden input cannot be guaranteed (e.g., stdin is piped, redirected from a file, or running in a headless non-TTY CI environment), the CLI immediately aborts with exit code 1 (`NonInteractiveTerminalError`) **before** accepting any credentials.
+* **Zero Visible Fallback:** Visible `readline` input is **never** used as a fallback for password entry.
+* **Terminal Mode Restoration:** Terminal raw mode and echo settings are reliably restored upon Enter, Backspace, Ctrl+C (`\u0003`), unhandled exceptions, and process termination via a registered exit handler and `finally` semantics.
+* **No Screen or History Leaks:** No characters or asterisks (`*`) are echoed to the console screen. Passwords are never written to shell history files (`.bash_history`, PowerShell PSReadLine).
+* **Zero Process & Environment Exposure:** Passwords are not accepted as CLI arguments (`--password`) or environment variables, eliminating `/proc` inspection risks and process environment leaks. Memory references are cleared immediately after hash derivation.
 
 ### Master Password Complexity Requirements
 The Zod validation schema (`bootstrapInputSchema`) strictly requires:
@@ -189,6 +191,22 @@ flowchart TD
 4. **Standard Creation Ceiling:** Active `SUPER_ADMIN` accounts can only provision `ADMIN` and `EDITOR` roles. Standard user creation unconditionally rejects assigning `SUPER_ADMIN`.
 5. **Master Account Immutability:** Neither the `SUPER_ADMIN` nor any other role can delete, demote, or deactivate the master account (`SoleSuperAdminProtectionError`).
 
+### Audit Log Integrity Taxonomy & Historical Record Preservation
+The audit engine (`src/server/security/audit.ts`) operates under a strict three-tier integrity model:
+
+1. **Application-Level Append-Only Enforcement:**
+   - The application runtime exports exclusively append (`recordAuditEvent`, `createAuditLog`) and query (`getAuditHistory`, `getAuditLogById`) methods. Zero update, delete, or drop methods exist in code.
+   - Recursive credential scrubbing (`sanitizeAuditDetails`) with a 6-level recursion depth cap prevents sensitive credentials from ever being stored in log payloads.
+2. **Database-Level Protections & Historical Record Preservation:**
+   - The PostgreSQL schema decouples `AuditLog` from `AdminUser`: `actorId` and `actorEmail` are scalar strings without cascading foreign key constraints (`onDelete: Cascade`).
+   - When an administrator account is deactivated or deleted, **all historical audit records referencing that administrator remain 100% intact**.
+   - In production database administration, engine-level immutability is reinforced by revoking destructive permissions from the application database role:
+     `REVOKE UPDATE, DELETE, TRUNCATE ON TABLE "audit_logs" FROM voidtech_app_role;`
+3. **Protection Against Unrestricted Database Administrators:**
+   - Application-level and table-level permissions protect against software defects and compromised web sessions.
+   - However, an unrestricted database administrator (e.g., PostgreSQL superuser, Neon console administrator, or cloud account owner) with direct SQL access can bypass table rules and alter records directly.
+   - Therefore, absolute tamper-proofing is **not** claimed at the application or database layer alone. True high-assurance tamper-evident immutability requires external forward-secure logging (e.g., WORM storage, AWS S3 Object Lock, external syslog forwarding to Datadog/CloudWatch, or cryptographic ledger chaining).
+
 ---
 
 ## 8. Provisioning Subsequent ADMIN and EDITOR Accounts
@@ -216,6 +234,7 @@ Once the `SUPER_ADMIN` account exists, all operational team accounts must be cre
 | **Confirmation Mismatch** | `Password confirmation does not match the entered password` | Re-run `npm run admin:create` and re-enter both password fields carefully. |
 | **Transaction Rollback** | `Audit logging failure: Operation aborted...` | PostgreSQL rejected the atomic audit write. The account creation was 100% rolled back. Verify disk space / connection pool and retry. |
 | **User Abort (Ctrl+C)** | `[PROVISIONING ABORTED BY USER]` | The operation was cleanly cancelled before any database transaction commenced. No partial records were created. |
+| **Non-TTY Environment** | `[SECURITY ERROR] Interactive TTY required for administrator provisioning` | Hidden input cannot be guaranteed over piped stdin or redirected input. Run interactively from an interactive terminal (Windows Terminal, PowerShell, cmd.exe, or bash). |
 
 ---
 

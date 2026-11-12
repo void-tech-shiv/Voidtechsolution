@@ -260,5 +260,28 @@ describe("Milestone 7.5: Centralized Audit Logging Engine", () => {
         }
       }
     });
+
+    it("preserves historical audit records when administrator accounts are deleted (decoupled schema)", async () => {
+      // Demonstrates that audit records store scalar actor identifiers and are never deleted when a user is removed
+      const historicalLog = {
+        id: "audit_123",
+        action: "ADMIN_USER_CREATED",
+        entity: "AdminUser",
+        entityId: "target_user_456",
+        actorId: "deleted_super_admin_789",
+        actorEmail: "former_admin@voidtechsolution.com",
+        ipAddress: "127.0.0.1",
+        userAgent: "Console",
+        details: { note: "Historical record created prior to administrator deletion" },
+        createdAt: new Date("2026-01-01T00:00:00Z"),
+      };
+
+      vi.mocked(prisma.auditLog.findUnique).mockResolvedValueOnce(historicalLog);
+
+      const retrieved = await getAuditLogById("audit_123");
+      expect(retrieved).not.toBeNull();
+      expect(retrieved?.actorId).toBe("deleted_super_admin_789");
+      expect(retrieved?.actorEmail).toBe("former_admin@voidtechsolution.com");
+    });
   });
 });

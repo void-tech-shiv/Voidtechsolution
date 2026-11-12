@@ -4,15 +4,38 @@ import type { AuditLog, Prisma } from "@prisma/client";
 /**
  * VOIDTECH SOLUTION — Centralized Audit Logging Engine
  * 
- * Architectural & Security Principles:
- * 1. Append-Only Model: Audit logs are strictly immutable. No update, edit, or delete
- *    methods exist in this service or repository.
- * 2. Sensitive Data Exclusion: Automatically redacts passwords, password hashes,
- *    raw session tokens, secrets, cookies, OTPs, and connection strings from details.
- * 3. Transaction Participation: Supports atomic operations via optional Prisma.TransactionClient,
- *    ensuring state mutations and audit records commit or roll back together.
- * 4. Zero Orphan Risk: Historical records decouple from actor foreign keys, preserving logs
- *    even when administrator accounts are deleted.
+ * ==============================================================================
+ * AUDIT LOG INTEGRITY & SECURITY BOUNDARIES TAXONOMY
+ * ==============================================================================
+ * 
+ * 1. Application-Level Append-Only Restrictions:
+ *    - The application layer exposes exclusively append (create) and query (read) functions.
+ *    - No update, delete, truncate, drop, or rewrite operations are defined or exported.
+ *    - All detail payloads pass through recursive credential scrubbing (`sanitizeAuditDetails`)
+ *      with a defensive recursion depth cap of 6 levels, guaranteeing passwords, tokens,
+ *      cookies, secrets, and connection strings are never persisted unredacted.
+ * 
+ * 2. Database-Level Protections & Historical Record Preservation:
+ *    - The Prisma/PostgreSQL relational schema decouples `AuditLog` from `AdminUser`:
+ *      `actorId` and `actorEmail` are persisted as scalar string columns without foreign keys
+ *      or `onDelete: Cascade` constraints.
+ *    - When an administrator account is deactivated, demoted, or deleted, all historical
+ *      audit records referencing that administrator remain 100% intact.
+ *    - In production database administration, table-level permissions should be enforced
+ *      by revoking destructive privileges from the application database role:
+ *      `REVOKE UPDATE, DELETE, TRUNCATE ON TABLE "AuditLog" FROM voidtech_app_role;`
+ * 
+ * 3. Protection Against Unrestricted Database Administrators & Tamper-Proofing Reality:
+ *    - Application and table-level controls protect against application vulnerabilities,
+ *      compromised web sessions, and non-super administrative abuse.
+ *    - However, an unrestricted database administrator (e.g. PostgreSQL superuser, Neon
+ *      Console administrator, cloud infrastructure root) possessing direct SQL access can
+ *      bypass application and role rules to mutate or drop database tables directly.
+ *    - Absolute tamper-proofing is therefore NOT claimed at the application or local database
+ *      layer alone. High-assurance, tamper-evident audit immutability in production requires
+ *      external, forward-secure mechanisms (e.g. WORM storage, AWS S3 Object Lock, external
+ *      syslog forwarding to Datadog/CloudWatch, or cryptographic hash-chained ledgers).
+ * ==============================================================================
  */
 
 export const AUDIT_ACTIONS = {

@@ -66,72 +66,111 @@ export function promptVisible(
 }
 
 /**
- * Prompts user for hidden input (e.g. password) without echoing characters to screen.
- * Handles Backspace, Enter, Ctrl+C, and raw terminal mode safely across platforms.
+ * Error thrown when password prompt is executed in a non-interactive or non-TTY environment.
+ * Prevents plain-text echoing or leaking master credentials over piped/redirected stdin.
  */
-export function promptHidden(question: string): Promise<string> {
+export class NonInteractiveTerminalError extends Error {
+  constructor(
+    message = "Hidden password entry requires an interactive TTY terminal. Scripted pipes, redirected input, or non-TTY environments are prohibited for master password entry to prevent credential exposure."
+  ) {
+    super(message);
+    this.name = "NonInteractiveTerminalError";
+  }
+}
+
+/**
+ * Prompts user for hidden input (e.g. password) without echoing characters to screen.
+ * Strictly requires an interactive TTY with raw mode capability. Never falls back to visible input.
+ * Handles Backspace, Enter, Ctrl+C, and restores raw mode safely across platforms.
+ */
+export async function promptHidden(question: string): Promise<string> {
   const stdin = process.stdin;
 
-  // Fallback for non-TTY environments (e.g. automated tests or scripted pipes)
-  if (!stdin.isTTY) {
-    const rl = readline.createInterface({ input: stdin, output: process.stdout });
-    return new Promise((resolve) => {
-      rl.question(question, (ans) => {
-        rl.close();
-        resolve(ans.trim());
-      });
-    });
+  // Strict Security Policy: If hidden input cannot be guaranteed, ABORT immediately.
+  // Never fall back to visible readline input for passwords.
+  if (!stdin.isTTY || typeof stdin.setRawMode !== "function") {
+    throw new NonInteractiveTerminalError();
   }
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     process.stdout.write(question);
     stdin.setEncoding("utf8");
     const wasRaw = stdin.isRaw;
-    stdin.setRawMode(true);
-    stdin.resume();
+    let isCleanedUp = false;
+
+    const restoreTerminal = () => {
+      if (isCleanedUp) return;
+      isCleanedUp = true;
+      try {
+        stdin.removeListener("data", onData);
+        if (typeof stdin.setRawMode === "function") {
+          stdin.setRawMode(wasRaw ?? false);
+        }
+        stdin.pause();
+      } catch {
+        // Suppress cleanup errors on process termination
+      }
+    };
 
     let input = "";
 
     const onData = (chunk: Buffer | string) => {
-      const str = chunk.toString();
-      for (let i = 0; i < str.length; i++) {
-        const char = str[i];
-        if (!char) continue;
+      try {
+        const str = chunk.toString();
+        for (let i = 0; i < str.length; i++) {
+          const char = str[i];
+          if (!char) continue;
 
-        // Enter key (CR or LF)
-        if (char === "\r" || char === "\n") {
-          cleanup();
-          process.stdout.write("\n");
-          resolve(input);
-          return;
-        }
+          // Enter key (CR or LF)
+          if (char === "\r" || char === "\n") {
+            restoreTerminal();
+            process.stdout.write("\n");
+            resolve(input);
+            return;
+          }
 
-        // Backspace
-        if (char === "\u0008" || char === "\x7f") {
-          if (input.length > 0) {
-            input = input.slice(0, -1);
+          // Backspace (\b or DEL \x7f)
+          if (char === "\u0008" || char === "\x7f") {
+            if (input.length > 0) {
+              input = input.slice(0, -1);
+            }
+          }
+          // Ctrl+C (Interrupt \u0003)
+          else if (char === "\u0003") {
+            restoreTerminal();
+            process.stdout.write("\n\n[PROVISIONING ABORTED BY USER]\n");
+            process.exit(130);
+          }
+          // Regular printable characters
+          else if (char >= " " && char <= "~") {
+            input += char;
           }
         }
-        // Ctrl+C (Interrupt)
-        else if (char === "\u0003") {
-          cleanup();
-          process.stdout.write("\n\n[PROVISIONING ABORTED BY USER]\n");
-          process.exit(130);
-        }
-        // Regular printable characters
-        else if (char >= " " && char <= "~") {
-          input += char;
-        }
+      } catch (err) {
+        restoreTerminal();
+        reject(err);
       }
     };
 
-    const cleanup = () => {
-      stdin.removeListener("data", onData);
-      stdin.setRawMode(wasRaw ?? false);
-      stdin.pause();
-    };
+    // Guarantee terminal settings are restored even if the process exits unexpectedly
+    const exitHandler = () => restoreTerminal();
+    process.once("exit", exitHandler);
 
-    stdin.on("data", onData);
+    try {
+      stdin.setRawMode(true);
+      stdin.resume();
+      stdin.on("data", onData);
+    } catch (err) {
+      restoreTerminal();
+      process.removeListener("exit", exitHandler);
+      reject(
+        new NonInteractiveTerminalError(
+          `Failed to configure terminal raw mode: ${
+            err instanceof Error ? err.message : String(err)
+          }`
+        )
+      );
+    }
   });
 }
 
@@ -306,6 +345,16 @@ export async function runBootstrapCli(): Promise<number> {
   }
 
   console.log("No existing SUPER_ADMIN found.\n");
+
+  // Strict check: Abort if stdin is not a TTY capable of raw mode hidden input
+  if (!process.stdin.isTTY || typeof process.stdin.setRawMode !== "function") {
+    console.error("[SECURITY ERROR] Interactive TTY required for administrator provisioning.");
+    console.error("Non-interactive environments, piped stdin, or redirected input are strictly prohibited");
+    console.error("to guarantee that master password entry is never displayed, logged, or echoed.\n");
+    console.log(`${line}\n`);
+    return 1;
+  }
+
   console.log("Enter initial administrator details:\n");
 
   const rl = readline.createInterface({
@@ -321,8 +370,19 @@ export async function runBootstrapCli(): Promise<number> {
     rl.close();
 
     console.log("");
-    const password = await promptHidden("Password (min 12 chars, upper/lower/num/symbol): ");
-    const confirmPassword = await promptHidden("Confirm Password: ");
+    let password = "";
+    let confirmPassword = "";
+    try {
+      password = await promptHidden("Password (min 12 chars, upper/lower/num/symbol): ");
+      confirmPassword = await promptHidden("Confirm Password: ");
+    } catch (err) {
+      if (err instanceof NonInteractiveTerminalError) {
+        console.error(`\n[SECURITY ERROR] ${err.message}\n`);
+        console.log(`${line}\n`);
+        return 1;
+      }
+      throw err;
+    }
 
     console.log("\nValidating credentials...");
     const validation = bootstrapInputSchema.safeParse({
@@ -350,6 +410,10 @@ export async function runBootstrapCli(): Promise<number> {
       password,
       confirmPassword,
     });
+
+    // Zero out memory references immediately
+    password = "";
+    confirmPassword = "";
 
     if (!result.success || !result.user) {
       console.error(`\n[BOOTSTRAP FAILED] ${result.error || "Unknown error"}\n`);

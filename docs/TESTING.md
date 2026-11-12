@@ -217,16 +217,23 @@ npm run build
 ## 10. Milestone 7.5 Test Suite — Bootstrap CLI & Audit Logging Engine
 
 - **Test Files:**
-  - `tests/unit/admin-bootstrap.test.ts` (14 tests)
-  - `tests/unit/bootstrap-concurrency.test.ts` (3 tests)
-  - `tests/unit/audit.test.ts` (10 tests)
-- **Total Project Tests:** **273 passing across 17 test suites (100% pass rate)**.
+  - `tests/unit/admin-bootstrap.test.ts` (18 tests)
+  - `tests/unit/bootstrap-concurrency.test.ts` (3 tests — Unit & Mocked Simulation)
+  - `tests/unit/audit.test.ts` (11 tests)
+  - `tests/integration/bootstrap-concurrency.integration.test.ts` (2 tests — Real PostgreSQL Concurrency Integration)
+- **Total Project Tests:** **280 passing across 18 test suites (100% pass rate)**.
 - **Coverage Areas:**
   1. **Bootstrap Input Validation (`bootstrapInputSchema`):** Full name length constraints, valid email format, master password strength (min 12 chars, uppercase, lowercase, digit, symbol), and confirmation match.
-  2. **Database Pre-Flight Diagnostics:** Connection readiness, table detection, existing `SUPER_ADMIN` count check, and sanitized error reporting (`[REDACTED_CREDENTIALS]`).
-  3. **Bootstrap Execution & Invariant Enforcement:** Single initial account creation holding `isBootstrap: true`, scrypt hashing with 16-byte random salt, and atomic transaction commit.
-  4. **PostgreSQL Advisory Lock Serialization:** Concurrency testing with `Promise.all` verifying that out of two simultaneous bootstrap attempts, exactly one succeeds and the other is rejected with `ExactlyOneSuperAdminError`.
-  5. **Transaction Rollback Protection:** Verifies that if an error occurs during account creation or audit logging, the transaction rolls back cleanly without leaving partial records.
-  6. **Automated Credential Redaction (`sanitizeAuditDetails`):** Recursively redacts passwords, hashes, tokens, secrets, cookies, OTPs, and connection strings from audit metadata.
-  7. **Append-Only Immutability:** Verifies zero update or delete methods exist in the audit engine.
+  2. **Strict Interactive TTY & Hidden Input Enforcement:** Verifies `promptHidden` and `runBootstrapCli` immediately reject non-TTY execution or redirected stdin with `NonInteractiveTerminalError` (exit code 1). Proves visible readline input is never used as a password fallback. Verifies safe terminal mode restoration.
+  3. **Database Pre-Flight Diagnostics:** Connection readiness, table detection, existing `SUPER_ADMIN` count check, and sanitized error reporting (`[REDACTED_CREDENTIALS]`).
+  4. **Bootstrap Execution & Invariant Enforcement:** Single initial account creation holding `isBootstrap: true`, scrypt hashing with 16-byte random salt, and atomic transaction commit.
+  5. **Real PostgreSQL Concurrency & Transaction Serialization (`tests/integration/bootstrap-concurrency.integration.test.ts`):**
+     - Executed against an isolated local PostgreSQL database (`voidtech_test_concurrency` on `localhost:5432`). Zero contact with production Neon.
+     - Spawns two independent `PrismaClient` instances executing simultaneous bootstrap transactions.
+     - Proves PostgreSQL serializes execution via `SELECT pg_advisory_xact_lock(hashtext('super_admin_lifecycle_lock'))`.
+     - Confirms exactly one transaction succeeds (`fulfilled`), creating 1 `SUPER_ADMIN` and 1 `ADMIN_BOOTSTRAP_SUCCESS` audit log.
+     - Confirms the competing concurrent transaction is rejected (`rejected`) with `ExactlyOneSuperAdminError`.
+     - Forces an audit logging failure inside the transaction and confirms PostgreSQL completely rolls back user creation, leaving 0 accounts and 0 audit logs.
+  6. **Automated Credential Redaction (`sanitizeAuditDetails`):** Recursively redacts passwords, hashes, tokens, secrets, cookies, OTPs, and connection strings from audit metadata, capping recursion depth at 6 levels.
+  7. **Append-Only Immutability & Decoupled Historical Preservation:** Verifies zero update or delete methods exist in the audit engine, and proves historical audit logs persist intact even when an administrator account is deleted.
 

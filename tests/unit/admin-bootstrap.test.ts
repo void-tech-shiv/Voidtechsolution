@@ -4,6 +4,8 @@ import {
   checkDatabaseAndInvariant,
   executeBootstrap,
   runBootstrapCli,
+  promptHidden,
+  NonInteractiveTerminalError,
 } from "@/../scripts/create-admin";
 import { prisma } from "@/lib/prisma";
 import * as usersRepo from "@/server/repositories/users.repo";
@@ -257,6 +259,53 @@ describe("Milestone 7.5: SUPER_ADMIN Bootstrap CLI & Validation", () => {
     });
   });
 
+  describe("promptHidden (Non-TTY & Interactive Terminal Security)", () => {
+    it("throws NonInteractiveTerminalError immediately when stdin.isTTY is falsy (never falls back to visible input)", async () => {
+      const originalIsTTY = process.stdin.isTTY;
+      try {
+        Object.defineProperty(process.stdin, "isTTY", { value: false, configurable: true });
+        await expect(promptHidden("Password: ")).rejects.toThrow(NonInteractiveTerminalError);
+        await expect(promptHidden("Password: ")).rejects.toThrow(
+          /Hidden password entry requires an interactive TTY terminal/
+        );
+      } finally {
+        Object.defineProperty(process.stdin, "isTTY", { value: originalIsTTY, configurable: true });
+      }
+    });
+
+    it("throws NonInteractiveTerminalError when stdin.setRawMode is not a function", async () => {
+      const originalIsTTY = process.stdin.isTTY;
+      const originalSetRawMode = process.stdin.setRawMode;
+      try {
+        Object.defineProperty(process.stdin, "isTTY", { value: true, configurable: true });
+        Object.defineProperty(process.stdin, "setRawMode", { value: undefined, configurable: true });
+        await expect(promptHidden("Password: ")).rejects.toThrow(NonInteractiveTerminalError);
+      } finally {
+        Object.defineProperty(process.stdin, "isTTY", { value: originalIsTTY, configurable: true });
+        Object.defineProperty(process.stdin, "setRawMode", { value: originalSetRawMode, configurable: true });
+      }
+    });
+
+    it("restores terminal raw mode and cleans up on unhandled error or exit", async () => {
+      const originalIsTTY = process.stdin.isTTY;
+      const originalSetRawMode = process.stdin.setRawMode;
+      const mockSetRawMode = vi.fn().mockImplementationOnce(() => {
+        throw new Error("Terminal driver failure");
+      });
+      const stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+
+      try {
+        Object.defineProperty(process.stdin, "isTTY", { value: true, configurable: true });
+        Object.defineProperty(process.stdin, "setRawMode", { value: mockSetRawMode, configurable: true });
+        await expect(promptHidden("Password: ")).rejects.toThrow(NonInteractiveTerminalError);
+      } finally {
+        Object.defineProperty(process.stdin, "isTTY", { value: originalIsTTY, configurable: true });
+        Object.defineProperty(process.stdin, "setRawMode", { value: originalSetRawMode, configurable: true });
+        stdoutSpy.mockRestore();
+      }
+    });
+  });
+
   describe("runBootstrapCli", () => {
     it("aborts with code 1 when database is unreachable", async () => {
       vi.mocked(prisma.$queryRaw).mockRejectedValueOnce(new Error("Connection refused"));
@@ -271,6 +320,26 @@ describe("Milestone 7.5: SUPER_ADMIN Bootstrap CLI & Validation", () => {
 
       const code = await runBootstrapCli();
       expect(code).toBe(1);
+    });
+
+    it("aborts with code 1 and outputs security error when stdin is not an interactive TTY", async () => {
+      vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([1]);
+      vi.mocked(prisma.adminUser.count).mockResolvedValueOnce(0); // 0 existing SUPER_ADMIN
+
+      const originalIsTTY = process.stdin.isTTY;
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      try {
+        Object.defineProperty(process.stdin, "isTTY", { value: false, configurable: true });
+        const code = await runBootstrapCli();
+        expect(code).toBe(1);
+        expect(errorSpy).toHaveBeenCalledWith(
+          expect.stringContaining("[SECURITY ERROR] Interactive TTY required for administrator provisioning.")
+        );
+      } finally {
+        Object.defineProperty(process.stdin, "isTTY", { value: originalIsTTY, configurable: true });
+        errorSpy.mockRestore();
+      }
     });
   });
 });

@@ -106,12 +106,27 @@
 - [x] **Milestone 7.3: Administrative Server Actions & Route Handlers:**
   - `src/server/actions/admin-management.actions.ts`: `createAdminUserAction`, `updateAdminRoleAction`, `setAdminStatusAction`, `deleteAdminUserAction` with origin check, session resolution, and `AuditLog` generation.
   - `src/app/api/admin/users/route.ts`: Protected GET and POST route handlers enforcing `admins:manage`.
+- [x] **Milestone 7.4: Route Protection Middleware & Shared Admin Login UI:**
+  - `src/server/security/cookie.ts`: Web Crypto API HMAC-SHA256 cookie signing and open redirect sanitizer (`sanitizeCallbackUrl`).
+  - `src/middleware.ts`: Next.js Edge route protection middleware guarding `/admin/*` and `/api/admin/*` with security headers.
+  - `src/app/admin/login/page.tsx` & `src/components/admin/admin-login-form.tsx`: Unified, accessible login screen for all 3 roles with anti-enumeration protection.
+  - `src/app/admin/(dashboard)/*` & `src/components/admin/*`: Responsive layout shell with role-aware sidebar, header, and overview dashboard.
+- [x] **Milestone 7.5: Secure SUPER_ADMIN Bootstrap CLI & Append-Only Audit Logging Engine:**
+  - `scripts/create-admin.ts` (`npm run admin:create`): Interactive terminal provisioning utility with hidden password input (zero echo).
+  - Strict Interactive TTY Enforcement: Immediately aborts before accepting passwords if stdin is not an interactive TTY (`NonInteractiveTerminalError`), preventing plain-text exposure over pipes/redirects.
+  - Pre-flight database connectivity diagnostics (`SELECT 1`) with connection string credential sanitization.
+  - Enforces the **Strictly Exactly One `SUPER_ADMIN`** invariant: halts immediately with exit code 1 if a `SUPER_ADMIN` account already exists.
+  - Input validation with Zod (`bootstrapInputSchema`): full name (2–100 chars), valid email format, high-entropy password requirements (12–128 chars, uppercase, lowercase, number, symbol), and password confirmation matching.
+  - Constant-time Scrypt password hashing with 16-byte cryptographically secure random salt (`hashPassword`).
+  - Centralized, append-only Audit Logging Engine (`src/server/security/audit.ts`): recursive credential scrubbing (`sanitizeAuditDetails`, depth cap 6), decoupled scalar actor IDs preserving logs upon user deletion, and atomic transaction participation.
+  - Real PostgreSQL Concurrency & Serialization Integration Test (`tests/integration/bootstrap-concurrency.integration.test.ts`): verified advisory lock serialization, single account creation, rejection of concurrent attempt, and atomic transaction rollback on audit failure against isolated local test database (`voidtech_test_concurrency`).
+  - Production-grade runbook authored at [`docs/ADMIN_BOOTSTRAP.md`](./docs/ADMIN_BOOTSTRAP.md).
 - [x] **Empirical Quality Gates:**
   - `tsc --noEmit`: 0 TypeScript compiler errors.
   - `next lint`: 0 ESLint warnings or errors.
-  - `vitest run`: 11 test suites passed, 207/207 unit tests passed (100%).
-  - `playwright test`: 29/29 E2E tests passed (100%).
-  - `next build`: Next.js production build succeeded with clean generation of 14 static and dynamic routes.
+  - `vitest run`: 18 test suites passed, 280/280 tests passed (100% across 17 unit suites and 1 real PostgreSQL concurrency integration suite).
+  - `playwright test`: 47/47 E2E tests passed (4 skipped as mobile-only on desktop).
+  - `next build`: Next.js production build succeeded with clean generation of 16 static and dynamic routes (Edge middleware: 35 kB).
 
 ---
 
@@ -119,4 +134,4 @@
 - **Zero Real Remote Migrations:** Local migration scripts staged. Remote PostgreSQL database untouched.
 - **Zero Real Production Admin Accounts Created:** No production administrative credentials generated or stored.
 - **Zero Real Emails:** Real SMTP mocked in automated verification test suites.
-- **Strict Stop Condition:** Stopped after Milestone 7.3. Strictly awaiting user approval before starting Milestone 7.4.
+- **Strict Stop Condition:** Stopped after Milestone 7.5 Security Closure Review. Strictly awaiting user approval before starting Milestone 7.6.

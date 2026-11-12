@@ -12,7 +12,7 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-describe("Milestone 7.5: Concurrency Safety & SUPER_ADMIN Invariant Locking", () => {
+describe("Milestone 7.5: Concurrency Safety & SUPER_ADMIN Invariant Locking (Unit & Mocked Simulation)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
