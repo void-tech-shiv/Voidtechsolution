@@ -225,7 +225,7 @@ export default function AboutPage() {
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
-            <Link href="/#contact" tabIndex={-1}>
+            <Link href="/contact" tabIndex={-1}>
               <Button size="lg" variant="outline">
                 <span>Start Your Project</span>
               </Button>
@@ -496,7 +496,7 @@ export default function AboutPage() {
           </p>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <Link href="/#contact" tabIndex={-1}>
+            <Link href="/contact" tabIndex={-1}>
               <Button size="lg" variant="glow" className="gap-2">
                 <span>Start Your Project</span>
                 <ArrowRight className="h-4 w-4" />

@@ -14,12 +14,12 @@ export function Footer() {
   }
 
   const featuredServices = [
-    { title: "Website Development", href: "/#services" },
-    { title: "App Development", href: "/#services" },
-    { title: "Custom API Development", href: "/#services" },
-    { title: "AI Automation & Workflows", href: "/#services" },
-    { title: "Autonomous AI Agents", href: "/#services" },
-    { title: "SaaS Development", href: "/#services" },
+    { title: "Website Development", href: "/services" },
+    { title: "App Development", href: "/services" },
+    { title: "Custom API Development", href: "/services" },
+    { title: "AI Automation & Workflows", href: "/services" },
+    { title: "Autonomous AI Agents", href: "/services" },
+    { title: "SaaS Development", href: "/services" },
   ];
 
   return (

@@ -39,13 +39,13 @@ export function QuickInquiry() {
 
         {/* Action Controls */}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-          <Link href="/#services" tabIndex={-1}>
+          <Link href="/services" tabIndex={-1}>
             <Button size="lg" variant="glow" className="gap-2">
               <span>Explore Services & Capabilities</span>
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Button>
           </Link>
-          <Link href="/#pricing" tabIndex={-1}>
+          <Link href="/pricing" tabIndex={-1}>
             <Button size="lg" variant="outline">
               Review Pricing Tiers
             </Button>

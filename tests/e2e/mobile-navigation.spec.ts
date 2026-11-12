@@ -94,9 +94,9 @@ test.describe("Mobile Responsive Navigation & Hero Layout", () => {
       }
 
       // Verify CTAs are visible and clickable
-      const startProjectBtn = page.locator("#hero a[href='/#contact']");
+      const startProjectBtn = page.locator("#hero a[href='/contact']");
       await expect(startProjectBtn).toBeVisible();
-      const exploreBtn = page.locator("#hero a[href='/#services']");
+      const exploreBtn = page.locator("#hero a[href='/services']");
       await expect(exploreBtn).toBeVisible();
     }
   });

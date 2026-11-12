@@ -246,11 +246,11 @@ describe("Phase 4: Homepage & Marketing Experience", () => {
       expect(screen.getByRole("navigation", { name: "Desktop Navigation" })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Start Your Project" })).toBeInTheDocument();
 
-      // Verify all 6 navigation links (dedicated pages for About, Pricing, Portfolio & Contact, section anchor for Services)
+      // Verify all 6 navigation links (dedicated pages for Home, About, Services, Pricing, Portfolio & Contact)
       const expectedNav = [
         { name: "Home", href: "/" },
         { name: "About", href: "/about" },
-        { name: "Services", href: "/#services" },
+        { name: "Services", href: "/services" },
         { name: "Pricing", href: "/pricing" },
         { name: "Portfolio", href: "/portfolio" },
         { name: "Contact", href: "/contact" },

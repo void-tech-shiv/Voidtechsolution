@@ -52,18 +52,43 @@ const TIMELINE_OPTIONS = [
 export function ContactEnquiryForm() {
   const searchParams = useSearchParams();
 
-  // Read URL query parameters from calculator / package clicks
+  // Read URL query parameters from calculator / package / service clicks
   const initialCategoryParam = searchParams.get("category");
   const initialPackageParam = searchParams.get("package");
   const initialAddonsParam = searchParams.get("addons");
   const initialTimelineParam = searchParams.get("timeline");
+  const initialServiceParam = searchParams.get("service");
 
   // Determine initial category
   const resolvedCategory = React.useMemo(() => {
-    if (!initialCategoryParam) return "WEB_DEVELOPMENT";
-    const found = CATEGORIES.find((c) => c.id === initialCategoryParam.toUpperCase());
-    return found ? found.id : "WEB_DEVELOPMENT";
-  }, [initialCategoryParam]);
+    if (initialCategoryParam) {
+      const found = CATEGORIES.find((c) => c.id === initialCategoryParam.toUpperCase());
+      if (found) return found.id;
+    }
+    if (initialServiceParam) {
+      const s = initialServiceParam.toLowerCase();
+      if (s.includes("mobile") || s.includes("app") || s.includes("ios") || s.includes("android")) {
+        return "MOBILE_DEVELOPMENT";
+      }
+      if (s.includes("commerce") || s.includes("shop") || s.includes("store")) {
+        return "ECOMMERCE";
+      }
+      if (s.includes("saas")) {
+        return "SAAS";
+      }
+      if (s.includes("ai") || s.includes("agent") || s.includes("bot") || s.includes("automation")) {
+        return "AI_AUTOMATION";
+      }
+      if (s.includes("api") || s.includes("backend") || s.includes("database") || s.includes("cloud")) {
+        return "API_BACKEND";
+      }
+      if (s.includes("erp") || s.includes("crm") || s.includes("enterprise")) {
+        return "ENTERPRISE_SYSTEMS";
+      }
+      return "WEB_DEVELOPMENT";
+    }
+    return "WEB_DEVELOPMENT";
+  }, [initialCategoryParam, initialServiceParam]);
 
   // Determine initial timeline
   const resolvedTimeline = React.useMemo(() => {
@@ -95,9 +120,13 @@ export function ContactEnquiryForm() {
   const [submitError, setSubmitError] = React.useState<string | null>(null);
   const [submittedEnquiryId, setSubmittedEnquiryId] = React.useState<string | null>(null);
 
-  // Pre-fill message if calculator addons were passed
+  // Pre-fill message if service or calculator addons were passed
   React.useEffect(() => {
-    if (initialAddonsParam && !message) {
+    if (initialServiceParam && !message) {
+      setMessage(
+        `I would like to discuss requirements for ${initialServiceParam}.\n\nKey project requirements:\n`
+      );
+    } else if (initialAddonsParam && !message) {
       const addonsList = initialAddonsParam.split(",").map((a) => a.trim()).filter(Boolean);
       if (addonsList.length > 0) {
         setMessage(
@@ -105,18 +134,35 @@ export function ContactEnquiryForm() {
         );
       }
     }
-  }, [initialAddonsParam, message]);
+  }, [initialServiceParam, initialAddonsParam, message]);
 
   // Update category and package if URL params change
   React.useEffect(() => {
     if (initialCategoryParam) {
       const matched = CATEGORIES.find((c) => c.id === initialCategoryParam.toUpperCase());
       if (matched) setServiceCategory(matched.id);
+    } else if (initialServiceParam) {
+      const s = initialServiceParam.toLowerCase();
+      let matchedId = "WEB_DEVELOPMENT";
+      if (s.includes("mobile") || s.includes("app") || s.includes("ios") || s.includes("android")) {
+        matchedId = "MOBILE_DEVELOPMENT";
+      } else if (s.includes("commerce") || s.includes("shop") || s.includes("store")) {
+        matchedId = "ECOMMERCE";
+      } else if (s.includes("saas")) {
+        matchedId = "SAAS";
+      } else if (s.includes("ai") || s.includes("agent") || s.includes("bot") || s.includes("automation")) {
+        matchedId = "AI_AUTOMATION";
+      } else if (s.includes("api") || s.includes("backend") || s.includes("database") || s.includes("cloud")) {
+        matchedId = "API_BACKEND";
+      } else if (s.includes("erp") || s.includes("crm") || s.includes("enterprise")) {
+        matchedId = "ENTERPRISE_SYSTEMS";
+      }
+      setServiceCategory(matchedId);
     }
     if (initialPackageParam) {
       setSelectedPackage(initialPackageParam);
     }
-  }, [initialCategoryParam, initialPackageParam]);
+  }, [initialCategoryParam, initialPackageParam, initialServiceParam]);
 
   // Step 1 Validation
   const validateStep1 = () => {
@@ -452,6 +498,14 @@ export function ContactEnquiryForm() {
           {/* ===================================================================== */}
           {currentStep === 1 && (
             <div className="space-y-6">
+              {initialServiceParam && (
+                <div className="flex items-center gap-2.5 rounded-lg border border-electric-purple/40 bg-electric-purple/10 px-4 py-2.5 text-xs font-mono text-electric-purple">
+                  <Sparkles className="h-4 w-4 shrink-0 text-electric-neon" />
+                  <span>
+                    Inquiry Focus: <strong className="text-white">{initialServiceParam}</strong>
+                  </span>
+                </div>
+              )}
               <div>
                 <label className="block font-mono text-sm font-semibold text-white mb-1">
                   1. Select Primary Service Discipline <span className="text-electric-neon">*</span>

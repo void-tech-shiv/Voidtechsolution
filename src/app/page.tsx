@@ -94,7 +94,7 @@ export default async function HomePage() {
 
           {/* Primary & Secondary Action CTAs */}
           <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto max-w-xs sm:max-w-none mx-auto">
-            <Link href="/#contact" className="w-full sm:w-auto">
+            <Link href="/contact" className="w-full sm:w-auto">
               <Button
                 size="lg"
                 variant="glow"
@@ -104,7 +104,7 @@ export default async function HomePage() {
                 <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
               </Button>
             </Link>
-            <Link href="/#services" className="w-full sm:w-auto">
+            <Link href="/services" className="w-full sm:w-auto">
               <Button
                 size="lg"
                 variant="outline"
@@ -197,6 +197,17 @@ export default async function HomePage() {
             </p>
           </div>
         </div>
+
+        {/* Explore About Dedicated Route */}
+        <div className="mt-10 text-center">
+          <Link
+            href="/about"
+            className="inline-flex items-center gap-1.5 text-xs font-mono font-medium text-electric-purple hover:underline"
+          >
+            <span>Read Our Full Story & Engineering Philosophy</span>
+            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+          </Link>
+        </div>
       </section>
 
       {/* ========================================================================= */}
@@ -224,6 +235,16 @@ export default async function HomePage() {
 
         {/* Interactive Services Filter & Grid */}
         <ServicesFilter initialServices={services} />
+
+        {/* Dedicated Services Catalog Link */}
+        <div className="mt-12 flex justify-center">
+          <Link href="/services">
+            <Button size="lg" variant="outline" className="gap-2">
+              <span>Explore Full Services Catalog & Deliverables</span>
+              <ArrowRight className="h-4 w-4 text-electric-purple" aria-hidden="true" />
+            </Button>
+          </Link>
+        </div>
       </section>
 
       {/* ========================================================================= */}
@@ -438,18 +459,37 @@ export default async function HomePage() {
                     ))}
                   </div>
 
-                  <Link
-                    href="/#contact"
-                    className="inline-flex w-full items-center justify-between rounded-lg border border-void-border/70 bg-void-surface/50 px-4 py-2.5 text-xs font-medium text-void-light transition-all hover:border-electric-purple hover:bg-electric-purple/10 hover:text-white"
-                  >
-                    <span>Request Architecture Brief</span>
-                    <ExternalLink className="h-3.5 w-3.5 text-electric-purple" aria-hidden="true" />
-                  </Link>
+                  <div className="flex gap-2">
+                    <Link
+                      href={`/portfolio/${proj.slug}`}
+                      className="inline-flex flex-1 items-center justify-between rounded-lg border border-void-border/70 bg-void-surface/50 px-3.5 py-2 text-xs font-medium text-void-light transition-all hover:border-electric-purple hover:bg-electric-purple/10 hover:text-white"
+                    >
+                      <span>Explore Case Study</span>
+                      <ExternalLink className="h-3.5 w-3.5 text-electric-purple" aria-hidden="true" />
+                    </Link>
+                    <Link
+                      href={`/contact?service=${encodeURIComponent(proj.title)}`}
+                      className="inline-flex items-center justify-center rounded-lg border border-void-border/70 bg-void-surface/30 px-3 py-2 text-xs font-medium text-void-muted transition-all hover:border-electric-purple/50 hover:text-white"
+                      title="Inquire about this architecture"
+                    >
+                      <span>Inquire</span>
+                    </Link>
+                  </div>
                 </div>
               </GlassCard>
             ))}
           </div>
         )}
+
+        {/* Dedicated Portfolio Page Link */}
+        <div className="mt-12 flex justify-center">
+          <Link href="/portfolio">
+            <Button size="lg" variant="outline" className="gap-2">
+              <span>View All Case Studies in Concept Lab</span>
+              <ArrowRight className="h-4 w-4 text-electric-purple" aria-hidden="true" />
+            </Button>
+          </Link>
+        </div>
       </section>
 
       {/* ========================================================================= */}
@@ -489,11 +529,21 @@ export default async function HomePage() {
                 isPopular={pkg.popular}
                 features={pkg.features}
                 ctaText="Select Package"
-                href="/#contact"
+                href={`/contact?package=${pkg.slug}`}
                 className="h-full"
               />
             );
           })}
+        </div>
+
+        {/* Dedicated Pricing Page Link */}
+        <div className="mt-12 flex justify-center">
+          <Link href="/pricing">
+            <Button size="lg" variant="outline" className="gap-2">
+              <span>View All 10 Packages & Cost Calculator</span>
+              <ArrowRight className="h-4 w-4 text-electric-purple" aria-hidden="true" />
+            </Button>
+          </Link>
         </div>
       </section>
 
@@ -521,6 +571,16 @@ export default async function HomePage() {
         </div>
 
         <FaqAccordion faqs={faqs} />
+
+        {/* Direct Contact Link */}
+        <div className="mt-10 text-center">
+          <p className="text-xs text-void-muted">
+            Have a specific technical or commercial question?{" "}
+            <Link href="/contact" className="text-electric-purple hover:underline font-medium">
+              Contact our technical leads directly
+            </Link>
+          </p>
+        </div>
       </section>
 
       {/* ========================================================================= */}

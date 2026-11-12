@@ -394,7 +394,7 @@ export default async function ProjectCaseStudyPage({
                 Sanitized codebase architecture and test harness configurations can be reviewed upon request during technical onboarding.
               </p>
             </div>
-            <Link href="/#contact" tabIndex={-1} className="shrink-0">
+            <Link href="/contact" tabIndex={-1} className="shrink-0">
               <Button size="sm" variant="outline">
                 Request Architecture Brief
               </Button>
@@ -476,7 +476,7 @@ export default async function ProjectCaseStudyPage({
             Let&apos;s evaluate your architectural requirements, data volumes, and delivery targets.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
-            <Link href="/#contact" tabIndex={-1}>
+            <Link href="/contact" tabIndex={-1}>
               <Button size="lg" variant="glow" className="gap-2">
                 <span>Start Your Project</span>
                 <ArrowRight className="h-4 w-4" />

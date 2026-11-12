@@ -116,11 +116,11 @@ describe("Phase 5: Dedicated About Page (/about)", () => {
     expect(screen.getByText("Docker")).toBeInTheDocument();
   });
 
-  it("renders closing collaboration CTA linking to /#contact", () => {
+  it("renders closing collaboration CTA linking to /contact", () => {
     const { container } = render(<AboutPage />);
 
     expect(screen.getByText("Have an idea worth building?")).toBeInTheDocument();
-    const contactLinks = container.querySelectorAll('a[href="/#contact"]');
+    const contactLinks = container.querySelectorAll('a[href="/contact"], a[href="/#contact"]');
     expect(contactLinks.length).toBeGreaterThanOrEqual(1);
   });
 });
@@ -299,7 +299,7 @@ describe("Phase 5: Dynamic Case Study Route (/portfolio/[slug])", () => {
       screen.getByText("Facing a similar engineering challenge?")
     ).toBeInTheDocument();
 
-    const ctaLink = container.querySelector('a[href="/#contact"]');
+    const ctaLink = container.querySelector('a[href="/contact"], a[href="/#contact"]');
     expect(ctaLink).toBeInTheDocument();
   });
 
