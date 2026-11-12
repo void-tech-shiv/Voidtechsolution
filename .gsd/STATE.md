@@ -39,6 +39,16 @@ updated: 2026-11-12T05:25:00+05:30
     - Updated [`docs/TESTING.md`](file:///d:/voidtechsolution/docs/TESTING.md).
     - Updated [`docs/PROJECT_STATUS.md`](file:///d:/voidtechsolution/docs/PROJECT_STATUS.md).
 
+- **Mobile Navigation & Hero UI Bug Fix Executed (`cf0b461`):**
+  - **Fixed Navigation Drawer:** Converted to dedicated fixed-position modal overlay (`fixed inset-0 z-50 md:hidden`) with darkened backdrop (`bg-void-black/85 backdrop-blur-md`), preventing background clicks and bleeding into the hero section.
+  - **Body Scroll & Touch Locking:** Locks `document.body` and `document.documentElement` overflow and disables touch-action while open, cleanly restoring upon close.
+  - **Dedicated Close Button & Focus Trap:** Prominent close button (`X`) inside drawer top-right header with focus auto-capture, Tab focus trap, and focus restoration to the trigger button upon close.
+  - **Hero Layout Responsive Optimization:**
+    - Tagline badge uses `max-w-full truncate text-[11px] sm:text-xs` preventing horizontal overflow on 320px screens.
+    - Headline uses responsive `text-3xl min-[360px]:text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[1.18] sm:leading-[1.1] break-words` eliminating text clipping and overlap.
+    - CTAs stack vertically on mobile (`flex-col sm:flex-row w-full sm:w-auto min-h-[48px]`), ensuring accessible touch targets without overlap.
+  - **Verification:** 174 / 174 unit tests passing (100%), 11 Playwright E2E tests passing across 320px, 360px, 375px, 390px, 430px, 768px, 1024px, and 1440px viewports with zero horizontal scroll.
+
 ## Next Steps
 
 1. Present Milestone 7.1 & 7.2 Security Closure Review to the project owner.
