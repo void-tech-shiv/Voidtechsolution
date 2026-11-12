@@ -34,7 +34,12 @@ describe("Milestone 7.4: Admin UI Components & Role-Aware Shell", () => {
     // @ts-expect-error Mocking window.location for jsdom
     delete window.location;
     // @ts-expect-error Mocking window.location for jsdom
-    window.location = { ...originalLocation, href: "", assign: vi.fn(), replace: vi.fn() };
+    window.location = {
+      ...originalLocation,
+      href: "http://localhost:3000/admin/login",
+      assign: vi.fn(),
+      replace: vi.fn(),
+    };
   });
 
   describe("AdminLoginForm", () => {

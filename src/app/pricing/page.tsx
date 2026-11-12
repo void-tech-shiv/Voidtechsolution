@@ -59,6 +59,8 @@ export default async function PricingPage() {
         title={<>Predictable Investment. <span className="bg-gradient-to-r from-electric-purple via-electric-violet to-electric-neon bg-clip-text text-transparent">Zero Hidden Costs.</span></>}
         description="Honest, transparent pricing strictly in Indian Rupees (INR). From ultra-fast static landing pages starting at ₹999 to custom enterprise systems, our clear 50/50 payment terms ensure alignment at kickoff and final handover."
         actions={<><a href="#packages" className={buttonVariants({ variant: "glow", size: "lg", className: "min-h-12" })}>View Approved Tiers<ArrowRight className="h-4 w-4" aria-hidden="true" /></a><a href="#calculator" className={buttonVariants({ variant: "outline", size: "lg", className: "min-h-12" })}><Calculator className="h-4 w-4 text-electric-purple" aria-hidden="true" />Open Project Calculator</a></>}
+        imageSrc="/hero/voidtech-pricing-3d.webp"
+        imageAlt="VOIDTECH Holographic Pricing Calculator & Prism"
         asideLabel="Clear project terms"
         aside={<div className="space-y-3"><div className="rounded-xl border border-void-border/60 bg-void-black/40 p-4"><p className="font-mono text-xs uppercase tracking-wider text-void-muted">Starting price</p><p className="mt-2 text-3xl font-bold text-white">₹999</p><p className="mt-1 text-xs text-void-muted">Package-specific scope applies</p></div><div className="grid grid-cols-2 gap-3"><div className="rounded-xl border border-void-border/60 bg-void-black/40 p-4"><p className="font-mono text-xs uppercase text-void-muted">Kickoff</p><p className="mt-2 text-xl font-bold text-electric-purple">50%</p></div><div className="rounded-xl border border-void-border/60 bg-void-black/40 p-4"><p className="font-mono text-xs uppercase text-void-muted">Handover</p><p className="mt-2 text-xl font-bold text-white">50%</p></div></div><p className="text-xs leading-relaxed text-void-muted">Ten approved packages and a project calculator make scope and investment easier to compare.</p></div>}
       />
@@ -68,7 +70,7 @@ export default async function PricingPage() {
       {/* ========================================================================= */}
       <section
         id="packages"
-        className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 border-t border-void-border/60"
+        className="relative mx-auto max-w-[1440px] px-4 py-16 sm:px-6 sm:py-20 lg:px-8 xl:px-12 border-t border-void-border/60"
         aria-labelledby="packages-headline"
       >
         <div className="mb-12 text-center">
@@ -94,7 +96,7 @@ export default async function PricingPage() {
       {/* ========================================================================= */}
       <section
         id="calculator"
-        className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8 border-t border-void-border/60"
+        className="relative mx-auto max-w-[1440px] px-4 py-16 sm:px-6 sm:py-24 lg:px-8 xl:px-12 border-t border-void-border/60"
         aria-labelledby="calculator-headline"
       >
         <div className="mb-12 text-center">
@@ -119,7 +121,7 @@ export default async function PricingPage() {
       {/* SECTION 4: COMMERCIAL GUARANTEES & POLICIES                               */}
       {/* ========================================================================= */}
       <section
-        className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 border-t border-void-border/60"
+        className="relative mx-auto max-w-[1440px] px-4 py-16 sm:px-6 sm:py-20 lg:px-8 xl:px-12 border-t border-void-border/60"
         aria-labelledby="guarantees-headline"
       >
         <div className="mb-12 text-center">
@@ -217,7 +219,7 @@ export default async function PricingPage() {
       {/* ========================================================================= */}
       {/* SECTION 6: CLOSING CTA                                                    */}
       {/* ========================================================================= */}
-      <section className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 border-t border-void-border/60 text-center">
+      <section className="relative mx-auto max-w-[1440px] px-4 py-16 sm:px-6 sm:py-20 lg:px-8 xl:px-12 border-t border-void-border/60 text-center">
         <div className="mx-auto max-w-3xl rounded-3xl border border-electric-purple/40 bg-void-card-gradient p-8 sm:p-12 shadow-glow-md">
           <Badge variant="outline" className="mb-4 border-electric-purple/40 text-electric-purple font-mono">
             GET STARTED

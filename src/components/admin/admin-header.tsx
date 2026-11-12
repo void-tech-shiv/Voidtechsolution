@@ -36,9 +36,9 @@ export function AdminHeader({ user, onOpenMobileMenu }: AdminHeaderProps) {
   const getRoleBadgeStyle = (role: UserRole) => {
     switch (role) {
       case "SUPER_ADMIN":
-        return "bg-electric-violet/20 text-electric-purple border-electric-purple/40";
+        return "bg-electric-neon/20 text-electric-neon border-electric-neon/40";
       case "ADMIN":
-        return "bg-cyan-500/20 text-cyan-300 border-cyan-500/40";
+        return "bg-electric-purple/20 text-electric-purple border-electric-purple/40";
       case "EDITOR":
         return "bg-emerald-500/20 text-emerald-300 border-emerald-500/40";
       default:

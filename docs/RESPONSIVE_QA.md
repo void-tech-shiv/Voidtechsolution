@@ -8,13 +8,14 @@
 
 ## 1. Cross-Device Matrix
 
-| Device / Viewport | Width | Height | Navigation Mode | Horizontal Overflow | Touch Target Compliance | Result |
-|---|---|---|---|---|---|---|
-| **Ultra-Compact Mobile (iPhone SE)** | 320px | 568px | Modal Drawer (Full Screen) | 0px (No Scroll) | ≥44px (WCAG AAA) | **PASS** |
-| **Standard Mobile (iPhone 12/13)** | 375px | 667px | Modal Drawer (Full Screen) | 0px (No Scroll) | ≥44px (WCAG AAA) | **PASS** |
-| **Tablet Portrait (iPad Mini)** | 768px | 1024px | Desktop Nav Bar | 0px (No Scroll) | ≥40px (WCAG AA) | **PASS** |
-| **Standard Desktop (Laptop / Mac)** | 1280px | 800px | Desktop Nav Bar | 0px (No Scroll) | ≥40px (WCAG AA) | **PASS** |
-| **Ultra-Wide Desktop (Full HD / 4K)** | 1920px | 1080px | Desktop Nav Bar (Max 1280px Container) | 0px (No Scroll) | ≥40px (WCAG AA) | **PASS** |
+| Device / Viewport | Width | Height | Navigation Mode | Container Width | Horizontal Overflow | Touch Target Compliance | Result |
+|---|---|---|---|---|---|---|---|
+| **Ultra-Compact Mobile (iPhone SE)** | 320px | 568px | Modal Drawer (Full Screen) | 100% (Padding 16px) | 0px (No Scroll) | ≥48px (WCAG AAA) | **PASS** |
+| **Standard Mobile (iPhone 12/13/14/15)** | 375px | 667px | Modal Drawer (Full Screen) | 100% (Padding 16px) | 0px (No Scroll) | ≥48px (WCAG AAA) | **PASS** |
+| **Tablet Portrait (iPad Mini)** | 768px | 1024px | Desktop Nav Bar | 100% (Padding 24px) | 0px (No Scroll) | ≥44px (WCAG AA) | **PASS** |
+| **Standard Laptop / Desktop** | 1280px | 800px | Desktop Nav Bar | Max 1280px | 0px (No Scroll) | ≥44px (WCAG AA) | **PASS** |
+| **Wide Desktop (1440p / iMac)** | 1440px | 900px | Desktop Nav Bar | Max 1440px (Padding 48px) | 0px (No Scroll) | ≥44px (WCAG AA) | **PASS** |
+| **Ultra-Wide Desktop (Full HD / 4K)** | 1920px | 1080px | Desktop Nav Bar | Max 1440px (Centered) | 0px (No Scroll) | ≥44px (WCAG AA) | **PASS** |
 
 ---
 
@@ -25,6 +26,7 @@
 - **Opening Behavior:** Smooth overlay transition with backdrop blur (`backdrop-blur-xl`) and high z-index (`z-50`).
 - **Body Scroll Lock:** Tested via Playwright: `document.body.style.overflow === "hidden"` while open; restores to `""` upon closing.
 - **Focus Management:** Focus automatically moves to the close button upon opening; Escape key safely dismisses drawer and restores focus to the menu trigger button.
+- **Focus Trap Loop:** `Shift+Tab` wraps to bottom CTA link; `Tab` from CTA wraps to close button.
 - **Link Click Handling:** Tapping any route link automatically dismisses the drawer, unlocking body scroll and navigating smoothly.
 
 ### 2.2 Form Controls & Mobile Input
@@ -36,28 +38,36 @@
 
 ## 3. Automated Test Verification Output
 
-```
-Running 33 tests using 1 worker
-  ok  1 [mobile-375] › mobile-navigation.spec.ts (891ms)
-  ok  2 [mobile-375] › Escape key dismiss (489ms)
-  ok  3 [mobile-375] › focus trap & restore (532ms)
-  ok  4 [mobile-375] › body scroll lock (494ms)
-  ok  5 [mobile-375] › route navigation dismissal (561ms)
-  ok  6 [mobile-375] › horizontal overflow check (1.9s)
-  ok  7 [mobile-375] › all 6 public pages load (885ms)
-  ok  8 [mobile-320] › mobile drawer trigger (725ms)
-  ok  9 [mobile-320] › all 6 public pages load (791ms)
-  ok 10 [desktop] › header active link highlights (818ms)
-  ok 11 [desktop] › services category filter & search (613ms)
-  ok 12 [desktop] › services inquiry prefill (527ms)
-  ok 13 [desktop] › responsive smoke 320px/768px/1280px/1920px (24.7s)
-
-25 passed in core suite, 15 passed in design smoke suite (40/40 E2E total).
-```
+- **364 / 364 Unit & Integration Tests Passing** (Vitest across 22 test files).
+- **19 / 19 Screenshot Visual Proofs Captured** (Playwright).
+- **10 / 10 Public Multi-Page E2E Tests Passing** (Playwright).
+- **6 / 6 Mobile Navigation Drawer Lifecycle Tests Passing** (Playwright).
 
 ---
 
-## 4. Cinematic 3D Hero Viewport Verification & Screenshot Evidence
+## 4. Visual Evidence Artifacts Captured (`test-results/screenshots/`)
+
+| Screenshot File | Viewport | Verified Elements |
+|---|---|---|
+| `hero-320px.png` | 320x600 | Mobile stacked layout, 3D background wash, official logo, CTA buttons |
+| `drawer-open-320px.png` | 320x600 | Full-screen mobile drawer, all 6 navigation links, close button |
+| `hero-375px.png` | 375x667 | Clean mobile hero, legible typography, no horizontal scroll |
+| `drawer-open-375px.png` | 375x667 | Mobile navigation drawer with active route highlights |
+| `hero-768px.png` | 768x1024 | Tablet 2-column layout, horizontal navbar |
+| `hero-1440px.png` | 1440x900 | 1440px wide desktop container, 3D digital infrastructure, illustrative telemetry |
+| `hero-1920px.png` | 1920x1080 | Ultra-wide balanced layout, zero awkward side gutters |
+| `page-about-1440px.png` | 1440x900 | 3D wireframe globe, 6 engineering pillars, 1440px wide layout |
+| `page-about-375px.png` | 375x667 | About page on mobile |
+| `page-services-1440px.png` | 1440x900 | 3D microservice cubes, 18 services catalog, starting INR prices |
+| `page-services-375px.png` | 375x667 | Services page on mobile |
+| `page-pricing-1440px.png` | 1440x900 | 3D calculation prism, 10 approved packages, cost calculator |
+| `page-pricing-375px.png` | 375x667 | Pricing page on mobile |
+| `page-portfolio-1440px.png` | 1440x900 | 3D showroom visual, Concept Lab prototypes, simulated benchmarks |
+| `page-portfolio-375px.png` | 375x667 | Portfolio page on mobile |
+| `page-contact-1440px.png` | 1440x900 | 3D communication spire, 3-step intake form, email fallback |
+| `page-contact-375px.png` | 375x667 | Contact intake on mobile |
+| `page-admin-login-1440px.png`| 1440x900 | Secure admin login card with official emblem and purple accents |
+| `page-admin-login-375px.png` | 375x667 | Admin login on mobile |
 
 Playwright automated visual capture executed across all five designated responsive breakpoints:
 

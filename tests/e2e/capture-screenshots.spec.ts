@@ -34,5 +34,36 @@ test.describe("Visual Responsive Proofs", () => {
       });
     }
   }
+
+  const dedicatedPages = [
+    { path: "/about", name: "about" },
+    { path: "/services", name: "services" },
+    { path: "/pricing", name: "pricing" },
+    { path: "/portfolio", name: "portfolio" },
+    { path: "/contact", name: "contact" },
+    { path: "/admin/login", name: "admin-login" },
+  ];
+
+  for (const p of dedicatedPages) {
+    test(`captures dedicated page ${p.name} at 1440px`, async ({ page }) => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto(p.path);
+      await page.waitForTimeout(500);
+      await page.screenshot({
+        path: `test-results/screenshots/page-${p.name}-1440px.png`,
+        fullPage: false,
+      });
+    });
+
+    test(`captures dedicated page ${p.name} at 375px mobile`, async ({ page }) => {
+      await page.setViewportSize({ width: 375, height: 667 });
+      await page.goto(p.path);
+      await page.waitForTimeout(500);
+      await page.screenshot({
+        path: `test-results/screenshots/page-${p.name}-375px.png`,
+        fullPage: false,
+      });
+    });
+  }
 });
 

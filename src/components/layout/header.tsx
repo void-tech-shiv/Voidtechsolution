@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Menu, X, ArrowRight } from "lucide-react";
 import { siteConfig } from "@/config/site";
 import { buttonVariants } from "@/components/ui/button";
+import { BrandLogo } from "@/components/ui/brand-logo";
 import { cn } from "@/lib/utils";
 
 export function Header() {
@@ -104,26 +105,14 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-void-border/70 bg-void-black/85 backdrop-blur-xl transition-all">
-      <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Brand Identity */}
-        <Link
+      <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-12">
+        {/* Official Brand Identity */}
+        <BrandLogo
+          variant="header"
+          size="md"
           href="/"
-          className="group flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-purple/70 rounded-lg p-1"
-          aria-label="VOIDTECH SOLUTION Home"
           onClick={() => setMobileMenuOpen(false)}
-        >
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-electric-violet to-electric-purple shadow-glow-xs group-hover:shadow-glow-sm transition-all">
-            <span className="font-mono text-base font-black text-white">V</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="font-mono text-base font-bold tracking-wider text-void-white group-hover:text-electric-purple transition-colors">
-              VOIDTECH
-            </span>
-            <span className="text-[10px] uppercase tracking-widest text-void-muted">
-              SOLUTION
-            </span>
-          </div>
-        </Link>
+        />
 
         {/* Desktop Navigation */}
         <nav
@@ -195,19 +184,7 @@ export function Header() {
           >
             {/* Drawer Header with Title and Accessible Close Button */}
             <div className="flex items-center justify-between border-b border-void-border/60 px-5 py-4 shrink-0">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-electric-violet text-white font-mono font-bold text-xs shadow-glow-xs">
-                  V
-                </div>
-                <div className="flex flex-col">
-                  <span className="font-mono text-xs font-bold text-void-white tracking-wider">
-                    VOIDTECH
-                  </span>
-                  <span className="text-[9px] uppercase tracking-widest text-void-muted">
-                    SOLUTION
-                  </span>
-                </div>
-              </div>
+              <BrandLogo variant="header" size="sm" href={false} />
 
               {/* Dedicated Close Button */}
               <button

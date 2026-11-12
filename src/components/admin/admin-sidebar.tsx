@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { hasPermission, type PermissionKey } from "@/server/security/rbac";
+import { BrandLogo } from "@/components/ui/brand-logo";
 
 export interface NavItemConfig {
   name: string;
@@ -124,9 +125,7 @@ export function AdminSidebar({
           className="flex items-center gap-2.5 group"
           aria-label="Admin Dashboard Home"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-electric-violet to-electric-purple text-white font-mono font-bold text-sm shadow-glow-xs group-hover:shadow-glow-sm transition-all">
-            V
-          </div>
+          <BrandLogo variant="symbol" size="sm" href={false} />
           <div>
             <div className="font-mono text-sm font-bold text-white tracking-wider flex items-center gap-1.5">
               <span>VOIDTECH</span>

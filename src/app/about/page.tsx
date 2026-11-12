@@ -195,6 +195,8 @@ export default function AboutPage() {
         title={<>Engineering Ideas Into <span className="bg-gradient-to-r from-electric-purple via-electric-violet to-electric-neon bg-clip-text text-transparent">Digital Reality.</span></>}
         description="VOIDTECH SOLUTION builds practical digital products through modern engineering, thoughtful design, and technology-driven problem solving."
         actions={<><Link href="/portfolio" className={buttonVariants({ variant: "glow", size: "lg", className: "min-h-12" })}>Explore Our Work<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link><Link href="/contact" className={buttonVariants({ variant: "outline", size: "lg", className: "min-h-12" })}>Start Your Project</Link></>}
+        imageSrc="/hero/voidtech-about-3d.webp"
+        imageAlt="VOIDTECH Global Engineering Network"
         asideLabel="Engineering values"
         aside={<ul className="space-y-2">{["Engineering Quality", "Transparent Communication", "Practical Innovation", "Maintainable Architecture", "User-Centered Design", "Continuous Improvement"].map((value, i) => <li key={value} className="flex items-center gap-3 rounded-lg border border-void-border/55 bg-void-black/35 px-3.5 py-3"><span className="font-mono text-[10px] text-electric-purple">0{i + 1}</span><span className="text-sm font-medium text-white">{value}</span></li>)}</ul>}
       />
@@ -203,7 +205,7 @@ export default function AboutPage() {
       {/* SECTION 2: WHO WE ARE                                              */}
       {/* ------------------------------------------------------------------ */}
       <Section id="who-we-are" className="py-20 border-b border-void-border/50 bg-void-dark/50">
-        <Container className="max-w-5xl">
+        <Container>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             <div className="lg:col-span-5 space-y-4">
               <Badge variant="outline" className="border-electric-purple/40 text-electric-purple">
@@ -236,7 +238,7 @@ export default function AboutPage() {
       {/* SECTION 3: MISSION & VISION                                        */}
       {/* ------------------------------------------------------------------ */}
       <Section id="mission-vision" className="py-20 border-b border-void-border/50">
-        <Container className="max-w-6xl">
+        <Container>
           <div className="text-center max-w-2xl mx-auto mb-14">
             <Badge variant="outline" className="border-electric-purple/40 text-electric-purple mb-3">
               PURPOSE & DIRECTION
@@ -296,7 +298,7 @@ export default function AboutPage() {
       {/* SECTION 4: CORE VALUES (6 PILLARS)                                 */}
       {/* ------------------------------------------------------------------ */}
       <Section id="core-values" className="py-20 border-b border-void-border/50 bg-void-dark/30">
-        <Container className="max-w-6xl">
+        <Container>
           <div className="text-center max-w-2xl mx-auto mb-16">
             <Badge variant="outline" className="border-electric-purple/40 text-electric-purple mb-3">
               GUIDING PRINCIPLES
@@ -344,7 +346,7 @@ export default function AboutPage() {
       {/* SECTION 5: OUR APPROACH (6 PHASES)                                 */}
       {/* ------------------------------------------------------------------ */}
       <Section id="our-approach" className="py-20 border-b border-void-border/50">
-        <Container className="max-w-6xl">
+        <Container>
           <div className="text-center max-w-2xl mx-auto mb-16">
             <Badge variant="outline" className="border-electric-purple/40 text-electric-purple mb-3">
               METHODOLOGY
@@ -388,7 +390,7 @@ export default function AboutPage() {
       {/* SECTION 6: TECHNOLOGY STACK MATRIX                                */}
       {/* ------------------------------------------------------------------ */}
       <Section id="technology-stack" className="py-20 border-b border-void-border/50 bg-void-dark/40">
-        <Container className="max-w-6xl">
+        <Container>
           <div className="text-center max-w-2xl mx-auto mb-16">
             <Badge variant="outline" className="border-electric-purple/40 text-electric-purple mb-3">
               TECHNOLOGY MATRIX

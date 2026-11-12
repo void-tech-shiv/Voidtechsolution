@@ -94,7 +94,7 @@ export default async function ProjectCaseStudyPage({
           className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 h-80 w-[600px] rounded-full bg-electric-purple/10 blur-[130px]"
         />
 
-        <Container className="relative z-10 max-w-5xl">
+        <Container className="relative z-10">
           {/* Breadcrumb Navigation */}
           <nav
             aria-label="Breadcrumb"
@@ -191,7 +191,7 @@ export default async function ProjectCaseStudyPage({
       {/* 2. CHALLENGE & ARCHITECTURAL SOLUTION GRID                         */}
       {/* ------------------------------------------------------------------ */}
       <Section className="py-16 border-b border-void-border/50">
-        <Container className="max-w-5xl space-y-12">
+        <Container className="space-y-12">
           {/* Concept Prototype Transparency Notice */}
           <div className="rounded-xl border border-electric-purple/30 bg-electric-purple/5 p-4 sm:p-5 flex items-start gap-4">
             <Sparkles className="h-5 w-5 text-electric-purple shrink-0 mt-0.5" />
@@ -301,7 +301,7 @@ export default async function ProjectCaseStudyPage({
       {/* 3. SIMULATED BENCHMARK METRICS & RESULTS                           */}
       {/* ------------------------------------------------------------------ */}
       <Section className="py-16 border-b border-void-border/50 bg-void-dark/30">
-        <Container className="max-w-5xl space-y-10">
+        <Container className="space-y-10">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Cpu className="h-4 w-4 text-electric-purple" />
@@ -357,7 +357,7 @@ export default async function ProjectCaseStudyPage({
       {/* 4. TECH STACK & IMPLEMENTATION DETAILS                             */}
       {/* ------------------------------------------------------------------ */}
       <Section className="py-16 border-b border-void-border/50">
-        <Container className="max-w-5xl space-y-10">
+        <Container className="space-y-10">
           <div className="space-y-2">
             <Badge variant="outline" className="border-electric-purple/40 text-electric-purple text-[10px] font-mono">
               ENGINEERING TOOLKIT
@@ -406,7 +406,7 @@ export default async function ProjectCaseStudyPage({
       {/* ------------------------------------------------------------------ */}
       {relatedProjects.length > 0 && (
         <Section className="py-16 border-b border-void-border/50 bg-void-dark/20">
-          <Container className="max-w-5xl space-y-8">
+          <Container className="space-y-8">
             <div className="flex items-center justify-between">
               <h2 className="font-mono text-2xl font-bold text-white">
                 Other Engineering Concepts

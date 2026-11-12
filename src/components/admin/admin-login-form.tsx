@@ -6,6 +6,7 @@ import { Lock, Mail, Eye, EyeOff, ShieldAlert, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { loginAction } from "@/server/actions/auth.actions";
 import { sanitizeCallbackUrl } from "@/server/security/cookie";
+import { BrandLogo } from "@/components/ui/brand-logo";
 
 export function AdminLoginForm() {
   const searchParams = useSearchParams();
@@ -75,9 +76,7 @@ export function AdminLoginForm() {
 
         {/* Header */}
         <div className="text-center mb-8 relative">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-electric-violet/10 border border-electric-purple/30 text-electric-purple mb-3 shadow-glow-sm">
-            <Lock className="w-5 h-5" aria-hidden="true" />
-          </div>
+          <BrandLogo variant="emblem" size="md" className="mx-auto mb-4" />
           <h1 className="text-2xl font-bold tracking-tight text-white">
             Admin Console
           </h1>

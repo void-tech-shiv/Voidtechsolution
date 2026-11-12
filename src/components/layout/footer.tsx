@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { siteConfig } from "@/config/site";
+import { BrandLogo } from "@/components/ui/brand-logo";
 
 export function Footer() {
   const pathname = usePathname();
@@ -24,21 +25,11 @@ export function Footer() {
 
   return (
     <footer className="w-full border-t border-void-border/80 bg-void-dark py-14 text-void-muted transition-colors">
-      <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-12">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
           {/* Brand & Introduction Column */}
           <div className="flex flex-col gap-3.5 sm:col-span-2">
-            <Link href="/" className="flex items-center gap-2 group w-fit" aria-label="VOIDTECH SOLUTION Home">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-electric-violet text-white font-mono font-bold text-xs shadow-glow-xs">
-                V
-              </div>
-              <span className="font-mono text-sm font-bold text-void-white tracking-wider group-hover:text-electric-purple transition-colors">
-                VOIDTECH SOLUTION
-              </span>
-            </Link>
-            <p className="text-xs text-electric-purple font-mono font-medium tracking-wide">
-              {siteConfig.tagline}
-            </p>
+            <BrandLogo variant="footer" size="md" href="/" />
             <p className="max-w-md text-xs leading-relaxed text-void-muted">
               {siteConfig.description}
             </p>

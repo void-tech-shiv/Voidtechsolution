@@ -70,7 +70,7 @@ export default async function HomePage() {
       {/* ========================================================================= */}
       <section
         id="about"
-        className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 border-t border-void-border/60"
+        className="relative mx-auto max-w-[1440px] px-4 py-16 sm:px-6 sm:py-20 lg:px-8 xl:px-12 border-t border-void-border/60"
         aria-labelledby="brand-intro-headline"
       >
         <div className="mx-auto max-w-3xl text-center">
@@ -143,7 +143,7 @@ export default async function HomePage() {
       {/* ========================================================================= */}
       <section
         id="services"
-        className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8 border-t border-void-border/60"
+        className="relative mx-auto max-w-[1440px] px-4 py-16 sm:px-6 sm:py-24 lg:px-8 xl:px-12 border-t border-void-border/60"
         aria-labelledby="services-headline"
       >
         <div className="mb-10 text-center">
@@ -178,7 +178,7 @@ export default async function HomePage() {
       {/* ========================================================================= */}
       <section
         id="why-us"
-        className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8 border-t border-void-border/60"
+        className="relative mx-auto max-w-[1440px] px-4 py-16 sm:px-6 sm:py-24 lg:px-8 xl:px-12 border-t border-void-border/60"
         aria-labelledby="why-us-headline"
       >
         <div className="mb-12 text-center">
@@ -252,7 +252,7 @@ export default async function HomePage() {
       {/* ========================================================================= */}
       <section
         id="process"
-        className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8 border-t border-void-border/60"
+        className="relative mx-auto max-w-[1440px] px-4 py-16 sm:px-6 sm:py-24 lg:px-8 xl:px-12 border-t border-void-border/60"
         aria-labelledby="process-headline"
       >
         <div className="mb-12 text-center">
@@ -307,7 +307,7 @@ export default async function HomePage() {
       {/* ========================================================================= */}
       <section
         id="portfolio"
-        className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8 border-t border-void-border/60"
+        className="relative mx-auto max-w-[1440px] px-4 py-16 sm:px-6 sm:py-24 lg:px-8 xl:px-12 border-t border-void-border/60"
         aria-labelledby="portfolio-headline"
       >
         <div className="mb-12 text-center">
@@ -417,11 +417,11 @@ export default async function HomePage() {
       </section>
 
       {/* ========================================================================= */}
-      {/* TECHNOLOGY ECOSYSTEM RIBBON (SMARTSTRUCT REFERENCE)                      */}
+      {/* TECHNOLOGY ECOSYSTEM RIBBON                                              */}
       {/* ========================================================================= */}
       <section
         id="technologies"
-        className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 border-t border-[rgba(70,180,230,0.18)]"
+        className="relative mx-auto max-w-[1440px] px-4 py-16 sm:px-6 sm:py-20 lg:px-8 xl:px-12 border-t border-void-border/60"
         aria-label="Technology Stack Ecosystem"
       >
         <TechEcosystemRibbon />
@@ -432,7 +432,7 @@ export default async function HomePage() {
       {/* ========================================================================= */}
       <section
         id="pricing"
-        className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8 border-t border-void-border/60"
+        className="relative mx-auto max-w-[1440px] px-4 py-16 sm:px-6 sm:py-24 lg:px-8 xl:px-12 border-t border-void-border/60"
         aria-labelledby="pricing-headline"
       >
         <div className="mb-12 text-center">
@@ -521,7 +521,7 @@ export default async function HomePage() {
       {/* ========================================================================= */}
       <section
         id="contact"
-        className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8 border-t border-void-border/60"
+        className="relative mx-auto max-w-[1440px] px-4 py-16 sm:px-6 sm:py-24 lg:px-8 xl:px-12 border-t border-void-border/60"
         aria-label="Direct Project Inquiry"
       >
         <QuickInquiry />

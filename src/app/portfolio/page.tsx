@@ -31,6 +31,8 @@ export default async function PortfolioPage() {
         eyebrow="Engineering showcase"
         title={<>Selected Work & <span className="bg-gradient-to-r from-electric-purple via-electric-violet to-electric-neon bg-clip-text text-transparent">Engineering Concepts.</span></>}
         description="Explore software concepts, architecture experiments and digital solutions developed around practical engineering challenges."
+        imageSrc="/hero/voidtech-portfolio-3d.webp"
+        imageAlt="VOIDTECH Concept Lab Showroom & Architecture Displays"
         asideLabel="Concept lab"
         aside={<div className="space-y-4"><span className="inline-flex rounded-full border border-electric-purple/40 bg-electric-purple/10 px-3 py-1 font-mono text-[10px] font-semibold tracking-wider text-electric-purple">AUTHENTIC LAB PROTOTYPES</span><div className="flex aspect-[16/10] flex-col justify-between overflow-hidden rounded-xl border border-void-border/70 bg-[radial-gradient(ellipse_at_72%_28%,rgba(139,92,246,0.22),transparent_55%),linear-gradient(145deg,#15151f,#09090d)] p-4"><div className="flex justify-between"><span className="font-mono text-[10px] uppercase tracking-wider text-electric-purple">LAB / CONCEPTS</span><span className="h-2 w-2 rounded-full bg-electric-neon" aria-hidden="true" /></div><div className="grid grid-cols-3 gap-2" aria-hidden="true"><span className="h-12 rounded-lg border border-electric-purple/25 bg-electric-purple/10"/><span className="h-12 rounded-lg border border-void-border bg-void-black/35"/><span className="h-12 rounded-lg border border-electric-purple/20 bg-electric-purple/5"/></div><div><p className="text-sm font-semibold text-white">Prototype & architecture experiments</p><p className="mt-1 text-xs text-void-muted">Concept work is labeled clearly throughout this showcase.</p></div></div><p className="rounded-lg border border-electric-purple/20 bg-electric-purple/5 p-3.5 text-xs leading-relaxed text-void-light">Authentic lab prototypes. Zero fabricated case studies or client results.</p></div>}
       />
@@ -39,7 +41,7 @@ export default async function PortfolioPage() {
       {/* INTERACTIVE PROJECTS DISCOVERY GRID                                */}
       {/* ------------------------------------------------------------------ */}
       <Section className="py-16">
-        <Container className="max-w-7xl">
+        <Container>
           <PortfolioFilter initialProjects={projects} />
         </Container>
       </Section>

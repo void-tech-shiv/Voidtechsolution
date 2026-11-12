@@ -61,6 +61,8 @@ export default async function ServicesPage() {
             <Link href="/pricing" className={buttonVariants({ variant: "outline", size: "lg", className: "min-h-12 w-full sm:w-auto" })}>Review Pricing Packages</Link>
           </>
         }
+        imageSrc="/hero/voidtech-services-3d.webp"
+        imageAlt="VOIDTECH Modular Microservices and API Architecture"
         asideLabel="Explore by discipline"
         aside={<div className="grid grid-cols-2 gap-2">{["Web", "Mobile", "API & Systems", "AI & Agents", "Bots & Automation", "Enterprise & SaaS", "FinTech & UPI", "Design", "Cloud & DevOps"].map((label, i) => <div key={label} className="flex min-h-12 items-center gap-2 rounded-lg border border-void-border/60 bg-void-black/35 px-3 py-2 text-xs text-void-light"><span className="font-mono text-[10px] text-electric-purple">{String(i + 1).padStart(2, "0")}</span>{label}</div>)}</div>}
         footer={
@@ -78,7 +80,7 @@ export default async function ServicesPage() {
       {/* ========================================================================= */}
       <section
         id="catalog"
-        className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 border-t border-void-border/60"
+        className="relative mx-auto max-w-[1440px] px-4 py-16 sm:px-6 sm:py-20 lg:px-8 xl:px-12 border-t border-void-border/60"
         aria-labelledby="catalog-headline"
       >
         <div className="mb-10 text-center">
@@ -104,7 +106,7 @@ export default async function ServicesPage() {
       {/* SECTION 3: ENGINEERING STANDARDS & COMMITMENTS                             */}
       {/* ========================================================================= */}
       <section
-        className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 border-t border-void-border/60"
+        className="relative mx-auto max-w-[1440px] px-4 py-16 sm:px-6 sm:py-20 lg:px-8 xl:px-12 border-t border-void-border/60"
         aria-labelledby="standards-headline"
       >
         <div className="mb-12 text-center">
@@ -230,7 +232,7 @@ export default async function ServicesPage() {
       {/* SECTION 5: CLOSING CTA                                                     */}
       {/* ========================================================================= */}
       <section
-        className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8 border-t border-void-border/60"
+        className="relative mx-auto max-w-[1440px] px-4 py-16 sm:px-6 sm:py-24 lg:px-8 xl:px-12 border-t border-void-border/60"
         aria-label="Direct Project Inquiry"
       >
         <QuickInquiry />

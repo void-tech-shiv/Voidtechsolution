@@ -3,7 +3,7 @@
 **Brand:** VOIDTECH SOLUTION  
 **Tagline:** Build. Launch. Grow Online.  
 **Design Reference:** SmartStruct Cybernetic Digital Architecture  
-**Document Version:** 2.0 (Phase 8 Redesign)  
+**Document Version:** 3.0 (Phase 8.2 Global Brand Identity & Multi-Page UI Correction)  
 
 ---
 
@@ -11,7 +11,7 @@
 
 VOIDTECH SOLUTION represents a premier, forward-thinking software engineering agency. The visual identity balances **futuristic precision**, **architectural depth**, and **uncompromising clarity**. 
 
-The design rejects generic corporate templates in favor of a bespoke, cybernetic digital agency aesthetic that evokes high-assurance engineering, AI automation, and cloud scalability.
+The design combines cybernetic digital architecture with the owner's signature purple and violet aesthetic: deep obsidian canvas, elevated glassmorphic cards, luminous purple ribbons, and honest technical schematics.
 
 ---
 
@@ -21,20 +21,41 @@ The design rejects generic corporate templates in favor of a bespoke, cybernetic
 --------------------------------------------------------------------------------
 ROLE                     HEX VALUE    SEMANTIC PURPOSE
 --------------------------------------------------------------------------------
-Primary Background       #020914      Deepest oceanic navy; infinite canvas ground
-Secondary Background     #061321      Sub-section background; architectural containers
-Card / Glass Surface     #081A2B      Translucent card bodies with 85% opacity
-Elevated Surface         #0B2033      Modals, floating HUD cards, active tabs
-Primary Cyan Accent      #00D4FF      Primary brand luminescence, active links, glow
-Bright Cyan Highlight    #43E8FF      High-chroma focal points, badges, beacon dots
-Secondary Vibrant Blue   #168BFF      Gradients, secondary button glows, borders
-Primary Text             #F3F8FC      High-contrast crisp white typography
-Secondary Text           #A2B3C5      Silver slate for body text and descriptions
-Muted Text               #71849A      Subtle metadata, timestamps, secondary labels
-Precision Border         rgba(70, 180, 230, 0.18)   Fine hairline glass boundaries
-Glow Border (Hover)      rgba(0, 212, 255, 0.40)    Active interactive hover highlight
+Primary Background       #050507      Deep obsidian canvas ground
+Secondary Background     #0A0912      Header, footer, and sub-section background
+Card Surface             #100D1B      Translucent card bodies with 85% opacity
+Elevated Surface         #171126      Modals, floating HUD cards, active tabs
+Primary Violet Accent    #8B5CF6      Primary brand luminescence, active buttons, glow
+Bright Purple Accent     #A855F7      High-chroma focal points, badges, beacon dots
+Highlight Purple         #C084FC      Hover accents, micro-interaction pings
+Primary Text             #F8F7FC      High-contrast crisp white typography
+Secondary Text           #B8B3C7      Light violet slate for body text and descriptions
+Muted Text               #858096      Subtle metadata, timestamps, secondary labels
+Precision Border         rgba(168, 85, 247, 0.20)   Fine hairline glass boundaries
+Glow Border (Hover)      rgba(168, 85, 247, 0.50)   Active interactive hover highlight
 --------------------------------------------------------------------------------
 ```
+
+---
+
+## 3. Official Brand Logo Identity
+
+The official brand identity centers on the origami ribbon `V` symbol:
+- **Symbol:** Transparent origami ribbon `V` mark (`/brand/voidtech-symbol.webp`).
+- **Typography:** Bold `VOID` in crisp white paired with electric purple `TECH` (`#A855F7`) and tracked `SOLUTION` subtitle.
+- **Component:** Reusable `<BrandLogo />` component (`src/components/ui/brand-logo.tsx`) deployed in header, footer, mobile drawer, admin login, and 404 pages.
+
+---
+
+## 4. Multi-Page 3D Visual Asset Architecture
+
+Every dedicated route features an exclusive 3D Octane visual asset:
+- **Home (`/`):** 3D Digital Infrastructure & Glass Headquarters (`voidtech-hero-violet.webp`)
+- **About (`/about`):** 3D Global Telemetry Wireframe Globe (`voidtech-about-3d.webp`)
+- **Services (`/services`):** Modular Floating Microservice Cubes & APIs (`voidtech-services-3d.webp`)
+- **Pricing (`/pricing`):** Holographic Calculation Prism & Concentric Rings (`voidtech-pricing-3d.webp`)
+- **Portfolio (`/portfolio`):** Concept Lab Showroom & Glass Display Panels (`voidtech-portfolio-3d.webp`)
+- **Contact (`/contact`):** Cybernetic Communication Beacon Spire (`voidtech-contact-3d.webp`)
 
 ---
 
