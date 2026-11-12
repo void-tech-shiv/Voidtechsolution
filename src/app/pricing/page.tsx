@@ -11,7 +11,8 @@ import {
 import { siteConfig } from "@/config/site";
 import { FaqRepo } from "@/server/repositories";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { PublicPageHero } from "@/components/layout/public-page-hero";
 import { FaqAccordion } from "@/components/sections/faq-accordion";
 import { PricingTable } from "@/components/sections/pricing-table";
 import { PricingCalculator } from "@/components/sections/pricing-calculator";
@@ -45,58 +46,22 @@ export default async function PricingPage() {
   const faqs = await FaqRepo.getActiveFaqs();
 
   return (
-    <div className="relative overflow-hidden">
+    <div className="public-editorial relative overflow-hidden">
       {/* Background radial glow */}
       <div
         className="pointer-events-none absolute inset-0 bg-void-glow-radial opacity-40"
         aria-hidden="true"
       />
 
-      {/* ========================================================================= */}
-      {/* SECTION 1: HERO                                                           */}
-      {/* ========================================================================= */}
-      <section
-        className="relative mx-auto max-w-7xl px-4 pt-20 pb-16 sm:px-6 sm:pt-28 sm:pb-20 lg:px-8 text-center"
-        aria-labelledby="pricing-hero-headline"
-      >
-        <div className="mx-auto max-w-4xl">
-          <Badge
-            variant="outline"
-            className="mb-6 border-electric-purple/40 bg-electric-purple/10 text-electric-purple font-mono text-xs px-4 py-1.5 shadow-glow-xs"
-          >
-            TRANSPARENT INR PRICING &bull; PREDICTABLE ENGINEERING
-          </Badge>
-
-          <h1
-            id="pricing-hero-headline"
-            className="font-mono text-4xl font-extrabold tracking-tight text-white sm:text-6xl leading-tight"
-          >
-            Predictable Investment.{" "}
-            <span className="bg-gradient-to-r from-electric-purple via-electric-violet to-electric-neon bg-clip-text text-transparent">
-              Zero Hidden Costs.
-            </span>
-          </h1>
-
-          <p className="mt-6 text-base leading-relaxed text-void-light sm:text-lg max-w-2xl mx-auto">
-            Honest, transparent pricing strictly in Indian Rupees (INR). From ultra-fast static landing pages starting at ₹999 to custom enterprise systems, our clear 50/50 payment terms ensure alignment at kickoff and final handover.
-          </p>
-
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <a href="#packages">
-              <Button size="lg" variant="glow" className="gap-2">
-                <span>View Approved Tiers</span>
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </a>
-            <a href="#calculator">
-              <Button size="lg" variant="outline" className="gap-2 border-void-border hover:border-electric-purple/50">
-                <Calculator className="h-4 w-4 text-electric-purple" />
-                <span>Open Project Calculator</span>
-              </Button>
-            </a>
-          </div>
-        </div>
-      </section>
+      <PublicPageHero
+        headingId="pricing-hero-headline"
+        eyebrow="Transparent INR pricing • Predictable engineering"
+        title={<>Predictable Investment. <span className="bg-gradient-to-r from-electric-purple via-electric-violet to-electric-neon bg-clip-text text-transparent">Zero Hidden Costs.</span></>}
+        description="Honest, transparent pricing strictly in Indian Rupees (INR). From ultra-fast static landing pages starting at ₹999 to custom enterprise systems, our clear 50/50 payment terms ensure alignment at kickoff and final handover."
+        actions={<><a href="#packages" className={buttonVariants({ variant: "glow", size: "lg", className: "min-h-12" })}>View Approved Tiers<ArrowRight className="h-4 w-4" aria-hidden="true" /></a><a href="#calculator" className={buttonVariants({ variant: "outline", size: "lg", className: "min-h-12" })}><Calculator className="h-4 w-4 text-electric-purple" aria-hidden="true" />Open Project Calculator</a></>}
+        asideLabel="Clear project terms"
+        aside={<div className="space-y-3"><div className="rounded-xl border border-void-border/60 bg-void-black/40 p-4"><p className="font-mono text-xs uppercase tracking-wider text-void-muted">Starting price</p><p className="mt-2 text-3xl font-bold text-white">₹999</p><p className="mt-1 text-xs text-void-muted">Package-specific scope applies</p></div><div className="grid grid-cols-2 gap-3"><div className="rounded-xl border border-void-border/60 bg-void-black/40 p-4"><p className="font-mono text-xs uppercase text-void-muted">Kickoff</p><p className="mt-2 text-xl font-bold text-electric-purple">50%</p></div><div className="rounded-xl border border-void-border/60 bg-void-black/40 p-4"><p className="font-mono text-xs uppercase text-void-muted">Handover</p><p className="mt-2 text-xl font-bold text-white">50%</p></div></div><p className="text-xs leading-relaxed text-void-muted">Ten approved packages and a project calculator make scope and investment easier to compare.</p></div>}
+      />
 
       {/* ========================================================================= */}
       {/* SECTION 2: APPROVED PACKAGES TABLE                                        */}
@@ -263,12 +228,10 @@ export default async function PricingPage() {
           <p className="text-void-light text-sm sm:text-base leading-relaxed max-w-xl mx-auto mb-8">
             Tell us about your technical specifications and goals. We review every enquiry and respond as soon as possible with an architectural breakdown.
           </p>
-          <Link href="/contact">
-            <Button size="lg" variant="glow" className="gap-2 px-8">
+          <Link href="/contact" className={buttonVariants({ variant: "glow", size: "lg", className: "gap-2 px-8" })}>
               <span>Start Your Project Inquiry</span>
               <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
+            </Link>
         </div>
       </section>
     </div>

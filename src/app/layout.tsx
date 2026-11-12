@@ -22,7 +22,7 @@ const monoFont = JetBrains_Mono({
 export const metadata: Metadata = {
   title: {
     default: `${siteConfig.name} — ${siteConfig.tagline}`,
-    template: `%s | ${siteConfig.name}`,
+    template: "%s",
   },
   description: siteConfig.description,
   keywords: [

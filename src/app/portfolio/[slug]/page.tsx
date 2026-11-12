@@ -17,7 +17,7 @@ import {
   getProjectBySlug,
 } from "@/server/repositories/portfolio.repo";
 import { Container, Section } from "@/components/layout";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -84,7 +84,7 @@ export default async function ProjectCaseStudyPage({
     : [];
 
   return (
-    <main className="min-h-screen bg-void-black text-void-light selection:bg-electric-purple/30 selection:text-white">
+    <main className="public-editorial min-h-screen bg-void-black text-void-light selection:bg-electric-purple/30 selection:text-white">
       {/* ------------------------------------------------------------------ */}
       {/* 1. BREADCRUMB NAVIGATION & HERO HEADER                             */}
       {/* ------------------------------------------------------------------ */}
@@ -394,11 +394,9 @@ export default async function ProjectCaseStudyPage({
                 Sanitized codebase architecture and test harness configurations can be reviewed upon request during technical onboarding.
               </p>
             </div>
-            <Link href="/contact" tabIndex={-1} className="shrink-0">
-              <Button size="sm" variant="outline">
+            <Link href="/contact" className={buttonVariants({ variant: "outline", size: "sm", className: "shrink-0" })}>
                 Request Architecture Brief
-              </Button>
-            </Link>
+              </Link>
           </div>
         </Container>
       </Section>
@@ -476,18 +474,14 @@ export default async function ProjectCaseStudyPage({
             Let&apos;s evaluate your architectural requirements, data volumes, and delivery targets.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
-            <Link href="/contact" tabIndex={-1}>
-              <Button size="lg" variant="glow" className="gap-2">
+            <Link href="/contact" className={buttonVariants({ variant: "glow", size: "lg", className: "gap-2" })}>
                 <span>Start Your Project</span>
                 <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/portfolio" tabIndex={-1}>
-              <Button size="lg" variant="outline" className="gap-2">
+              </Link>
+            <Link href="/portfolio" className={buttonVariants({ variant: "outline", size: "lg", className: "gap-2" })}>
                 <ArrowLeft className="h-4 w-4" />
                 <span>Back to Portfolio</span>
-              </Button>
-            </Link>
+              </Link>
           </div>
         </Container>
       </Section>

@@ -24,9 +24,10 @@ const CATEGORIES: { label: string; value: ServiceCategory | "ALL" }[] = [
 
 interface ServicesFilterProps {
   initialServices: Service[];
+  featured?: boolean;
 }
 
-export function ServicesFilter({ initialServices }: ServicesFilterProps) {
+export function ServicesFilter({ initialServices, featured = false }: ServicesFilterProps) {
   const [selectedCategory, setSelectedCategory] = React.useState<ServiceCategory | "ALL">("ALL");
   const [searchQuery, setSearchQuery] = React.useState("");
 
@@ -48,11 +49,11 @@ export function ServicesFilter({ initialServices }: ServicesFilterProps) {
   return (
     <div className="w-full space-y-8">
       {/* Search and Category Filter Controls */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      {!featured ? <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         {/* Category Pills */}
         <div
           className="flex flex-wrap items-center gap-2"
-          role="tablist"
+          role="group"
           aria-label="Filter services by category"
         >
           {CATEGORIES.map((cat) => {
@@ -61,11 +62,10 @@ export function ServicesFilter({ initialServices }: ServicesFilterProps) {
               <button
                 key={cat.value}
                 type="button"
-                role="tab"
-                aria-selected={isActive}
+                aria-pressed={isActive}
                 onClick={() => setSelectedCategory(cat.value)}
                 className={cn(
-                  "rounded-full px-3.5 py-1.5 text-xs font-mono transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-purple",
+                  "min-h-11 rounded-full px-3.5 py-2 text-xs font-mono transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-purple",
                   isActive
                     ? "bg-electric-purple text-white shadow-glow-xs font-bold"
                     : "border border-void-border/80 bg-void-surface/60 text-void-muted hover:border-electric-purple/40 hover:text-void-white"
@@ -92,10 +92,10 @@ export function ServicesFilter({ initialServices }: ServicesFilterProps) {
             placeholder="Search capabilities or tech..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg border border-void-border/80 bg-void-surface/80 py-2 pl-9 pr-3 text-xs text-void-white placeholder:text-void-muted focus:border-electric-purple focus:outline-none focus:ring-1 focus:ring-electric-purple"
+            className="w-full rounded-lg border border-void-border/80 bg-void-surface/80 py-3 pl-9 pr-3 text-sm text-void-white placeholder:text-void-muted focus:border-electric-purple focus:outline-none focus:ring-1 focus:ring-electric-purple"
           />
         </div>
-      </div>
+      </div> : null}
 
       {/* Services Grid */}
       {filteredServices.length === 0 ? (
@@ -190,7 +190,7 @@ export function ServicesFilter({ initialServices }: ServicesFilterProps) {
 
                 <Link
                   href={`/contact?service=${encodeURIComponent(service.title)}`}
-                  className="inline-flex w-full items-center justify-between rounded-lg border border-void-border/70 bg-void-surface/50 px-3.5 py-2 text-xs font-medium text-void-light transition-all hover:border-electric-purple hover:bg-electric-purple/10 hover:text-white group/btn"
+                  className="inline-flex min-h-11 w-full items-center justify-between rounded-lg border border-void-border/70 bg-void-surface/50 px-3.5 py-2.5 text-xs font-medium text-void-light transition-all hover:border-electric-purple hover:bg-electric-purple/10 hover:text-white group/btn"
                 >
                   <span>Inquire for {service.title}</span>
                   <ArrowUpRight className="h-3.5 w-3.5 text-electric-purple transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" aria-hidden="true" />

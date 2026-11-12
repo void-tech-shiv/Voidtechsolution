@@ -78,7 +78,7 @@ describe("Phase 5: Dedicated About Page (/about)", () => {
     ];
 
     for (const val of values) {
-      expect(screen.getByText(val)).toBeInTheDocument();
+      expect(screen.getAllByText(val).length).toBeGreaterThanOrEqual(1);
     }
   });
 

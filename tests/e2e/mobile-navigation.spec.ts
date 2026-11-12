@@ -43,6 +43,19 @@ test.describe("Mobile Responsive Navigation & Hero Layout", () => {
     await expect(drawer).not.toBeVisible();
   });
 
+  test("traps keyboard focus in the drawer and restores focus to the menu trigger", async ({ page, isMobile }) => {
+    test.skip(!isMobile, "Mobile drawer focus is tested on mobile viewports");
+    const { triggerBtn, drawer } = await openDrawer(page);
+    const closeBtn = drawer.getByRole("button", { name: "Close navigation drawer" });
+    await expect(closeBtn).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await expect(drawer.getByRole("link", { name: "Start Your Project" })).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(closeBtn).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(drawer).not.toBeVisible();
+    await expect(triggerBtn).toBeFocused();
+  });
   test("locks background body scroll when drawer is open and restores upon close", async ({ page, isMobile }) => {
     test.skip(!isMobile, "Mobile drawer is tested on mobile viewports");
 

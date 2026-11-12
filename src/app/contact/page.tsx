@@ -10,6 +10,7 @@ import {
 import { siteConfig } from "@/config/site";
 import { Badge } from "@/components/ui/badge";
 import { ContactEnquiryForm } from "@/components/sections/contact-enquiry-form";
+import { PublicPageHero } from "@/components/layout/public-page-hero";
 
 export const metadata: Metadata = {
   title: "Contact Us & Project Consultation — VOIDTECH SOLUTION",
@@ -37,43 +38,21 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <div className="relative overflow-hidden">
+    <div className="public-editorial relative overflow-hidden">
       {/* Background radial glow */}
       <div
         className="pointer-events-none absolute inset-0 bg-void-glow-radial opacity-40"
         aria-hidden="true"
       />
 
-      {/* ========================================================================= */}
-      {/* SECTION 1: HERO                                                           */}
-      {/* ========================================================================= */}
-      <section
-        className="relative mx-auto max-w-7xl px-4 pt-20 pb-12 sm:px-6 sm:pt-28 sm:pb-16 lg:px-8 text-center"
-        aria-labelledby="contact-hero-headline"
-      >
-        <div className="mx-auto max-w-4xl">
-          <Badge
-            variant="outline"
-            className="mb-6 border-electric-purple/40 bg-electric-purple/10 text-electric-purple font-mono text-xs px-4 py-1.5 shadow-glow-xs"
-          >
-            DIRECT ENGINEERING CONSULTATION &bull; TECHNICAL DISCOVERY
-          </Badge>
-
-          <h1
-            id="contact-hero-headline"
-            className="font-mono text-4xl font-extrabold tracking-tight text-white sm:text-6xl leading-tight"
-          >
-            Let&apos;s Build Something{" "}
-            <span className="bg-gradient-to-r from-electric-purple via-electric-violet to-electric-neon bg-clip-text text-transparent">
-              Exceptional.
-            </span>
-          </h1>
-
-          <p className="mt-6 text-base leading-relaxed text-void-light sm:text-lg max-w-2xl mx-auto">
-            Connect directly with our engineering team. Whether you need a high-converting web application, multi-tenant SaaS, custom API, or autonomous AI automation, we provide direct architectural scoping and transparent project estimates.
-          </p>
-        </div>
-      </section>
+      <PublicPageHero
+        headingId="contact-hero-headline"
+        eyebrow="Direct engineering consultation • Technical discovery"
+        title={<>Let&apos;s Build Something <span className="bg-gradient-to-r from-electric-purple via-electric-violet to-electric-neon bg-clip-text text-transparent">Exceptional.</span></>}
+        description="Connect directly with our engineering team. Whether you need a high-converting web application, multi-tenant SaaS, custom API, or autonomous AI automation, we provide direct architectural scoping and transparent project estimates."
+        asideLabel="What happens next"
+        aside={<ol className="space-y-3">{[{title:"Tell us about the project",detail:"Share goals, requirements and constraints."},{title:"Engineering scoping",detail:"We review the enquiry and prepare a technical assessment."},{title:"Proposal & kickoff",detail:"Align on scope, milestones and the next steps."}].map((step,i)=><li key={step.title} className="flex gap-3 rounded-xl border border-void-border/60 bg-void-black/40 p-3.5"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-electric-purple/15 font-mono text-xs font-bold text-electric-purple">0{i+1}</span><div><p className="text-sm font-semibold text-white">{step.title}</p><p className="mt-1 text-xs leading-relaxed text-void-muted">{step.detail}</p></div></li>)}</ol>}
+      />
 
       {/* ========================================================================= */}
       {/* SECTION 2: AGENCY AVAILABILITY & CONSULTATION GUIDELINES                  */}
@@ -82,7 +61,7 @@ export default function ContactPage() {
         className="relative mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8"
         aria-label="Agency Availability and Scoping Standards"
       >
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-2xl border border-void-border/80 bg-void-surface/50 p-5 backdrop-blur-md">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-electric-purple/20 border border-electric-purple/40 text-electric-purple mb-3">
               <Globe2 className="h-4 w-4" />

@@ -2,7 +2,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Check, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   glow?: boolean;
@@ -210,14 +210,8 @@ export const PricingCard = React.forwardRef<HTMLDivElement, PricingCardProps>(
       </div>
 
       {href ? (
-        <Link href={href} className="w-full">
-          <Button
-            variant={isPopular ? "primary" : "secondary"}
-            size="lg"
-            className="w-full"
-          >
-            {ctaText}
-          </Button>
+        <Link href={href} className={buttonVariants({ variant: isPopular ? "primary" : "secondary", size: "lg", className: "w-full" })}>
+          {ctaText}
         </Link>
       ) : (
         <Button

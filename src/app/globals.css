@@ -6,33 +6,39 @@
   :root {
     /* -------------------------------------------------------------------------
      * VOIDTECH SOLUTION Semantic Token Architecture
+     * Premium Dark Navy & Electric Cyan Palette (SmartStruct Aesthetic)
      * ----------------------------------------------------------------------- */
     /* Backgrounds & Surfaces */
-    --bg-primary: #050507;
-    --bg-secondary: #0a0a0f;
-    --bg-surface: #121218;
-    --bg-surface-elevated: #181824;
-    --bg-card: rgba(18, 18, 24, 0.85);
-    --bg-glass: rgba(24, 24, 34, 0.7);
+    --bg-primary: #020914;
+    --bg-secondary: #061321;
+    --bg-surface: #081A2B;
+    --bg-surface-elevated: #0B2033;
+    --bg-card: rgba(8, 26, 43, 0.85);
+    --bg-glass: rgba(11, 32, 51, 0.75);
 
     /* Text Hierarchy */
-    --text-primary: #f8f8fc;
-    --text-secondary: #e2e2ec;
-    --text-muted: #88889c;
-    --text-subtle: #5a5a6e;
+    --text-primary: #F3F8FC;
+    --text-secondary: #A2B3C5;
+    --text-muted: #71849A;
+    --text-subtle: #415368;
 
-    /* Accent & Luminescence */
-    --accent-purple: #8b5cf6;
-    --accent-purple-hover: #7c3aed;
-    --accent-purple-active: #6d28d9;
-    --accent-purple-glow: rgba(139, 92, 246, 0.35);
-    --accent-neon: #a855f7;
-    --accent-cyan: #06b6d4;
+    /* Accent & Luminescence (Cyan Primary + Blue Secondary) */
+    --accent-cyan: #00D4FF;
+    --accent-cyan-bright: #43E8FF;
+    --accent-blue: #168BFF;
+    --accent-cyan-glow: rgba(0, 212, 255, 0.35);
 
-    /* Borders */
-    --border-primary: #262636;
-    --border-subtle: rgba(38, 38, 54, 0.6);
-    --border-glow: rgba(139, 92, 246, 0.35);
+    /* Preserved token aliases for backward compatibility */
+    --accent-purple: #00D4FF;
+    --accent-purple-hover: #168BFF;
+    --accent-purple-active: #0ea5e9;
+    --accent-purple-glow: rgba(0, 212, 255, 0.40);
+    --accent-neon: #43E8FF;
+
+    /* Precision Borders */
+    --border-primary: rgba(70, 180, 230, 0.18);
+    --border-subtle: rgba(70, 180, 230, 0.10);
+    --border-glow: rgba(0, 212, 255, 0.40);
 
     /* Status Colors */
     --color-success: #10b981;
@@ -47,9 +53,9 @@
     --color-error-bg: rgba(239, 68, 68, 0.12);
     --color-error-border: rgba(239, 68, 68, 0.3);
 
-    --color-info: #06b6d4;
-    --color-info-bg: rgba(6, 182, 212, 0.12);
-    --color-info-border: rgba(6, 182, 212, 0.3);
+    --color-info: #00D4FF;
+    --color-info-bg: rgba(0, 212, 255, 0.12);
+    --color-info-border: rgba(0, 212, 255, 0.3);
   }
 
   * {
@@ -85,25 +91,25 @@
   .glass-panel {
     background: linear-gradient(
       180deg,
-      rgba(24, 24, 34, 0.75) 0%,
-      rgba(10, 10, 15, 0.9) 100%
+      rgba(8, 26, 43, 0.85) 0%,
+      rgba(2, 9, 20, 0.95) 100%
     );
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(139, 92, 246, 0.18);
+    border: 1px solid rgba(70, 180, 230, 0.18);
     box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.08);
   }
 
   .glass-panel-elevated {
     background: linear-gradient(
       180deg,
-      rgba(32, 32, 46, 0.85) 0%,
-      rgba(18, 18, 26, 0.95) 100%
+      rgba(11, 32, 51, 0.90) 0%,
+      rgba(6, 19, 33, 0.98) 100%
     );
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(139, 92, 246, 0.28);
-    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(0, 212, 255, 0.32);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6), inset 0 1px 1px 0 rgba(255, 255, 255, 0.1);
   }
 
   /* Subtle border glow */
@@ -117,9 +123,9 @@
     inset: -1px;
     background: linear-gradient(
       90deg,
-      rgba(139, 92, 246, 0.45),
-      rgba(124, 58, 237, 0.15),
-      rgba(168, 85, 247, 0.45)
+      rgba(0, 212, 255, 0.5),
+      rgba(22, 139, 255, 0.2),
+      rgba(67, 232, 255, 0.5)
     );
     border-radius: inherit;
     z-index: -1;
@@ -135,8 +141,8 @@
 
   .void-card-hover:hover {
     transform: translateY(-2px);
-    border-color: rgba(139, 92, 246, 0.45);
-    box-shadow: 0 12px 30px -10px rgba(139, 92, 246, 0.25);
+    border-color: rgba(0, 212, 255, 0.45);
+    box-shadow: 0 12px 30px -10px rgba(0, 212, 255, 0.25);
   }
 }
 
@@ -174,3 +180,55 @@
     scroll-behavior: auto !important;
   }
 }
+
+
+/* Public site direction: editorial headings, quiet grid texture and accessible forms. */
+.public-editorial :where(h1, h2, h3) {
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+.public-page-hero {
+  isolation: isolate;
+  background: linear-gradient(180deg, rgba(8, 26, 43, 0.45), rgba(2, 9, 20, 0.1));
+}
+
+.public-page-hero__ambient {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  opacity: 0.28;
+  background-image: linear-gradient(rgba(0, 212, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 212, 255, 0.08) 1px, transparent 1px), radial-gradient(ellipse at 82% 16%, rgba(0, 212, 255, 0.2), transparent 45%);
+  background-size: 48px 48px, 48px 48px, auto;
+  mask-image: linear-gradient(to bottom, black, transparent 96%);
+}
+
+.public-page-hero__eyebrow {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid rgba(0, 212, 255, 0.38);
+  border-radius: 9999px;
+  background: rgba(0, 212, 255, 0.09);
+  padding: 0.5rem 0.85rem;
+  color: #43E8FF;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.public-page-hero__aside {
+  min-width: 0;
+  border: 1px solid rgba(70, 180, 230, 0.24);
+  border-radius: 1.25rem;
+  background: linear-gradient(145deg, rgba(11, 32, 51, 0.88), rgba(6, 19, 33, 0.94));
+  padding: clamp(1rem, 3vw, 1.5rem);
+  box-shadow: 0 24px 60px -40px rgba(0, 212, 255, 0.48), inset 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.public-editorial input,
+.public-editorial select,
+.public-editorial textarea { font-size: 16px; }

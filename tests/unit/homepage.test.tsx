@@ -25,8 +25,11 @@ describe("Phase 4: Homepage & Marketing Experience", () => {
       "Turning Ideas Into Powerful Digital Products."
     );
     expect(screen.getByText(/We design, develop, and deliver modern digital solutions/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Start Your Project/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Explore Our Services/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Start Your Project/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Explore Our Services/i })).toBeInTheDocument();
+
+    expect(screen.getByRole("link", { name: /Start Your Project/i })).toHaveAttribute("href", "/contact");
+    expect(container.querySelector("#hero")).toBeInTheDocument();
 
     // Section 2: Brand Introduction
     expect(screen.getByText(/Technology should move your business forward/i)).toBeInTheDocument();
@@ -35,7 +38,7 @@ describe("Phase 4: Homepage & Marketing Experience", () => {
     expect(screen.getByText(/High-Assurance Code/i)).toBeInTheDocument();
 
     // Section 3: Services Showcase Heading
-    expect(screen.getByText("Full-Spectrum Digital Services")).toBeInTheDocument();
+    expect(screen.getByText("Featured Engineering Services")).toBeInTheDocument();
 
     // Section 4: Why Choose VoidTech
     expect(screen.getByText("Why Partner With VoidTech")).toBeInTheDocument();
@@ -132,7 +135,7 @@ describe("Phase 4: Homepage & Marketing Experience", () => {
 
     it("renders all 18 services initially", () => {
       render(<ServicesFilter initialServices={mockServices} />);
-      expect(screen.getByRole("tab", { name: "All Services (18)" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "All Services (18)" })).toBeInTheDocument();
       expect(screen.getByText("Website Development")).toBeInTheDocument();
       expect(screen.getByText("Custom Software Solutions")).toBeInTheDocument();
       expect(screen.getByText("UPI & Payment Solutions")).toBeInTheDocument();
@@ -141,7 +144,7 @@ describe("Phase 4: Homepage & Marketing Experience", () => {
     it("filters services by category tab selection", () => {
       render(<ServicesFilter initialServices={mockServices} />);
       
-      const mobileTab = screen.getByRole("tab", { name: "Mobile" });
+      const mobileTab = screen.getByRole("button", { name: "Mobile" });
       fireEvent.click(mobileTab);
 
       expect(screen.getByText("App Development")).toBeInTheDocument();
@@ -231,8 +234,8 @@ describe("Phase 4: Homepage & Marketing Experience", () => {
       render(<QuickInquiry />);
       
       expect(screen.getByText("Have an Idea? Let's Build It.")).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /Explore Services & Capabilities/i })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /Review Pricing Tiers/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /Explore Services & Capabilities/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /Review Pricing Tiers/i })).toBeInTheDocument();
       expect(screen.getByText("Structured Requirements Scoping")).toBeInTheDocument();
       expect(screen.getByText("Full Repository Handover")).toBeInTheDocument();
       expect(screen.getByText("Clear Milestone Pricing")).toBeInTheDocument();
@@ -244,7 +247,7 @@ describe("Phase 4: Homepage & Marketing Experience", () => {
       render(<Header />);
       expect(screen.getByLabelText("VOIDTECH SOLUTION Home")).toBeInTheDocument();
       expect(screen.getByRole("navigation", { name: "Desktop Navigation" })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Start Your Project" })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Start Your Project" })).toBeInTheDocument();
 
       // Verify all 6 navigation links (dedicated pages for Home, About, Services, Pricing, Portfolio & Contact)
       const expectedNav = [

@@ -13,9 +13,11 @@ import { ServicesRepo, PortfolioRepo, PricingRepo, FaqRepo } from "@/server/repo
 import { ServicesFilter } from "@/components/sections/services-filter";
 import { FaqAccordion } from "@/components/sections/faq-accordion";
 import { QuickInquiry } from "@/components/sections/quick-inquiry";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { GlassCard, PricingCard } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { HeroArchitectureVisual } from "@/components/sections/hero-architecture-visual";
+import { TechEcosystemRibbon } from "@/components/sections/tech-ecosystem-ribbon";
 
 export const metadata: Metadata = {
   title: "VOIDTECH SOLUTION — Build. Launch. Grow Online.",
@@ -51,7 +53,7 @@ export default async function HomePage() {
   ]);
 
   return (
-    <div className="relative overflow-hidden">
+    <div className="public-editorial relative overflow-hidden">
       {/* Background radial glow */}
       <div
         className="pointer-events-none absolute inset-0 bg-void-glow-radial opacity-50"
@@ -59,79 +61,100 @@ export default async function HomePage() {
       />
 
       {/* ========================================================================= */}
-      {/* SECTION 1: HERO                                                           */}
+      {/* SECTION 1: BESPOKE FLAGSHIP HERO (SMARTSTRUCT-INSPIRED AESTHETIC)        */}
       {/* ========================================================================= */}
       <section
         id="hero"
-        className="relative mx-auto max-w-7xl px-4 pt-12 pb-14 sm:px-6 sm:pt-24 sm:pb-20 lg:px-8 overflow-hidden"
+        className="relative overflow-hidden border-b border-[rgba(70,180,230,0.18)] bg-gradient-to-b from-[#020914] via-[#061321] to-[#020914] py-12 sm:py-16 lg:py-24"
         aria-labelledby="hero-headline"
       >
-        <div className="mx-auto max-w-4xl text-center">
-          {/* Tagline / Positioning Badge */}
-          <div className="inline-flex max-w-full items-center gap-1.5 sm:gap-2 rounded-full border border-electric-purple/40 bg-electric-purple/10 px-3 py-1 sm:px-4 sm:py-1.5 text-[11px] sm:text-xs font-mono text-electric-purple mb-6 sm:mb-8 shadow-glow-xs">
-            <span className="relative flex h-2 w-2 shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-electric-neon opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-electric-purple" />
-            </span>
-            <span className="truncate">VOIDTECH SOLUTION &bull; {siteConfig.tagline}</span>
-          </div>
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
+            {/* Left Column: Mission, Headlines, Actions & Metrics */}
+            <div className="flex flex-col items-start">
+              {/* Eyebrow Badge */}
+              <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(70,180,230,0.35)] bg-[rgba(0,212,255,0.08)] px-3.5 py-1.5 text-xs font-mono font-semibold text-cyan-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#00D4FF] animate-pulse" />
+                <span>VOIDTECH SOLUTION • {siteConfig.tagline}</span>
+              </div>
 
-          {/* Approved Hero Headline */}
-          <h1
-            id="hero-headline"
-            className="font-mono text-3xl min-[360px]:text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.18] sm:leading-[1.1] break-words"
-          >
-            Turning Ideas Into{" "}
-            <span className="bg-gradient-to-r from-electric-purple via-electric-violet to-electric-neon bg-clip-text text-transparent inline-block">
-              Powerful Digital Products.
-            </span>
-          </h1>
-
-          {/* Approved Supporting Copy */}
-          <p className="mt-5 sm:mt-6 text-sm leading-relaxed text-void-light sm:text-lg lg:text-xl max-w-2xl mx-auto px-1 sm:px-0">
-            We design, develop, and deliver modern digital solutions — from websites and applications to custom software, APIs, and AI-powered automation.
-          </p>
-
-          {/* Primary & Secondary Action CTAs */}
-          <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto max-w-xs sm:max-w-none mx-auto">
-            <Link href="/contact" className="w-full sm:w-auto">
-              <Button
-                size="lg"
-                variant="glow"
-                className="w-full sm:w-auto min-h-[48px] px-6 gap-2"
+              {/* Main Headline */}
+              <h1
+                id="hero-headline"
+                className="mt-6 font-sans text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.08]"
               >
-                <span>Start Your Project</span>
-                <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
-              </Button>
-            </Link>
-            <Link href="/services" className="w-full sm:w-auto">
-              <Button
-                size="lg"
-                variant="outline"
-                className="w-full sm:w-auto min-h-[48px] px-6"
-              >
-                Explore Our Services
-              </Button>
-            </Link>
-          </div>
+                Turning Ideas Into{" "}
+                <span className="bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-500 bg-clip-text text-transparent filter drop-shadow-[0_0_25px_rgba(0,212,255,0.3)]">
+                  Powerful Digital Products.
+                </span>
+              </h1>
 
-          {/* Authentic Technical Highlights (Zero Fake Numbers) */}
-          <div className="mt-12 sm:mt-16 grid grid-cols-2 gap-2.5 sm:gap-4 border-t border-void-border/60 pt-6 sm:pt-8 sm:grid-cols-4">
-            <div className="flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-lg border border-void-border/40 bg-void-surface/30 text-center">
-              <span className="font-mono text-base sm:text-lg font-bold text-white">18 Tracks</span>
-              <span className="text-[10px] sm:text-[11px] text-void-muted">Web, Mobile, AI & APIs</span>
+              {/* Subtitle Description */}
+              <p className="mt-6 text-base sm:text-lg leading-relaxed text-slate-300 max-w-2xl">
+                We design, develop, and deliver modern digital solutions — from websites and applications to custom software, APIs, and AI-powered automation.
+              </p>
+
+              {/* Dual Action CTAs */}
+              <div className="mt-8 flex w-full flex-col gap-3.5 sm:w-auto sm:flex-row sm:items-center">
+                <Link
+                  href="/contact"
+                  className={buttonVariants({
+                    variant: "glow",
+                    size: "lg",
+                    className:
+                      "min-h-12 w-full sm:w-auto gap-2 bg-gradient-to-r from-blue-600 via-cyan-500 to-cyan-400 text-white font-semibold shadow-[0_0_20px_rgba(0,212,255,0.4)] hover:shadow-[0_0_30px_rgba(0,212,255,0.6)]",
+                  })}
+                >
+                  <span>Start Your Project</span>
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+                <Link
+                  href="/services"
+                  className={buttonVariants({
+                    variant: "outline",
+                    size: "lg",
+                    className:
+                      "min-h-12 w-full sm:w-auto border-[rgba(70,180,230,0.4)] text-cyan-300 hover:bg-cyan-950/40 hover:border-cyan-400",
+                  })}
+                >
+                  Explore Our Services
+                </Link>
+              </div>
+
+              {/* 4-Metric Trust Strip (Directly from SmartStruct Reference Model) */}
+              <div className="mt-12 grid w-full grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 border-t border-[rgba(70,180,230,0.18)] pt-8">
+                {[
+                  { value: "18+", label: "Specialized Tracks", sub: "Web, AI & APIs" },
+                  { value: "100%", label: "Code Handover", sub: "Full Source & IP" },
+                  { value: "₹999", label: "Starting Rate", sub: "Transparent INR" },
+                  { value: "30-Day", label: "Warranty Shield", sub: "Bug-Fix Included" },
+                ].map((stat, i) => (
+                  <div
+                    key={i}
+                    className="rounded-xl border border-[rgba(70,180,230,0.15)] bg-[#081A2B]/60 p-3 sm:p-4 backdrop-blur-md transition-all hover:border-cyan-400/40"
+                  >
+                    <p className="font-mono text-xl font-bold text-white sm:text-2xl">
+                      {stat.value}
+                    </p>
+                    <p className="mt-1 font-mono text-xs font-semibold text-cyan-300">
+                      {stat.label}
+                    </p>
+                    <p className="mt-0.5 text-[10px] text-slate-400">
+                      {stat.sub}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Approach Note */}
+              <p className="mt-4 text-[11px] text-slate-400">
+                Full repository handover and project-specific architecture are part of the engineering approach. Pricing begins at ₹999 INR.
+              </p>
             </div>
-            <div className="flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-lg border border-void-border/40 bg-void-surface/30 text-center">
-              <span className="font-mono text-base sm:text-lg font-bold text-electric-purple">Custom Build</span>
-              <span className="text-[10px] sm:text-[11px] text-void-muted">Tailored Architecture</span>
-            </div>
-            <div className="flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-lg border border-void-border/40 bg-void-surface/30 text-center">
-              <span className="font-mono text-base sm:text-lg font-bold text-white">Code Delivery</span>
-              <span className="text-[10px] sm:text-[11px] text-void-muted">Full Repo Handover</span>
-            </div>
-            <div className="flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-lg border border-void-border/40 bg-void-surface/30 text-center">
-              <span className="font-mono text-base sm:text-lg font-bold text-electric-neon">From ₹999</span>
-              <span className="text-[10px] sm:text-[11px] text-void-muted">Transparent INR Pricing</span>
+
+            {/* Right Column: 3D Isometric Software Architecture & HUD Dashboards */}
+            <div className="relative w-full">
+              <HeroArchitectureVisual />
             </div>
           </div>
         </div>
@@ -226,24 +249,22 @@ export default async function HomePage() {
             id="services-headline"
             className="font-mono text-3xl font-bold tracking-tight text-white sm:text-4xl"
           >
-            Full-Spectrum Digital Services
+            Featured Engineering Services
           </h2>
           <p className="mt-3 text-sm text-void-muted max-w-2xl mx-auto">
-            From modern responsive websites and cross-platform mobile apps to autonomous AI agents and enterprise SaaS backends.
+            A first look at our engineering capabilities. The services page has the complete catalogue, deliverables and technology details.
           </p>
         </div>
 
         {/* Interactive Services Filter & Grid */}
-        <ServicesFilter initialServices={services} />
+        <ServicesFilter initialServices={services.slice(0, 6)} featured />
 
         {/* Dedicated Services Catalog Link */}
         <div className="mt-12 flex justify-center">
-          <Link href="/services">
-            <Button size="lg" variant="outline" className="gap-2">
+          <Link href="/services" className={buttonVariants({ variant: "outline", size: "lg", className: "gap-2" })}>
               <span>Explore Full Services Catalog & Deliverables</span>
               <ArrowRight className="h-4 w-4 text-electric-purple" aria-hidden="true" />
-            </Button>
-          </Link>
+            </Link>
         </div>
       </section>
 
@@ -483,13 +504,22 @@ export default async function HomePage() {
 
         {/* Dedicated Portfolio Page Link */}
         <div className="mt-12 flex justify-center">
-          <Link href="/portfolio">
-            <Button size="lg" variant="outline" className="gap-2">
+          <Link href="/portfolio" className={buttonVariants({ variant: "outline", size: "lg", className: "gap-2" })}>
               <span>View All Case Studies in Concept Lab</span>
               <ArrowRight className="h-4 w-4 text-electric-purple" aria-hidden="true" />
-            </Button>
-          </Link>
+            </Link>
         </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* TECHNOLOGY ECOSYSTEM RIBBON (SMARTSTRUCT REFERENCE)                      */}
+      {/* ========================================================================= */}
+      <section
+        id="technologies"
+        className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 border-t border-[rgba(70,180,230,0.18)]"
+        aria-label="Technology Stack Ecosystem"
+      >
+        <TechEcosystemRibbon />
       </section>
 
       {/* ========================================================================= */}
@@ -538,12 +568,10 @@ export default async function HomePage() {
 
         {/* Dedicated Pricing Page Link */}
         <div className="mt-12 flex justify-center">
-          <Link href="/pricing">
-            <Button size="lg" variant="outline" className="gap-2">
+          <Link href="/pricing" className={buttonVariants({ variant: "outline", size: "lg", className: "gap-2" })}>
               <span>View All 10 Packages & Cost Calculator</span>
               <ArrowRight className="h-4 w-4 text-electric-purple" aria-hidden="true" />
-            </Button>
-          </Link>
+            </Link>
         </div>
       </section>
 

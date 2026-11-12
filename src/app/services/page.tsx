@@ -12,7 +12,8 @@ import { ServicesRepo } from "@/server/repositories";
 import { ServicesFilter } from "@/components/sections/services-filter";
 import { QuickInquiry } from "@/components/sections/quick-inquiry";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { PublicPageHero } from "@/components/layout/public-page-hero";
 
 export const metadata: Metadata = {
   title: "Software Development Services & Engineering Disciplines — VOIDTECH SOLUTION",
@@ -42,82 +43,35 @@ export default async function ServicesPage() {
   const services = await ServicesRepo.getAllServices();
 
   return (
-    <div className="relative overflow-hidden">
+    <div className="public-editorial relative overflow-hidden">
       {/* Background radial glow */}
       <div
         className="pointer-events-none absolute inset-0 bg-void-glow-radial opacity-40"
         aria-hidden="true"
       />
 
-      {/* ========================================================================= */}
-      {/* SECTION 1: SERVICES HERO                                                  */}
-      {/* ========================================================================= */}
-      <section
-        className="relative mx-auto max-w-7xl px-4 pt-16 pb-14 sm:px-6 sm:pt-24 sm:pb-20 lg:px-8 text-center"
-        aria-labelledby="services-hero-headline"
-      >
-        <div className="mx-auto max-w-4xl">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-electric-purple/40 bg-electric-purple/10 px-3.5 py-1 text-xs font-mono text-electric-purple mb-6 shadow-glow-xs">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-electric-neon opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-electric-purple" />
-            </span>
-            <span>CAPABILITY CATALOG &bull; 18 SPECIALIZED DISCIPLINES</span>
+      <PublicPageHero
+        headingId="services-hero-headline"
+        eyebrow="Capability catalog • 18 specialized disciplines"
+        title={<>Engineering Scalable Software Across <span className="bg-gradient-to-r from-electric-purple via-electric-violet to-electric-neon bg-clip-text text-transparent">18 Core Tracks.</span></>}
+        description="From modern responsive web applications and cross-platform mobile apps to autonomous AI agents, high-throughput backend APIs, and enterprise cloud infrastructure. Engineered with strict TypeScript, tested architectures, and full code ownership."
+        actions={
+          <>
+            <Link href="/contact" className={buttonVariants({ variant: "glow", size: "lg", className: "min-h-12 w-full sm:w-auto" })}><span>Start Project Scoping</span><ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
+            <Link href="/pricing" className={buttonVariants({ variant: "outline", size: "lg", className: "min-h-12 w-full sm:w-auto" })}>Review Pricing Packages</Link>
+          </>
+        }
+        asideLabel="Explore by discipline"
+        aside={<div className="grid grid-cols-2 gap-2">{["Web", "Mobile", "API & Systems", "AI & Agents", "Bots & Automation", "Enterprise & SaaS", "FinTech & UPI", "Design", "Cloud & DevOps"].map((label, i) => <div key={label} className="flex min-h-12 items-center gap-2 rounded-lg border border-void-border/60 bg-void-black/35 px-3 py-2 text-xs text-void-light"><span className="font-mono text-[10px] text-electric-purple">{String(i + 1).padStart(2, "0")}</span>{label}</div>)}</div>}
+        footer={
+          <div className="grid grid-cols-2 gap-3 border-t border-void-border/60 pt-6 sm:grid-cols-4 sm:gap-4">
+            <div className="rounded-xl border border-void-border/60 bg-void-surface/35 p-4 text-center"><span className="font-mono text-xl font-bold text-white">18</span><p className="mt-1 text-xs text-void-muted">Core Disciplines</p></div>
+            <div className="rounded-xl border border-void-border/60 bg-void-surface/35 p-4 text-center"><span className="font-mono text-xl font-bold text-electric-purple">100%</span><p className="mt-1 text-xs text-void-muted">Repo Handover</p></div>
+            <div className="rounded-xl border border-void-border/60 bg-void-surface/35 p-4 text-center"><span className="font-mono text-xl font-bold text-electric-neon">From ₹999</span><p className="mt-1 text-xs text-void-muted">Transparent INR</p></div>
+            <div className="rounded-xl border border-void-border/60 bg-void-surface/35 p-4 text-center"><span className="font-mono text-xl font-bold text-white">30-Day</span><p className="mt-1 text-xs text-void-muted">Bug-Fix Warranty</p></div>
           </div>
-
-          {/* Headline */}
-          <h1
-            id="services-hero-headline"
-            className="font-mono text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-white leading-[1.15]"
-          >
-            Engineering Scalable Software Across{" "}
-            <span className="bg-gradient-to-r from-electric-purple via-electric-violet to-electric-neon bg-clip-text text-transparent">
-              18 Core Tracks.
-            </span>
-          </h1>
-
-          {/* Supporting Copy */}
-          <p className="mt-6 text-sm sm:text-lg text-void-light leading-relaxed max-w-3xl mx-auto">
-            From modern responsive web applications and cross-platform mobile apps to autonomous AI agents, high-throughput backend APIs, and enterprise cloud infrastructure. Engineered with strict TypeScript, tested architectures, and full code ownership.
-          </p>
-
-          {/* Action CTAs */}
-          <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/contact" className="w-full sm:w-auto">
-              <Button size="lg" variant="glow" className="w-full sm:w-auto gap-2">
-                <span>Start Project Scoping</span>
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Button>
-            </Link>
-            <Link href="/pricing" className="w-full sm:w-auto">
-              <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                Review Pricing Packages
-              </Button>
-            </Link>
-          </div>
-
-          {/* Differentiators Grid */}
-          <div className="mt-14 grid grid-cols-2 gap-3 sm:gap-6 border-t border-void-border/60 pt-8 sm:grid-cols-4">
-            <div className="rounded-xl border border-void-border/50 bg-void-surface/30 p-4 text-center">
-              <span className="font-mono text-xl sm:text-2xl font-bold text-white">18</span>
-              <p className="mt-1 text-xs text-void-muted">Core Disciplines</p>
-            </div>
-            <div className="rounded-xl border border-void-border/50 bg-void-surface/30 p-4 text-center">
-              <span className="font-mono text-xl sm:text-2xl font-bold text-electric-purple">100%</span>
-              <p className="mt-1 text-xs text-void-muted">Repo Handover</p>
-            </div>
-            <div className="rounded-xl border border-void-border/50 bg-void-surface/30 p-4 text-center">
-              <span className="font-mono text-xl sm:text-2xl font-bold text-electric-neon">From ₹999</span>
-              <p className="mt-1 text-xs text-void-muted">Transparent INR</p>
-            </div>
-            <div className="rounded-xl border border-void-border/50 bg-void-surface/30 p-4 text-center">
-              <span className="font-mono text-xl sm:text-2xl font-bold text-white">30-Day</span>
-              <p className="mt-1 text-xs text-void-muted">Bug-Fix Warranty</p>
-            </div>
-          </div>
-        </div>
-      </section>
+        }
+      />
 
       {/* ========================================================================= */}
       {/* SECTION 2: INTERACTIVE SERVICES CATALOG                                   */}

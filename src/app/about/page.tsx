@@ -24,7 +24,8 @@ import {
   Zap,
 } from "lucide-react";
 import { Container, Section } from "@/components/layout";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { PublicPageHero } from "@/components/layout/public-page-hero";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -187,52 +188,16 @@ const techStackMatrix = [
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen bg-void-black text-void-light selection:bg-electric-purple/30 selection:text-white">
-      {/* ------------------------------------------------------------------ */}
-      {/* SECTION 1: HERO                                                    */}
-      {/* ------------------------------------------------------------------ */}
-      <Section className="relative overflow-hidden pt-28 pb-20 border-b border-void-border/50">
-        {/* Ambient Glow Backdrop */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 h-96 w-[600px] rounded-full bg-electric-violet/10 blur-[130px]"
-        />
-
-        <Container className="relative z-10 text-center max-w-4xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-electric-purple/30 bg-electric-purple/10 px-3.5 py-1 text-xs font-mono font-medium text-electric-purple mb-6">
-            <span className="h-1.5 w-1.5 rounded-full bg-electric-neon animate-pulse" />
-            ABOUT VOIDTECH SOLUTION
-          </div>
-
-          <h1
-            id="about-headline"
-            className="font-mono text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-tight"
-          >
-            Engineering Ideas Into{" "}
-            <span className="bg-gradient-to-r from-electric-purple via-electric-violet to-electric-neon bg-clip-text text-transparent">
-              Digital Reality.
-            </span>
-          </h1>
-
-          <p className="mt-6 text-base sm:text-lg lg:text-xl text-void-light leading-relaxed max-w-2xl mx-auto">
-            VOIDTECH SOLUTION builds practical digital products through modern engineering, thoughtful design, and technology-driven problem solving.
-          </p>
-
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <Link href="/portfolio" tabIndex={-1}>
-              <Button size="lg" variant="glow" className="gap-2">
-                <span>Explore Our Work</span>
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/contact" tabIndex={-1}>
-              <Button size="lg" variant="outline">
-                <span>Start Your Project</span>
-              </Button>
-            </Link>
-          </div>
-        </Container>
-      </Section>
+    <main className="public-editorial min-h-screen bg-void-black text-void-light selection:bg-electric-purple/30 selection:text-white">
+      <PublicPageHero
+        headingId="about-headline"
+        eyebrow="About VOIDTECH SOLUTION"
+        title={<>Engineering Ideas Into <span className="bg-gradient-to-r from-electric-purple via-electric-violet to-electric-neon bg-clip-text text-transparent">Digital Reality.</span></>}
+        description="VOIDTECH SOLUTION builds practical digital products through modern engineering, thoughtful design, and technology-driven problem solving."
+        actions={<><Link href="/portfolio" className={buttonVariants({ variant: "glow", size: "lg", className: "min-h-12" })}>Explore Our Work<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link><Link href="/contact" className={buttonVariants({ variant: "outline", size: "lg", className: "min-h-12" })}>Start Your Project</Link></>}
+        asideLabel="Engineering values"
+        aside={<ul className="space-y-2">{["Engineering Quality", "Transparent Communication", "Practical Innovation", "Maintainable Architecture", "User-Centered Design", "Continuous Improvement"].map((value, i) => <li key={value} className="flex items-center gap-3 rounded-lg border border-void-border/55 bg-void-black/35 px-3.5 py-3"><span className="font-mono text-[10px] text-electric-purple">0{i + 1}</span><span className="text-sm font-medium text-white">{value}</span></li>)}</ul>}
+      />
 
       {/* ------------------------------------------------------------------ */}
       {/* SECTION 2: WHO WE ARE                                              */}
@@ -496,17 +461,13 @@ export default function AboutPage() {
           </p>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <Link href="/contact" tabIndex={-1}>
-              <Button size="lg" variant="glow" className="gap-2">
+            <Link href="/contact" className={buttonVariants({ variant: "glow", size: "lg", className: "gap-2" })}>
                 <span>Start Your Project</span>
                 <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/portfolio" tabIndex={-1}>
-              <Button size="lg" variant="outline">
+              </Link>
+            <Link href="/portfolio" className={buttonVariants({ variant: "outline", size: "lg" })}>
                 <span>View Selected Work</span>
-              </Button>
-            </Link>
+              </Link>
           </div>
         </Container>
       </Section>

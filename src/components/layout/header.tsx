@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, ArrowRight } from "lucide-react";
 import { siteConfig } from "@/config/site";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function Header() {
@@ -136,6 +136,7 @@ export function Header() {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "transition-colors hover:text-void-white focus-visible:text-electric-purple focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-electric-purple rounded py-1 px-1",
                   isActive && "text-electric-purple font-semibold"
@@ -149,11 +150,7 @@ export function Header() {
 
         {/* Action Controls & Mobile Trigger */}
         <div className="flex items-center gap-3">
-          <Link href="/contact" className="hidden sm:inline-flex">
-            <Button size="sm" variant="glow">
-              Start Your Project
-            </Button>
-          </Link>
+          <Link href="/contact" className={cn(buttonVariants({ variant: "glow", size: "sm" }), "hidden min-h-10 sm:inline-flex")}>Start Your Project</Link>
 
           {/* Mobile Menu Toggle Button */}
           <button
@@ -239,6 +236,7 @@ export function Header() {
                     <Link
                       key={item.href}
                       href={item.href}
+                      aria-current={isActive ? "page" : undefined}
                       onClick={() => setMobileMenuOpen(false)}
                       className={cn(
                         "flex items-center justify-between rounded-xl px-4 py-3 min-h-[48px] text-base font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-purple",

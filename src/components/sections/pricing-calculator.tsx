@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 export interface ProjectCategoryOption {
   id: string;
@@ -492,11 +492,9 @@ export function PricingCalculator() {
 
               {/* Transfer Scope Action */}
               <div className="pt-2">
-                <Link href={contactUrl} className="w-full block">
-                  <Button size="lg" variant="glow" className="w-full gap-2">
-                    <span>Continue to Enquiry Form</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
+                <Link href={contactUrl} className={buttonVariants({ variant: "glow", size: "lg", className: "w-full gap-2" })}>
+                  <span>Continue to Enquiry Form</span>
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
                 <p className="text-[10px] text-center text-void-muted mt-2 font-mono">
                   Your selected parameters will be transferred automatically

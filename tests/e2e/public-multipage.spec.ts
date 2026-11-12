@@ -37,16 +37,16 @@ test.describe("Public Website Multi-Page Architecture E2E", () => {
 
     // Verify initial count shows 18 services
     await expect(page.locator("h1")).toContainText("Engineering Scalable Software Across 18 Core Tracks.");
-    await expect(page.getByRole("tab", { name: /All Services/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /All Services/i })).toBeVisible();
 
     // Click "Mobile" tab
-    const mobileTab = page.getByRole("tab", { name: "Mobile" });
+    const mobileTab = page.getByRole("button", { name: "Mobile" });
     await mobileTab.click();
     await expect(page.getByRole("heading", { name: "App Development", level: 3 })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Website Development", level: 3 })).not.toBeVisible();
 
     // Reset to "All Services"
-    await page.getByRole("tab", { name: /All Services/i }).click();
+    await page.getByRole("button", { name: /All Services/i }).click();
     await expect(page.getByRole("heading", { name: "Website Development", level: 3 })).toBeVisible();
 
     // Search by keyword
