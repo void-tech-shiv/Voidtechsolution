@@ -5,7 +5,7 @@ export const siteConfig = {
   tagline: "Build. Launch. Grow Online.",
   description:
     "Premium software development agency specializing in scalable web applications, mobile apps, custom APIs, autonomous AI agents, and enterprise automations.",
-  url: process.env.NEXT_PUBLIC_SITE_URL || "https://voidtechsolution.com",
+  url: process.env.NEXT_PUBLIC_SITE_URL || "https://voidtechsolution.codedev.co.in",
   contactEmail: "voidtechsolutionsupport@gmail.com",
   mainNav: [
     { title: "Home", href: "/" },

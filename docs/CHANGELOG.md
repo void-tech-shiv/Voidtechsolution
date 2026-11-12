@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.9.0] — 2026-11-13
+### Phase 9.0: Admin Lead Management & CRM Pipeline — Discovery & Architecture
+
+#### Added
+- **CRM Specification Suite:**
+  - `docs/LEAD_MANAGEMENT_REQUIREMENTS.md`: Detailed functional and non-functional requirements covering 8 operational KPIs, 8-stage Kanban pipeline, lead inspection drawer, multi-author internal notes, follow-up scheduling, multi-channel notifications, faceted search/filtering, and sales velocity analytics.
+  - `docs/LEAD_MANAGEMENT_ARCHITECTURE.md`: Layered system architecture specification defining client presentation components, Server Action layer, domain state machine, optimistic concurrency control (OCC via `updatedAt`), and anti-leakage isolation boundary between internal notes and customer emails.
+  - `docs/LEAD_MANAGEMENT_DATABASE_DESIGN.md`: Relational schema design with normalized child entities (`lead_notes`, `lead_follow_ups`, `lead_activities`, `admin_notifications`), extended `enquiries` columns (`assignedAdminId`, `estimatedValueInr`, `source`, `nextFollowUpAt`, `lostReason`), performance indexing, and zero-downtime two-phase enum migration script with complete rollback strategy.
+  - `docs/LEAD_MANAGEMENT_RBAC.md`: Granular permission taxonomy (`leads:view`, `leads:update_status`, `leads:assign`, `leads:notes_create`, `leads:notes_delete`, `leads:followup_manage`, `leads:analytics_view`, `leads:export`, `leads:delete`), 11-operation RBAC permission matrix across `SUPER_ADMIN`, `ADMIN`, and `EDITOR`, and server-side assertion patterns.
+  - `docs/LEAD_MANAGEMENT_API_DESIGN.md`: Server Action and REST API interface specifications, standard `ApiResponse<T>` envelopes, machine-readable error codes (`CONFLICT_DETECTED`, `INVALID_TRANSITION`, etc.), and strict Zod validation schemas.
+- **Strict Boundary Compliance:**
+  - Zero database modifications or migrations applied in Milestone 9.0.
+  - Zero production emails dispatched; zero application code changes made.
+  - All existing code, tests, and invariants 100% preserved.
+
+---
+
 ## [0.8.4] — 2026-11-13
 ### Phase 8.4: Complete Website Visual & Functional Acceptance
 

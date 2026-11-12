@@ -21,9 +21,10 @@ describe("Phase 8.4: Technical SEO & Canonical Domain Verification", () => {
     
     // Check rules
     const rules = Array.isArray(robotsConfig.rules) ? robotsConfig.rules[0] : robotsConfig.rules;
-    expect(rules.allow).toBe("/");
-    expect(rules.disallow).toContain("/admin/");
-    expect(rules.disallow).toContain("/api/");
+    expect(rules).toBeDefined();
+    expect(rules?.allow).toBe("/");
+    expect(rules?.disallow).toContain("/admin/");
+    expect(rules?.disallow).toContain("/api/");
     expect(robotsConfig.sitemap).toBe("https://voidtechsolution.codedev.co.in/sitemap.xml");
   });
 
