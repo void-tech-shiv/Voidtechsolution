@@ -1,8 +1,8 @@
 # Phase 7: Implementation Plan & Milestone Roadmap
 
-**Document Version:** 1.0.0  
+**Document Version:** 1.1.0 (Owner-Approved: Single SUPER_ADMIN Governance & Shared Login Architecture)  
 **Phase:** 07 — Admin Authentication, Session Management & Role-Based Access Control  
-**Status:** Staged & Awaiting Owner Review (Milestone 7.0)  
+**Status:** Approved for Implementation (Milestones 7.1 & 7.2 Complete; Roadmap Updated for 7.3+)  
 **Date:** 2026-11-12  
 
 ---
@@ -48,21 +48,29 @@ Phase 7 will be implemented in strict sequential milestones. Each milestone defi
 
 ---
 
-### Milestone 7.3 — Role-Based Access Control (RBAC) System
-* **Objective:** Create centralized, type-safe server-side authorization guards.
+### Milestone 7.3 — Role-Based Access Control (RBAC) System & SUPER_ADMIN Governance
+* **Objective:** Implement centralized, type-safe server-side authorization guards, non-escalation invariants, and the Single `SUPER_ADMIN` Governance Model.
 * **Deliverables:**
   * `src/server/security/rbac.ts`:
-    * Typed permission definitions (`PermissionKey`).
-    * Role-to-permission mapping (`SUPER_ADMIN`, `ADMIN`, `EDITOR`).
+    * Strict three-role definition: `SUPER_ADMIN`, `ADMIN`, `EDITOR`.
+    * Typed permission definitions (`PermissionKey`) covering all administrative operations.
+    * Centralized permission mapping matrix.
     * `hasPermission(role: UserRole, permission: PermissionKey): boolean`.
     * `requirePermission(user: AdminUser, permission: PermissionKey): void`.
     * `requireRole(user: AdminUser, requiredRole: UserRole): void`.
-  * Integration into Server Actions and API endpoints.
+    * **Sole Active SUPER_ADMIN Invariant Guard (`assertSoleSuperAdminProtection`):**
+      * Atomic validation ensuring `count(AdminUser where role = 'SUPER_ADMIN' and isActive = true) >= 1`.
+      * Prevents deactivating, deleting, or demoting the last active `SUPER_ADMIN`.
+    * **Non-Escalation Safeguards:**
+      * Rejection of any user creation or role modification attempted by `ADMIN` or `EDITOR`.
+      * Rejection of self-role modification for any administrator.
+      * Enforces privilege ceiling (cannot grant higher permissions than own role).
+  * Integration into Server Actions and Route Handlers for authoritative enforcement.
 
 ---
 
-### Milestone 7.4 — Next.js Route Protection Middleware & Admin UI
-* **Objective:** Implement Edge-compatible routing guards and an agency-grade responsive admin login screen.
+### Milestone 7.4 — Next.js Route Protection Middleware & Single Shared Admin UI
+* **Objective:** Implement Edge-compatible routing guards and an agency-grade responsive shared admin login screen at `/admin/login`.
 * **Deliverables:**
   * `src/middleware.ts`:
     * Edge middleware inspecting incoming requests.
@@ -71,28 +79,36 @@ Phase 7 will be implemented in strict sequential milestones. Each milestone defi
     * Redirects already-authenticated admins visiting `/admin/login` directly to `/admin`.
     * Public website routes remain untouched.
     * Injects HTTP security headers (`X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`).
-  * `src/app/admin/login/page.tsx`:
+  * `src/app/admin/login/page.tsx` — **Single Shared Authentication Portal**:
+    * Exactly ONE shared login portal for `SUPER_ADMIN`, `ADMIN`, and `EDITOR`.
     * Dark theme matching VOIDTECH visual identity (`#050507`, `#0a0a0f`, electric violet glow).
     * Email and password inputs with accessible validation error alerts.
+    * Generic authentication error handling (zero user enumeration).
     * "Remember me" option extending session lifetime.
     * Dynamic loading spinners and disabled submit buttons during flight.
-  * `src/app/admin/page.tsx`:
-    * Authenticated admin shell landing placeholder displaying active user profile, role badge, and quick telemetry.
+  * `src/app/admin/page.tsx` — **Role-Aware Admin Shell**:
+    * Authenticated admin shell landing dashboard with dynamic, role-aware presentation:
+      * `SUPER_ADMIN`: Displays full suite (User management, Audit logs, Site Settings, Enquiries with Delete, Services, Pricing, Portfolio, FAQs).
+      * `ADMIN`: Displays operations suite (Enquiries status updates, Services, Pricing, Portfolio, FAQs). User management and audit logs hidden.
+      * `EDITOR`: Displays content curation suite (Portfolio, FAQs, Services copywriting, Read-only enquiries). Pricing, Admin management, Settings, and Audit logs hidden.
+    * Displays active administrator email, role badge, session status, and quick telemetry.
   * `src/app/admin/layout.tsx`:
-    * Admin layout wrapper ensuring authenticated session context.
+    * Admin layout wrapper ensuring authenticated session context, navigation sidebar tailored by role, and secure sign-out CTA.
 
 ---
 
-### Milestone 7.5 — Controlled Admin Provisioning CLI
-* **Objective:** Secure, owner-controlled bootstrap mechanism for administrator accounts with zero hardcoded credentials.
+### Milestone 7.5 — Controlled Initial SUPER_ADMIN Provisioning CLI
+* **Objective:** Secure, owner-controlled bootstrap mechanism strictly for the initial `SUPER_ADMIN` account with zero hardcoded credentials and zero database seed creation.
 * **Deliverables:**
   * `scripts/create-admin.ts`:
     * Standalone CLI utility executed via `npx tsx scripts/create-admin.ts`.
-    * Validates runtime inputs against `zod`.
+    * Interactively prompts owner for admin `name`, `email`, and `password` (or accepts secure environment overrides for headless execution).
+    * Validates runtime inputs against `zod` (password min 12 chars, complexity checks).
     * Rejects existing emails to prevent accidental overwrites.
-    * Hashes password using standard `hashPassword` (scrypt).
-    * Logs account creation in `AuditLog`.
-    * Fully decoupled from automated seeds.
+    * Hashes password using constant-time `hashPassword` (scrypt with 16-byte cryptographically secure random salt).
+    * Strictly provisions account with `role: "SUPER_ADMIN"` and `isActive: true`.
+    * Logs account creation in `AuditLog` (`action: "ADMIN_BOOTSTRAP_SUCCESS"`).
+    * Fully decoupled from automated seeds (`prisma/seed.ts` is strictly prohibited from creating admin accounts).
 
 ---
 

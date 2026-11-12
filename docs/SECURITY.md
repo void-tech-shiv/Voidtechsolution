@@ -156,10 +156,59 @@ In the event of database connectivity interruption (such as during cold starts o
 
 ---
 
-## 10. Approved Administrative Role-Based Access Control (RBAC)
+## 10. Approved Administrative Role-Based Access Control (RBAC) & Single SUPER_ADMIN Governance
+
+### A. Approved Three-Role Model
 The approved administrative access model is restricted strictly to three defined roles:
-1. `SUPER_ADMIN`: Unrestricted platform governance, role assignment, admin management, lead deletion, and audit log inspection.
-2. `ADMIN`: Full operational capabilities (lead status updates, service catalog management, pricing management, case study publishing, site settings). No lead deletion or admin permission modification.
+1. `SUPER_ADMIN`: Unrestricted platform governance, role assignment, administrator account management, lead deletion, and audit log inspection.
+2. `ADMIN`: Technical and operational management (lead status updates, service catalog management, pricing management, case study publishing, site settings). No lead deletion or administrator account management permissions.
 3. `EDITOR`: Content editing privileges (portfolio updates, FAQ management, service copywriting). Read-only access to inbound enquiries; zero administrative settings or user management permissions.
-*No additional or unapproved roles (such as SUPPORT or VIEWER) exist within the system.*
+*No additional or unapproved roles (such as SUPPORT or VIEWER) exist within the system or database schema.*
+
+### B. Single Shared Login Portal Architecture
+- **Single Entry Point:** There is exactly ONE shared authentication portal: `/admin/login`.
+- **Zero Role Bifurcation:** `SUPER_ADMIN`, `ADMIN`, and `EDITOR` authenticate through this identical login page and shared authentication action (`loginAction`).
+- **No Role Enumeration:** The login interface provides zero visual clues as to account existence or role. All authentication failures return identical, generic error messages (*"Invalid email or password"*).
+- **Post-Login Routing & Ergonomic Views:** Upon authentication, the administrator is redirected to `/admin`. The dashboard layout and navigation sidebar dynamically adapt to the user's authoritative role:
+  - `SUPER_ADMIN` views full management suite (Administrators, Audit Logs, Settings, Enquiries with Delete, Services, Pricing, Portfolio, FAQs).
+  - `ADMIN` views operational management (Enquiries status updates, Services, Pricing, Portfolio, FAQs). Administrative management and audit trails are hidden.
+  - `EDITOR` views content curation (Portfolio, FAQs, Services copywriting, Read-only enquiries). Administrative management, pricing, settings, and audit trails are hidden.
+- **Authoritative Server-Side RBAC Enforcement:** Client UI adaptation is purely for user experience. Every Server Action, Route Handler, and mutation independently verifies `requirePermission(user, permission)` against the database record.
+
+### C. SUPER_ADMIN Exclusive Account Governance
+- **Account Provisioning:** Only `SUPER_ADMIN` can create new `ADMIN` and `EDITOR` accounts.
+- **Role Assignment:** Only `SUPER_ADMIN` can assign, promote, or alter account roles.
+- **Account Lifecycle:** Only `SUPER_ADMIN` can activate or deactivate administrator accounts.
+- **Session Revocation:** Only `SUPER_ADMIN` can trigger global session revocation for another administrator.
+- **Password Resets:** Only `SUPER_ADMIN` can initiate administrator password reset procedures.
+- **Audit Log Inspection:** Only `SUPER_ADMIN` can view sensitive security and administrative audit logs (`audit_logs:view`).
+- **Lead Deletion:** Only `SUPER_ADMIN` can permanently purge inbound project enquiries (`enquiries:delete`).
+
+### D. Non-Escalation & Privilege Ceiling Invariants
+- **Non-Super-Admin Prohibition:** Neither `ADMIN` nor `EDITOR` can create administrator accounts, modify roles, or activate/deactivate accounts.
+- **Self-Role Modification Prevention:** No administrator (including `SUPER_ADMIN`) can alter their own role. Role elevation or demotion requires external administrative intervention.
+- **Privilege Ceiling:** An administrator can never assign a role equal to or higher than their own authority level.
+- **Authoritative Database Verification:** Permissions and roles are loaded directly from PostgreSQL on every authenticated request; client-supplied role values in request payloads are strictly discarded.
+
+### E. Sole Active SUPER_ADMIN Protection Invariant
+- **System Invariant:** The database MUST always contain at least one active, enabled `SUPER_ADMIN` account.
+- **Atomic Pre-Condition Check:** Before executing any account deactivation (`isActive = false`), deletion, or role demotion on a `SUPER_ADMIN`, the system queries:
+  ```typescript
+  const activeSuperAdmins = await prisma.adminUser.count({
+    where: { role: "SUPER_ADMIN", isActive: true },
+  });
+  if (activeSuperAdmins <= 1 && targetUser.role === "SUPER_ADMIN") {
+    throw new Error("CANNOT_DEACTIVATE_SOLE_SUPER_ADMIN: Operation rejected to prevent administrative lockout.");
+  }
+  ```
+- **Lockout Prevention:** Ensures the platform can never become permanently un-administrable due to accidental self-demotion or mass deactivation.
+
+### F. Initial SUPER_ADMIN Bootstrap Protocol
+- **Controlled CLI Bootstrap:** Initial bootstrapping is executed exclusively via an interactive CLI tool (`npx tsx scripts/create-admin.ts`).
+- **Zero Public Registration:** No public-facing user registration or sign-up endpoint exists.
+- **Zero Automatic Seeding:** `prisma/seed.ts` is strictly prohibited from creating administrator accounts.
+- **Zero Hardcoded Credentials:** No default credentials in repository code or `.env` templates.
+- **Password Complexity & Scrypt:** Interactive prompts enforce strong password requirements (min 12 chars with symbol/number/case variety), hashed via scrypt with a unique 16-byte random salt.
+- **Forced Password Rotation:** First-time login flags can enforce an immediate password change on initial sign-in.
+- **Audit Logging:** The bootstrap event is recorded immutably in `AuditLog` (`action: "ADMIN_BOOTSTRAP_SUCCESS"`).
 

@@ -32,13 +32,18 @@ describe("Phase 3: Cryptographic OTP Generation & Hashing", () => {
 });
 
 describe("Phase 3: OTP Lifecycle, Cooldown & Security Policies", () => {
+  const testEmail = (prefix: string) =>
+    `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@example.com`;
+
   beforeEach(() => {
     resetInMemoryOtpStore();
   });
 
   it("successfully creates a 6-digit OTP with 5-minute expiry and 60-second cooldown", async () => {
+    const email = testEmail("client");
+    const startTime = Date.now();
     const result = await createOtp({
-      identifier: "client@voidtechsolution.com",
+      identifier: email,
       purpose: "LOGIN",
       expiryMinutes: 5,
       cooldownSeconds: 60,
@@ -48,28 +53,27 @@ describe("Phase 3: OTP Lifecycle, Cooldown & Security Policies", () => {
     if (!result.success) return;
 
     expect(result.code).toMatch(/^\d{6}$/);
-    const now = Date.now();
-    const expiryDiff = result.expiresAt.getTime() - now;
-    const cooldownDiff = result.resendAvailableAt.getTime() - now;
+    const endTime = Date.now();
 
-    // ~5 minutes (300,000ms) with small execution tolerance
-    expect(expiryDiff).toBeGreaterThanOrEqual(295000);
-    expect(expiryDiff).toBeLessThanOrEqual(305000);
+    // Expiry is 5 minutes from when createOtp evaluated its internal clock
+    expect(result.expiresAt.getTime()).toBeGreaterThanOrEqual(startTime + 300000 - 1000);
+    expect(result.expiresAt.getTime()).toBeLessThanOrEqual(endTime + 300000 + 1000);
 
-    // ~60 seconds (60,000ms)
-    expect(cooldownDiff).toBeGreaterThanOrEqual(55000);
-    expect(cooldownDiff).toBeLessThanOrEqual(65000);
+    // Cooldown is 60 seconds from when createOtp evaluated its internal clock
+    expect(result.resendAvailableAt.getTime()).toBeGreaterThanOrEqual(startTime + 60000 - 1000);
+    expect(result.resendAvailableAt.getTime()).toBeLessThanOrEqual(endTime + 60000 + 1000);
   });
 
   it("enforces 60-second resend cooldown against rapid token spamming", async () => {
+    const email = testEmail("spam-check");
     const first = await createOtp({
-      identifier: "spam-check@example.com",
+      identifier: email,
       cooldownSeconds: 60,
     });
     expect(first.success).toBe(true);
 
     const second = await createOtp({
-      identifier: "spam-check@example.com",
+      identifier: email,
       cooldownSeconds: 60,
     });
 
@@ -82,19 +86,20 @@ describe("Phase 3: OTP Lifecycle, Cooldown & Security Policies", () => {
   });
 
   it("verifies a valid OTP and marks it single-use (prevents replay attacks)", async () => {
+    const email = testEmail("singleuse");
     const created = await createOtp({
-      identifier: "singleuse@example.com",
+      identifier: email,
       cooldownSeconds: 0, // disable cooldown for instant verification test
     });
     expect(created.success).toBe(true);
     if (!created.success) return;
 
     // First verification attempt: should succeed
-    const verified = await verifyOtp("singleuse@example.com", created.code, "LOGIN");
+    const verified = await verifyOtp(email, created.code, "LOGIN");
     expect(verified.success).toBe(true);
 
     // Second verification attempt with same code: must be rejected (single-use)
-    const replay = await verifyOtp("singleuse@example.com", created.code, "LOGIN");
+    const replay = await verifyOtp(email, created.code, "LOGIN");
     expect(replay.success).toBe(false);
     if (!replay.success) {
       expect(["OTP_ALREADY_USED", "OTP_NOT_FOUND"]).toContain(replay.error);
@@ -102,8 +107,9 @@ describe("Phase 3: OTP Lifecycle, Cooldown & Security Policies", () => {
   });
 
   it("rejects invalid OTP and tracks remaining attempts up to max 5 lockout", async () => {
+    const email = testEmail("lockout");
     const created = await createOtp({
-      identifier: "lockout-test@example.com",
+      identifier: email,
       cooldownSeconds: 0,
       maxAttempts: 5,
     });
@@ -113,7 +119,7 @@ describe("Phase 3: OTP Lifecycle, Cooldown & Security Policies", () => {
     const wrongCode = "000000";
 
     // Attempt 1: 4 remaining
-    const attempt1 = await verifyOtp("lockout-test@example.com", wrongCode, "LOGIN");
+    const attempt1 = await verifyOtp(email, wrongCode, "LOGIN");
     expect(attempt1.success).toBe(false);
     if (!attempt1.success) {
       expect(attempt1.error).toBe("INVALID_CODE");
@@ -121,12 +127,12 @@ describe("Phase 3: OTP Lifecycle, Cooldown & Security Policies", () => {
     }
 
     // Attempts 2, 3, 4
-    await verifyOtp("lockout-test@example.com", wrongCode, "LOGIN");
-    await verifyOtp("lockout-test@example.com", wrongCode, "LOGIN");
-    await verifyOtp("lockout-test@example.com", wrongCode, "LOGIN");
+    await verifyOtp(email, wrongCode, "LOGIN");
+    await verifyOtp(email, wrongCode, "LOGIN");
+    await verifyOtp(email, wrongCode, "LOGIN");
 
     // Attempt 5: Final attempt exhausted -> lockout
-    const attempt5 = await verifyOtp("lockout-test@example.com", wrongCode, "LOGIN");
+    const attempt5 = await verifyOtp(email, wrongCode, "LOGIN");
     expect(attempt5.success).toBe(false);
     if (!attempt5.success) {
       expect(attempt5.error).toBe("MAX_ATTEMPTS_EXCEEDED");
@@ -134,7 +140,7 @@ describe("Phase 3: OTP Lifecycle, Cooldown & Security Policies", () => {
     }
 
     // Attempt 6: Locked out even with the CORRECT code!
-    const attempt6 = await verifyOtp("lockout-test@example.com", created.code, "LOGIN");
+    const attempt6 = await verifyOtp(email, created.code, "LOGIN");
     expect(attempt6.success).toBe(false);
     if (!attempt6.success) {
       expect(["MAX_ATTEMPTS_EXCEEDED", "OTP_ALREADY_USED", "OTP_NOT_FOUND"]).toContain(attempt6.error);
@@ -142,15 +148,16 @@ describe("Phase 3: OTP Lifecycle, Cooldown & Security Policies", () => {
   });
 
   it("rejects expired OTP tokens", async () => {
+    const email = testEmail("expired");
     const created = await createOtp({
-      identifier: "expired@example.com",
+      identifier: email,
       expiryMinutes: -1, // already in the past
       cooldownSeconds: 0,
     });
     expect(created.success).toBe(true);
     if (!created.success) return;
 
-    const verified = await verifyOtp("expired@example.com", created.code, "LOGIN");
+    const verified = await verifyOtp(email, created.code, "LOGIN");
     expect(verified.success).toBe(false);
     if (!verified.success) {
       expect(verified.error).toBe("OTP_EXPIRED");
@@ -158,8 +165,9 @@ describe("Phase 3: OTP Lifecycle, Cooldown & Security Policies", () => {
   });
 
   it("enforces strict purpose isolation (LOGIN code cannot reset PASSWORD)", async () => {
+    const email = testEmail("isolated");
     const created = await createOtp({
-      identifier: "isolated@example.com",
+      identifier: email,
       purpose: "LOGIN",
       cooldownSeconds: 0,
     });
@@ -167,7 +175,7 @@ describe("Phase 3: OTP Lifecycle, Cooldown & Security Policies", () => {
     if (!created.success) return;
 
     // Verify against PASSWORD_RESET purpose
-    const crossPurpose = await verifyOtp("isolated@example.com", created.code, "PASSWORD_RESET");
+    const crossPurpose = await verifyOtp(email, created.code, "PASSWORD_RESET");
     expect(crossPurpose.success).toBe(false);
     if (!crossPurpose.success) {
       expect(crossPurpose.error).toBe("OTP_NOT_FOUND");

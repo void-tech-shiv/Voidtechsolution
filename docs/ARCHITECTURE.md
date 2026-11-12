@@ -262,3 +262,83 @@ flowchart TD
    - Token bucket rate limiter: Enforces a cap of 5 submissions per 10 minutes per IP/email.
    - SHA-256 fingerprinting: Rejects identical submissions within a 60-second cooldown window.
 4. **Decoupled Notification Pipeline:** Confirmation and admin alert emails are dispatched asynchronously; email transit interruptions never abort database persistence or falsify client failure.
+
+---
+
+## 10. Phase 7: Administrative Architecture — Single SUPER_ADMIN Governance & Shared Login Pipeline
+
+### System Topology & Unified Login Flow
+
+```mermaid
+flowchart TD
+    AdminUser["Administrator (SUPER_ADMIN / ADMIN / EDITOR)"]
+    
+    subgraph ClientLayer["Client Layer (Browser)"]
+        LoginPage["Unified Login Portal (/admin/login)"]
+        AdminDashboard["Dynamic Admin Dashboard (/admin)"]
+    end
+
+    subgraph EdgeLayer["Edge Infrastructure (src/middleware.ts)"]
+        EdgeGuard["Edge Route Guard (/admin/*)"]
+        HmacVerify["Web Crypto HMAC-SHA256 Cookie Verification"]
+    end
+
+    subgraph ServerLayer["Server-Side Authentication & Session Layer"]
+        LoginAction["loginAction (Server Action)"]
+        RateLimit["Process Rate Limiter (5 per 15m)"]
+        ScryptVerify["Constant-Time scrypt Verification (timingSafeEqual)"]
+        SessionEngine["Session Engine (src/server/security/session.ts)"]
+        RbacGuard["Authoritative RBAC Guard (requirePermission)"]
+        AuditService["Audit Trail Logger (AuditLog Repo)"]
+    end
+
+    subgraph DataLayer["Persistence Layer (PostgreSQL / Neon)"]
+        AdminUsersTable["admin_users (id, email, passwordHash, role, isActive)"]
+        AdminSessionsTable["admin_sessions (sessionToken, userId, expiresAt, lastActiveAt)"]
+        AuditLogsTable["audit_logs (actorId, action, entityId, details)"]
+    end
+
+    subgraph ProvisioningCLI["Controlled Bootstrap Layer"]
+        CliScript["scripts/create-admin.ts (Interactive CLI Bootstrap)"]
+    end
+
+    ProvisioningCLI -->|Bootstrap Initial SUPER_ADMIN| AdminUsersTable
+    ProvisioningCLI -->|Record Bootstrap Audit| AuditLogsTable
+
+    AdminUser -->|Navigate to Portal| LoginPage
+    LoginPage -->|POST Credentials| LoginAction
+    LoginAction --> RateLimit
+    RateLimit --> ScryptVerify
+    ScryptVerify --> AdminUsersTable
+    LoginAction -->|Success| SessionEngine
+    SessionEngine -->|INSERT Token Hash| AdminSessionsTable
+    LoginAction -->|Set-Cookie vts_session| LoginPage
+    LoginPage -->|Redirect /admin| EdgeGuard
+    EdgeGuard --> HmacVerify
+    HmacVerify -->|Valid Signature| AdminDashboard
+    AdminDashboard --> SessionEngine
+    SessionEngine -->|SELECT Session + User| AdminSessionsTable
+    AdminDashboard -->|Render Role-Tailored Views| AdminUser
+
+    AdminDashboard -->|Execute Administrative Mutation| RbacGuard
+    RbacGuard -->|Authoritative DB Role Check| AdminUsersTable
+    RbacGuard -->|Allowed| AuditService
+    AuditService --> AuditLogsTable
+```
+
+### Architectural Principles
+1. **Single Unified Authentication Portal:**
+   - Exactly ONE authentication endpoint exists: `/admin/login`.
+   - `SUPER_ADMIN`, `ADMIN`, and `EDITOR` authenticate through this single unified portal using identical credentials processing.
+   - Zero separate login routes or role-specific URL pathways exist.
+2. **Authoritative Server-Side Governance:**
+   - Client-side navigation adaptions are strictly ergonomic. Security is enforced authoritatively on the server inside Server Actions and Route Handlers via `requirePermission(user, permission)`.
+3. **Single SUPER_ADMIN Account Governance:**
+   - Only `SUPER_ADMIN` can provision `ADMIN` and `EDITOR` accounts, modify roles, activate/deactivate accounts, revoke active sessions, and view sensitive audit logs.
+   - Non-super admins have zero administrative user management capabilities.
+4. **Sole Active SUPER_ADMIN Invariant Protection:**
+   - Atomic verification ensures `count(where: { role: 'SUPER_ADMIN', isActive: true }) >= 1`.
+   - The platform strictly rejects any action that would deactivate, delete, or demote the sole remaining active `SUPER_ADMIN`, eliminating total administrative lockout risks.
+5. **Controlled Initial Bootstrap:**
+   - Initial `SUPER_ADMIN` account is provisioned exclusively through an interactive CLI script (`scripts/create-admin.ts`).
+   - Zero database seed provisioning; zero public user registration; zero hardcoded passwords.

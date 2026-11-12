@@ -1,8 +1,8 @@
 # Phase 7: Security Architecture & Threat Model
 
-**Document Version:** 1.1.0 (Owner-Approved with Security Refinements)  
+**Document Version:** 1.2.0 (Owner-Approved: Single SUPER_ADMIN Governance & Shared Login Architecture)  
 **Phase:** 07 — Admin Authentication, Session Management & Role-Based Access Control  
-**Status:** Approved for Implementation (Milestone 7.1 & 7.2)  
+**Status:** Approved for Implementation (Milestones 7.1 & 7.2 Complete; Architecture Updated for 7.3+)  
 **Date:** 2026-11-12  
 
 ---
@@ -149,9 +149,115 @@
 - **Permanent Enquiry Deletion:** Strictly guarded by `requirePermission("enquiries:delete")`. Any lead deletion automatically records an immutable `AuditLog` entry capturing `actorId`, `actorEmail`, `entityId`, `ipAddress`, and timestamp.
 - **Sensitive Audit Logs:** Viewing administrative audit trails is restricted to `SUPER_ADMIN` to prevent lower-tier operators from inspecting security monitoring details.
 
+### SUPER_ADMIN Authority & Governance Model
+1. **Exclusive Administrative Governance:**
+   - **Account Provisioning:** Only `SUPER_ADMIN` can create new `ADMIN` and `EDITOR` accounts.
+   - **Role Assignment:** Only `SUPER_ADMIN` can promote, demote, or modify account roles.
+   - **Account Lifecycle:** Only `SUPER_ADMIN` can activate or deactivate administrator accounts.
+   - **Session Revocation:** Only `SUPER_ADMIN` can trigger global session revocation for other administrators.
+   - **Password Resets:** Only `SUPER_ADMIN` can initiate administrative password reset flows.
+   - **Lead Deletion:** Only `SUPER_ADMIN` can permanently purge inbound project enquiries.
+   - **Audit Inspection:** Only `SUPER_ADMIN` can access sensitive administrative audit trails.
+
+2. **Non-Escalation & Least-Privilege Guarantees:**
+   - **Non-Super-Admin Prohibition:** Neither `ADMIN` nor `EDITOR` accounts possess any permissions to create accounts, modify user roles, activate/deactivate users, or delete data.
+   - **Self-Role Modification Block:** No administrator (including `SUPER_ADMIN`) can modify their own role. Role demotions or elevations require independent administrative action.
+   - **Privilege Ceiling:** An administrator can never assign a role equal to or higher than their own authority.
+   - **Server-Side Enforcement:** Role and permission validation is executed strictly on the server inside repository calls and Server Actions; client-side payload tampering is impossible.
+
+3. **Sole Active SUPER_ADMIN Protection Invariant:**
+   - **System Invariant:** The system MUST always maintain at least one active, enabled `SUPER_ADMIN` in the database.
+   - **Atomic Verification:** Before executing any deactivation (`isActive = false`), deletion, or role change away from `SUPER_ADMIN`, the system executes an atomic transaction check:
+     ```typescript
+     const activeSuperAdmins = await prisma.adminUser.count({
+       where: { role: "SUPER_ADMIN", isActive: true },
+     });
+     if (activeSuperAdmins <= 1 && targetUser.role === "SUPER_ADMIN") {
+       throw new Error("CANNOT_DEACTIVATE_SOLE_SUPER_ADMIN: Operation rejected to prevent administrative lockout.");
+     }
+     ```
+   - **Lockout Prevention:** This rule prevents accidental or malicious total lockout of the administrative platform.
+
 ---
 
-## 7. Database Change Proposal: `AdminSession` Model
+## 7. Single Shared Login System & Authentication Flow
+
+### Single Unified Portal Architecture
+- **Unified Route:** Exactly ONE shared authentication portal exists: `/admin/login`.
+- **Zero Role Bifurcation:** `SUPER_ADMIN`, `ADMIN`, and `EDITOR` all access this identical login interface. No separate login pages, alternative URLs, or partitioned authentication endpoints exist.
+- **Unified Credentials Processing:** All roles authenticate using email and password via the single `loginAction` Server Action.
+
+### Authentication & Authorization Sequence Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Admin as Administrator (Any Role)
+    participant Browser as Browser Client
+    participant Edge as Edge Middleware (src/middleware.ts)
+    participant Action as loginAction (src/server/actions/auth.actions.ts)
+    participant SessionSec as Session Engine (src/server/security/session.ts)
+    participant DB as PostgreSQL (Neon)
+    participant Shell as Admin Shell (/admin/page.tsx)
+
+    Admin->>Browser: Navigate to /admin/login
+    Browser->>Edge: GET /admin/login
+    Edge-->>Browser: Render unified login screen
+    Admin->>Browser: Enter email & password
+    Browser->>Action: POST loginAction(credentials)
+    Action->>Action: Validate origin & Zod schema
+    Action->>Action: Memory rate limiter check (max 5 / 15m)
+    Action->>DB: Query AdminUser by email
+    Action->>Action: Verify password via crypto.scryptSync (timingSafeEqual)
+    Action->>SessionSec: createAdminSession(userId)
+    SessionSec->>DB: INSERT INTO admin_sessions (tokenHash, expiresAt, lastActiveAt)
+    SessionSec-->>Action: Return rawToken & signed cookie
+    Action-->>Browser: Set-Cookie: vts_session (HttpOnly, SameSite=Lax, Secure)
+    Browser->>Edge: GET /admin (Redirect after login)
+    Edge->>Edge: Verify HMAC-SHA256 cookie signature
+    Edge-->>Shell: Forward request to Admin Shell
+    Shell->>SessionSec: validateAdminSession(rawToken)
+    SessionSec->>DB: SELECT user, session WHERE tokenHash = ?
+    SessionSec-->>Shell: Return authoritative AdminUser with role
+    Shell->>Shell: Dynamically tailor navigation & views based on user.role
+    Shell-->>Browser: Render role-appropriate dashboard
+```
+
+### Authoritative Server-Side RBAC Enforcement
+- **Ergonomic Client Presentation:** The dashboard presentation adapts based on the user's role:
+  - `SUPER_ADMIN`: Displays full management suite (Admins, Settings, Audit Logs, Enquiries with Delete, Services, Pricing, Portfolio, FAQs).
+  - `ADMIN`: Displays operational management (Enquiries status updates, Services, Pricing, Portfolio, FAQs). User management and audit logs are hidden.
+  - `EDITOR`: Displays content management (Portfolio, FAQs, Services copywriting, Read-only enquiries). Pricing, Admin management, Settings, and Audit logs are hidden.
+- **Zero Trust in Client UI:** Client-side visual toggles are strictly for user experience. Every Server Action, Route Handler, and mutation independently verifies `requirePermission(user, permission)` against the authoritative user record retrieved from PostgreSQL.
+
+---
+
+## 8. Initial SUPER_ADMIN Provisioning & Bootstrap Protocol
+
+### Controlled Provisioning Requirements
+1. **Zero Public Registration:** No public-facing sign-up, self-registration, or invitation forms exist.
+2. **Zero Seed Provisioning:** `prisma/seed.ts` is strictly prohibited from inserting administrator accounts. Seeds populate only static public catalogs (services, pricing, FAQs, site settings).
+3. **Zero Hardcoded Credentials:** No default passwords, static tokens, or repository-committed credentials.
+
+### Dedicated CLI Provisioning Script (`scripts/create-admin.ts`)
+- Initial administrator bootstrapping is performed strictly through an interactive CLI utility:
+  ```bash
+  npx tsx scripts/create-admin.ts
+  ```
+- **CLI Workflow & Safeguards:**
+  1. Prompts the owner interactively for admin `name`, `email`, and `password` (or accepts secure environment overrides during headless automation).
+  2. Validates inputs using strict Zod schemas:
+     - Email: Valid format, max 255 chars, unique in database.
+     - Password: Minimum 12 characters, requiring uppercase, lowercase, numbers, and symbols.
+  3. Hashes the password using constant-time `hashPassword` (scrypt with 16-byte cryptographically secure random salt).
+  4. Sets `role: "SUPER_ADMIN"` and `isActive: true`.
+  5. Inserts the record into `admin_users` table in PostgreSQL.
+  6. Creates an immutable `AuditLog` entry (`action: "ADMIN_BOOTSTRAP_SUCCESS"`).
+  7. Prompts for mandatory initial password change on first login.
+
+---
+
+## 9. Database Model: `AdminSession` Model
 
 ### Prisma Schema Definition (`prisma/schema.prisma`)
 ```prisma

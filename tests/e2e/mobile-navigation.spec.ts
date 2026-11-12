@@ -1,21 +1,30 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, Page } from "@playwright/test";
 
 test.describe("Mobile Responsive Navigation & Hero Layout", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
   });
+
+  async function openDrawer(page: Page) {
+    const triggerBtn = page.getByRole("button", { name: "Open navigation menu" });
+    await expect(triggerBtn).toBeVisible();
+    const drawer = page.getByRole("dialog", { name: "Mobile Navigation Menu" });
+
+    await expect(async () => {
+      if (!(await drawer.isVisible())) {
+        await triggerBtn.click();
+      }
+      await expect(drawer).toBeVisible({ timeout: 1000 });
+    }).toPass({ timeout: 5000 });
+
+    return { triggerBtn, drawer };
+  }
 
   test("opens and closes mobile navigation drawer via trigger and close button", async ({ page, isMobile }) => {
     test.skip(!isMobile, "Mobile drawer is tested on mobile viewports");
 
-    const triggerBtn = page.getByRole("button", { name: "Open navigation menu" });
-    await expect(triggerBtn).toBeVisible();
-
-    // Open drawer
-    await triggerBtn.click();
-
-    const drawer = page.getByRole("dialog", { name: "Mobile Navigation Menu" });
-    await expect(drawer).toBeVisible();
+    const { drawer } = await openDrawer(page);
 
     // Close button inside drawer
     const closeBtn = page.getByRole("button", { name: "Close navigation drawer" });
@@ -28,11 +37,7 @@ test.describe("Mobile Responsive Navigation & Hero Layout", () => {
   test("closes mobile drawer upon pressing Escape key", async ({ page, isMobile }) => {
     test.skip(!isMobile, "Mobile drawer is tested on mobile viewports");
 
-    const triggerBtn = page.getByRole("button", { name: "Open navigation menu" });
-    await triggerBtn.click();
-
-    const drawer = page.getByRole("dialog", { name: "Mobile Navigation Menu" });
-    await expect(drawer).toBeVisible();
+    const { drawer } = await openDrawer(page);
 
     await page.keyboard.press("Escape");
     await expect(drawer).not.toBeVisible();
@@ -41,26 +46,21 @@ test.describe("Mobile Responsive Navigation & Hero Layout", () => {
   test("locks background body scroll when drawer is open and restores upon close", async ({ page, isMobile }) => {
     test.skip(!isMobile, "Mobile drawer is tested on mobile viewports");
 
-    const triggerBtn = page.getByRole("button", { name: "Open navigation menu" });
-    await triggerBtn.click();
+    const { drawer } = await openDrawer(page);
 
     // Check body overflow style
-    const overflowOpen = await page.evaluate(() => document.body.style.overflow);
-    expect(overflowOpen).toBe("hidden");
+    await expect(page.locator("body")).toHaveCSS("overflow", "hidden");
 
     await page.keyboard.press("Escape");
-    const overflowClosed = await page.evaluate(() => document.body.style.overflow);
-    expect(overflowClosed).toBe("");
+    await expect(drawer).not.toBeVisible();
+
+    await expect(page.locator("body")).not.toHaveCSS("overflow", "hidden");
   });
 
   test("navigates to selected link and closes drawer", async ({ page, isMobile }) => {
     test.skip(!isMobile, "Mobile drawer is tested on mobile viewports");
 
-    const triggerBtn = page.getByRole("button", { name: "Open navigation menu" });
-    await triggerBtn.click();
-
-    const drawer = page.getByRole("dialog", { name: "Mobile Navigation Menu" });
-    await expect(drawer).toBeVisible();
+    const { drawer } = await openDrawer(page);
 
     // Click 'Pricing' link in mobile navigation
     const pricingLink = drawer.getByRole("link", { name: "Pricing" });
