@@ -117,18 +117,18 @@ describe("Milestone 7.4: Admin UI Components & Role-Aware Shell", () => {
   });
 
   describe("AdminSidebar (Role-Aware Navigation)", () => {
-    it("renders full navigation suite for SUPER_ADMIN", () => {
+    it("renders full navigation suite for SUPER_ADMIN with exact destination URLs", () => {
       render(<AdminSidebar role="SUPER_ADMIN" />);
 
-      expect(screen.getByText("Overview")).toBeInTheDocument();
-      expect(screen.getByText("Enquiries")).toBeInTheDocument();
-      expect(screen.getByText("Services")).toBeInTheDocument();
-      expect(screen.getByText("Pricing Tiers")).toBeInTheDocument();
-      expect(screen.getByText("Portfolio")).toBeInTheDocument();
-      expect(screen.getByText("Knowledgebase (FAQ)")).toBeInTheDocument();
-      expect(screen.getByText("Team & Access")).toBeInTheDocument();
-      expect(screen.getByText("Audit Trail")).toBeInTheDocument();
-      expect(screen.getByText("Platform Settings")).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /Overview/i })).toHaveAttribute("href", "/admin");
+      expect(screen.getByRole("link", { name: /Enquiries/i })).toHaveAttribute("href", "/admin/enquiries");
+      expect(screen.getByRole("link", { name: /Services/i })).toHaveAttribute("href", "/admin/services");
+      expect(screen.getByRole("link", { name: /Pricing Tiers/i })).toHaveAttribute("href", "/admin/pricing");
+      expect(screen.getByRole("link", { name: /Portfolio/i })).toHaveAttribute("href", "/admin/portfolio");
+      expect(screen.getByRole("link", { name: /Knowledgebase \(FAQ\)/i })).toHaveAttribute("href", "/admin/faqs");
+      expect(screen.getByRole("link", { name: /Team & Access/i })).toHaveAttribute("href", "/admin/users");
+      expect(screen.getByRole("link", { name: /Audit Trail/i })).toHaveAttribute("href", "/admin/audit-logs");
+      expect(screen.getByRole("link", { name: /Platform Settings/i })).toHaveAttribute("href", "/admin/settings");
       expect(screen.getByText("SUPER_ADMIN")).toBeInTheDocument();
     });
 

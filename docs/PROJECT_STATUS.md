@@ -1,8 +1,8 @@
 # PROJECT_STATUS.md — VOIDTECH SOLUTION Status Dashboard
 
 > **Current Status as of:** 2026-11-12  
-> **Active Milestone:** Milestone 5 — Phase 7: Admin Authentication, Session Management & Role-Based Access Control (Milestones 7.1, 7.2, 7.3, 7.4, & 7.5 Complete & Verified)  
-> **Strict Stop Condition:** STRICTLY DO NOT START MILESTONE 7.6 until owner reviews and explicitly authorizes start.
+> **Active Task:** Admin Console Route Completion & 404 Remediation (All 8 Affected Routes Implemented, Tested, & Verified; Zero 404s)  
+> **Milestone Status:** Milestones 7.1–7.5 Complete; 404 Remediation Complete; Strict Stop for Milestone 7.6.
 
 ---
 
@@ -130,8 +130,41 @@
 
 ---
 
-## 4. Strict Stop Boundary Enforced
+## 4. Admin Console Route Completion & 404 Remediation (Corrective Task)
+
+### ✅ Completed & Empirically Verified
+- [x] **Remediated All 8 Affected Admin Dashboard Routes:**
+  1. `/admin/users` — **Team & Access Control**: Full administrator account roster, role badges, active/inactive toggles, role change (ADMIN ↔ EDITOR), delete with confirmation, and "Add Administrator" modal with role restriction. Master `SUPER_ADMIN` account strictly locked against deletion, demotion, or deactivation. Requires `admins:manage` (`SUPER_ADMIN` only).
+  2. `/admin/audit-logs` — **Audit Trail & Security Logs**: Comprehensive, tamper-resistant administrative activity log viewer with filter by action, actor email, date range, search query, and modal for full JSON payload inspection. Zero edit or delete capabilities. Requires `audit_logs:view` (`SUPER_ADMIN` only).
+  3. `/admin/settings` — **Platform Configuration**: Key-value settings editor for core platform parameters (`site_name`, `site_tagline`, `contact_email`, `enquiry_auto_reply`, `maintenance_mode`). Sourced directly from `SiteSetting` database records with optimistic UI updates and validation. Requires `settings:manage` (`SUPER_ADMIN` only).
+  4. `/admin/enquiries` — **Inbound Client Leads & Enquiries**: Complete inbound leads table, metrics summary cards by status (New, Contacted, In Review, Converted, Closed, Spam), status filter tabs, search query, detailed lead inspector modal, status updater, internal reviewer notes, and permanent delete capability (restricted to `SUPER_ADMIN`). Dedicated read-only view for `EDITOR`. Requires `enquiries:view`.
+  5. `/admin/services` — **Services Catalog**: All 18 registered business services from `ServicesRepo`, categorized, with starting INR pricing, active/hidden toggle, and deliverables modal. Requires `services:manage` (`SUPER_ADMIN`, `ADMIN`, `EDITOR`).
+  6. `/admin/pricing` — **Pricing Packages**: All 10 approved investment packages (₹999 to ₹59,999+) from `PricingRepo`, popular badges, active status toggles, and feature lists. Prohibited for `EDITOR` (renders `<AdminAccessDenied />`). Requires `pricing:manage` (`SUPER_ADMIN`, `ADMIN`).
+  7. `/admin/portfolio` — **Portfolio & Concept Lab**: Showcases agency projects and architecture concepts with explicit `CONCEPT` badge markers, industry filters, tech stack badges, and benchmark metrics modal. Sourced from `PortfolioRepo`. Requires `portfolio:manage` (`SUPER_ADMIN`, `ADMIN`, `EDITOR`).
+  8. `/admin/faqs` — **Knowledgebase FAQs**: Interactive FAQ accordion with category filters, search box, and "Add Question" modal. Sourced from `FaqRepo`. Requires `faqs:manage` (`SUPER_ADMIN`, `ADMIN`, `EDITOR`).
+- [x] **Server-Side RBAC Guarding & 403 Forbidden State:**
+  - Standardized `<AdminAccessDenied />` primitive at `src/components/admin/admin-access-denied.tsx` displaying HTTP 403 Forbidden badge, active user role, required permission, and "Return to Overview" CTA.
+  - Every server page independently checks `hasPermission(current.user.role, requiredPermission)` before loading or rendering sensitive data.
+- [x] **Admin Content Server Actions (`src/server/actions/admin-content.actions.ts`):**
+  - All operations protected with origin verification (`validateRequestOrigin`), session authentication (`getCurrentAdmin`), and authoritative RBAC permission enforcement (`requirePermission`).
+  - Audit logging automatically triggered on sensitive mutations (`updateEnquiryStatusAction`, `deleteEnquiryAction`, `updateSiteSettingAction`).
+- [x] **Playwright E2E Route Verification (`tests/e2e/admin-routes.spec.ts`):**
+  - Verified across 3 viewports (`mobile-375`, `mobile-320`, `desktop`): 30/30 tests passed.
+  - Zero 404s when navigating or requesting any of the 8 remediated admin routes.
+  - Redirection preserves `callbackUrl` cleanly.
+  - Zero horizontal overflow on mobile viewports.
+- [x] **Empirical Quality Gates:**
+  - `tsc --noEmit`: 0 TypeScript compiler errors.
+  - `next lint`: 0 ESLint warnings or errors.
+  - `vitest run`: 19 test suites passed, 297/297 unit & integration tests passed (100%).
+  - `playwright test tests/e2e/admin-routes.spec.ts`: 30/30 E2E tests passed (100%).
+  - `next build`: Clean compilation of 24/24 static and dynamic routes.
+
+---
+
+## 5. Strict Stop Boundary Enforced
 - **Zero Real Remote Migrations:** Local migration scripts staged. Remote PostgreSQL database untouched.
 - **Zero Real Production Admin Accounts Created:** No production administrative credentials generated or stored.
 - **Zero Real Emails:** Real SMTP mocked in automated verification test suites.
-- **Strict Stop Condition:** Stopped after Milestone 7.5 Security Closure Review. Strictly awaiting user approval before starting Milestone 7.6.
+- **Zero Vercel Deployments:** No deployments.
+- **Strict Stop Condition:** Corrective 404 remediation complete. STRICTLY DO NOT START MILESTONE 7.6 without owner instruction.

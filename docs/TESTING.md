@@ -237,3 +237,30 @@ npm run build
   6. **Automated Credential Redaction (`sanitizeAuditDetails`):** Recursively redacts passwords, hashes, tokens, secrets, cookies, OTPs, and connection strings from audit metadata, capping recursion depth at 6 levels.
   7. **Append-Only Immutability & Decoupled Historical Preservation:** Verifies zero update or delete methods exist in the audit engine, and proves historical audit logs persist intact even when an administrator account is deleted.
 
+---
+
+## 11. Admin Console Route Remediation & Content Action Test Suites
+
+- **Test Files:**
+  - `tests/unit/admin-content-actions.test.tsx` (17 tests)
+  - `tests/unit/admin-ui.test.tsx` (11 tests — enhanced with exact URL navigation assertions)
+  - `tests/e2e/admin-routes.spec.ts` (30 Playwright E2E tests across `mobile-375`, `mobile-320`, `desktop`)
+- **Total Project Tests:** **297 passing unit & integration tests across 19 test suites (100% pass rate) + 30 passing Playwright E2E tests**.
+- **Coverage Areas:**
+  1. **Admin Access Denied Primitive (`<AdminAccessDenied />`):**
+     - Renders HTTP 403 Forbidden state badge, active role indicator, required permission badge, and "Return to Overview" CTA (`/admin`).
+  2. **Admin Content Server Actions Authorization & Execution (`src/server/actions/admin-content.actions.ts`):**
+     - `updateEnquiryStatusAction`: Origin verification, authentication guard, role enforcement (EDITOR denied, ADMIN allowed), and automatic `ENQUIRY_STATUS_UPDATED` audit log generation.
+     - `appendEnquiryNoteAction`: Origin verification, authentication guard, role enforcement (EDITOR denied, ADMIN allowed), reviewer attribution.
+     - `deleteEnquiryAction`: Restricted strictly to `SUPER_ADMIN` (`enquiries:delete`), rejected for `ADMIN`/`EDITOR`, automatic `ENQUIRY_DELETED` audit log.
+     - `updateSiteSettingAction`: Restricted strictly to `SUPER_ADMIN` (`settings:manage`), rejected for `ADMIN`, atomic `SiteSetting` persistence, and `SETTINGS_UPDATED` audit log.
+     - `toggleServiceActiveAction`: Allowed for `SUPER_ADMIN`, `ADMIN`, and `EDITOR` (`services:manage`).
+     - `createFaqAction`: Input validation, allowed for all 3 roles (`faqs:manage`).
+     - `togglePricingPackageActiveAction`: Allowed for `SUPER_ADMIN` and `ADMIN`, restricted from `EDITOR` (`pricing:manage`).
+  3. **Playwright E2E Route Verification (`tests/e2e/admin-routes.spec.ts`):**
+     - All 8 remediated admin routes (`/admin/users`, `/admin/audit-logs`, `/admin/settings`, `/admin/enquiries`, `/admin/services`, `/admin/pricing`, `/admin/portfolio`, `/admin/faqs`) tested across 3 viewports (`mobile-375`, `mobile-320`, `desktop`).
+     - Verifies unauthenticated visits redirect with HTTP 307 to `/admin/login` preserving the exact `callbackUrl` parameter.
+     - Confirms zero 404 Not Found HTTP status responses or Next.js 404 page content across all 8 routes.
+     - Verifies responsive admin portal layout with zero horizontal viewport overflow on narrow mobile screens (320px and 375px).
+
+

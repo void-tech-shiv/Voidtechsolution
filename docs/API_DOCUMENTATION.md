@@ -268,3 +268,43 @@ Interactive terminal command executing `scripts/create-admin.ts`.
 - **Security:** Hidden password input, database connection check, advisory lock `super_admin_lifecycle_lock`, Exactly One `SUPER_ADMIN` invariant, scrypt password hashing, and atomic `ADMIN_BOOTSTRAP_SUCCESS` audit logging.
 - **Reference:** See [`docs/ADMIN_BOOTSTRAP.md`](file:///d:/voidtechsolution/docs/ADMIN_BOOTSTRAP.md) for full execution runbook.
 
+---
+
+## 4. Admin Content Server Actions (`src/server/actions/admin-content.actions.ts`)
+
+### `updateEnquiryStatusAction(enquiryId, status, internalNotes?)`
+Updates the workflow status of an inbound lead.
+- **Access:** `SUPER_ADMIN` and `ADMIN` (Permission `enquiries:update_status`; `EDITOR` rejected)
+- **Security:** Request origin verification, session resolution, audit event `ENQUIRY_STATUS_UPDATED`.
+
+### `appendEnquiryNoteAction(enquiryId, note)`
+Appends reviewer notes and timestamp to an enquiry.
+- **Access:** `SUPER_ADMIN` and `ADMIN` (Permission `enquiries:update_status`)
+- **Security:** Request origin verification, session resolution.
+
+### `deleteEnquiryAction(enquiryId)`
+Permanently deletes an enquiry record from the database.
+- **Access:** Strictly `SUPER_ADMIN` only (Permission `enquiries:delete`; `ADMIN` & `EDITOR` rejected)
+- **Security:** Request origin verification, session resolution, audit event `ENQUIRY_DELETED`.
+
+### `updateSiteSettingAction(key, value, description?)`
+Updates or creates a global platform setting in `SiteSetting`.
+- **Access:** Strictly `SUPER_ADMIN` only (Permission `settings:manage`)
+- **Security:** Request origin verification, session resolution, audit event `SETTINGS_UPDATED`.
+
+### `toggleServiceActiveAction(serviceId, isActive)`
+Toggles the public visibility status of a service in the agency catalog.
+- **Access:** `SUPER_ADMIN`, `ADMIN`, and `EDITOR` (Permission `services:manage`)
+- **Security:** Request origin verification, session resolution.
+
+### `createFaqAction(question, answer, category, orderIndex?)`
+Creates a new question & answer in the agency FAQ knowledgebase.
+- **Access:** `SUPER_ADMIN`, `ADMIN`, and `EDITOR` (Permission `faqs:manage`)
+- **Security:** Request origin verification, non-empty validation, session resolution.
+
+### `togglePricingPackageActiveAction(packageId, isActive)`
+Toggles the active availability status of a pricing tier package.
+- **Access:** `SUPER_ADMIN` and `ADMIN` (Permission `pricing:manage`; `EDITOR` rejected)
+- **Security:** Request origin verification, session resolution.
+
+
