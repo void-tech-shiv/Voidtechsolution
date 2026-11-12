@@ -48,24 +48,41 @@ Phase 7 will be implemented in strict sequential milestones. Each milestone defi
 
 ---
 
-### Milestone 7.3 — Role-Based Access Control (RBAC) System & SUPER_ADMIN Governance
-* **Objective:** Implement centralized, type-safe server-side authorization guards, non-escalation invariants, and the Single `SUPER_ADMIN` Governance Model.
+### Milestone 7.3 — Role-Based Access Control (RBAC) System & SUPER_ADMIN Governance [COMPLETED & VERIFIED]
+* **Objective:** Implement centralized, type-safe server-side authorization guards, non-escalation invariants, and the Concurrency-Safe Exactly One `SUPER_ADMIN` Governance Model.
 * **Deliverables:**
   * `src/server/security/rbac.ts`:
     * Strict three-role definition: `SUPER_ADMIN`, `ADMIN`, `EDITOR`.
-    * Typed permission definitions (`PermissionKey`) covering all administrative operations.
-    * Centralized permission mapping matrix.
+    * Typed permission definitions (`PermissionKey`) covering all 14 administrative operations.
+    * Centralized permission mapping matrix (`ROLE_PERMISSIONS`).
     * `hasPermission(role: UserRole, permission: PermissionKey): boolean`.
-    * `requirePermission(user: AdminUser, permission: PermissionKey): void`.
-    * `requireRole(user: AdminUser, requiredRole: UserRole): void`.
-    * **Sole Active SUPER_ADMIN Invariant Guard (`assertSoleSuperAdminProtection`):**
-      * Atomic validation ensuring `count(AdminUser where role = 'SUPER_ADMIN' and isActive = true) >= 1`.
-      * Prevents deactivating, deleting, or demoting the last active `SUPER_ADMIN`.
+    * `requirePermission(user: UserSubject, permission: PermissionKey): void`.
+    * `requireRole(user: UserSubject, requiredRole: UserRole | UserRole[]): void`.
+    * **Exactly One SUPER_ADMIN Invariant Guard (`assertCanCreateAdmin`):**
+      * Strictly prohibits standard administrative creation of a `SUPER_ADMIN` account.
+      * Only the controlled CLI bootstrap protocol may create the master account.
+      * Rejects with `ExactlyOneSuperAdminError` if a `SUPER_ADMIN` already exists or if standard creation attempts to provision one.
+    * **Sole Master SUPER_ADMIN Invariant Guard (`assertCanModifyAdmin`):**
+      * Prevents deactivating (`isActive: false`), deleting, or demoting (changing role away from `SUPER_ADMIN`) the master `SUPER_ADMIN` account through every code path.
+      * Rejects with `SoleSuperAdminProtectionError`.
     * **Non-Escalation Safeguards:**
       * Rejection of any user creation or role modification attempted by `ADMIN` or `EDITOR`.
-      * Rejection of self-role modification for any administrator.
-      * Enforces privilege ceiling (cannot grant higher permissions than own role).
-  * Integration into Server Actions and Route Handlers for authoritative enforcement.
+      * Rejection of self-role modification (`SelfModificationError`) for any administrator.
+      * Rejection of self-deactivation and self-deletion.
+      * Strictly prohibits promoting any account to `SUPER_ADMIN`.
+  * `src/server/repositories/users.repo.ts`:
+    * PostgreSQL transaction serialization via advisory transaction locking (`SELECT pg_advisory_xact_lock(hashtext('super_admin_lifecycle_lock'))`).
+    * Concurrency-safe `createAdminUser`, `updateAdminRole`, `setAdminActiveStatus`, and `deleteAdminUser`.
+    * Automatic session revocation on role/status changes or deletion.
+  * `src/validations/admin-management.ts`:
+    * Zod validation schemas strictly limiting role assignment to `ADMIN` and `EDITOR`.
+  * `src/server/actions/admin-management.actions.ts`:
+    * `createAdminUserAction`, `updateAdminRoleAction`, `setAdminStatusAction`, `deleteAdminUserAction`.
+    * Authoritative Server Action authorization, origin verification, and immutable `AuditLog` generation.
+  * `src/app/api/admin/users/route.ts`:
+    * Protected Route Handlers (`GET`, `POST`) enforcing `admins:manage` permission.
+  * `tests/unit/rbac.test.ts`:
+    * 33 automated unit tests covering all permissions, invariants, concurrency safety, server action rejections, route handler rejections, and audit logging.
 
 ---
 

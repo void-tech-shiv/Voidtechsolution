@@ -165,18 +165,22 @@
    - **Privilege Ceiling:** An administrator can never assign a role equal to or higher than their own authority.
    - **Server-Side Enforcement:** Role and permission validation is executed strictly on the server inside repository calls and Server Actions; client-side payload tampering is impossible.
 
-3. **Sole Active SUPER_ADMIN Protection Invariant:**
-   - **System Invariant:** The system MUST always maintain at least one active, enabled `SUPER_ADMIN` in the database.
-   - **Atomic Verification:** Before executing any deactivation (`isActive = false`), deletion, or role change away from `SUPER_ADMIN`, the system executes an atomic transaction check:
-     ```typescript
-     const activeSuperAdmins = await prisma.adminUser.count({
-       where: { role: "SUPER_ADMIN", isActive: true },
-     });
-     if (activeSuperAdmins <= 1 && targetUser.role === "SUPER_ADMIN") {
-       throw new Error("CANNOT_DEACTIVATE_SOLE_SUPER_ADMIN: Operation rejected to prevent administrative lockout.");
-     }
+3. **Business Invariant: Exactly One SUPER_ADMIN Account:**
+   - **System Invariant:** The system strictly permits **EXACTLY ONE SUPER_ADMIN account**. Not merely at least one, but strictly a single master administrator.
+   - **Bootstrap-Only Creation:** Only the initial controlled provisioning script (`scripts/create-admin.ts`) holding `isBootstrap: true` may create the `SUPER_ADMIN` account. It verifies that `count(role = 'SUPER_ADMIN') === 0` inside a locked transaction.
+   - **Standard Provisioning Prohibition:** The `SUPER_ADMIN` can create `ADMIN` and `EDITOR` accounts only. No account-management API, Server Action, dashboard form, or provisioning workflow may create another `SUPER_ADMIN`. Standard user creation rejecting `SUPER_ADMIN` with `ExactlyOneSuperAdminError`.
+   - **Zero Promotion to Master:** No `ADMIN` or `EDITOR` can promote themselves or any other account to `SUPER_ADMIN` (`ExactlyOneSuperAdminError`).
+   - **Master Account Immutability:** The `SUPER_ADMIN` cannot change their own role, deactivate their own account, or delete their own master account (`SelfModificationError`).
+   - **Complete Code Path Protection:** Deletion, demotion, or deactivation of the master `SUPER_ADMIN` is strictly prevented across every available repository, Server Action, and Route Handler code path (`SoleSuperAdminProtectionError`).
+
+4. **Concurrency-Safe PostgreSQL Advisory Locking & Transaction Isolation:**
+   - **Explicit Serialization:** Count-then-update logic without concurrency protection is vulnerable to race conditions under simultaneous requests. All sensitive administrator account lifecycle operations (`createAdminUser`, `updateAdminRole`, `setAdminActiveStatus`, `deleteAdminUser`) acquire a dedicated PostgreSQL transactional advisory lock inside `prisma.$transaction`:
+     ```sql
+     SELECT pg_advisory_xact_lock(hashtext('super_admin_lifecycle_lock'));
      ```
-   - **Lockout Prevention:** This rule prevents accidental or malicious total lockout of the administrative platform.
+   - **Automatic Scope & Release:** The advisory lock is held exclusively by the active transaction and automatically released upon commit or rollback.
+   - **Recheck Inside Locked Transaction:** The target user's current role, status, and system-wide `SUPER_ADMIN` counts are re-queried and validated inside the locked transaction.
+   - **Simultaneous Race Rejection & Total Rollback:** Concurrent attempts to demote, deactivate, or provision conflicting accounts are serialized and rejected sequentially. Failed operations abort the transaction, rolling back 100% of mutations without leaving partial state.
 
 ---
 

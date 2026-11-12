@@ -190,18 +190,14 @@ The approved administrative access model is restricted strictly to three defined
 - **Privilege Ceiling:** An administrator can never assign a role equal to or higher than their own authority level.
 - **Authoritative Database Verification:** Permissions and roles are loaded directly from PostgreSQL on every authenticated request; client-supplied role values in request payloads are strictly discarded.
 
-### E. Sole Active SUPER_ADMIN Protection Invariant
-- **System Invariant:** The database MUST always contain at least one active, enabled `SUPER_ADMIN` account.
-- **Atomic Pre-Condition Check:** Before executing any account deactivation (`isActive = false`), deletion, or role demotion on a `SUPER_ADMIN`, the system queries:
-  ```typescript
-  const activeSuperAdmins = await prisma.adminUser.count({
-    where: { role: "SUPER_ADMIN", isActive: true },
-  });
-  if (activeSuperAdmins <= 1 && targetUser.role === "SUPER_ADMIN") {
-    throw new Error("CANNOT_DEACTIVATE_SOLE_SUPER_ADMIN: Operation rejected to prevent administrative lockout.");
-  }
-  ```
-- **Lockout Prevention:** Ensures the platform can never become permanently un-administrable due to accidental self-demotion or mass deactivation.
+### E. Exactly One SUPER_ADMIN Invariant & Concurrency Protection
+- **Business Invariant:** The platform strictly enforces **EXACTLY ONE SUPER_ADMIN account** across the entire lifecycle of the system.
+- **Bootstrap-Only Creation:** Only the initial controlled CLI provisioning script (`scripts/create-admin.ts`) holding `isBootstrap: true` can create the `SUPER_ADMIN`. If a `SUPER_ADMIN` already exists in PostgreSQL, the script aborts with `ExactlyOneSuperAdminError`.
+- **Standard Account Creation Safeguard:** Active `SUPER_ADMIN` accounts can provision `ADMIN` and `EDITOR` roles only. Creating another `SUPER_ADMIN` via standard user creation is unconditionally rejected.
+- **Promotion Prohibition:** No account (`ADMIN` or `EDITOR`) can promote themselves or another user to `SUPER_ADMIN`.
+- **Self-Modification Block:** The `SUPER_ADMIN` cannot modify their own role, deactivate their own account, or delete their own master account.
+- **Master Account Immutability:** Deletion, demotion, or deactivation of the master `SUPER_ADMIN` is strictly rejected across all repository methods, Server Actions, and API route handlers (`SoleSuperAdminProtectionError`).
+- **PostgreSQL Advisory Locking:** Count-then-update logic is concurrency-hardened using PostgreSQL transaction advisory locks (`SELECT pg_advisory_xact_lock(hashtext('super_admin_lifecycle_lock'))`) inside `prisma.$transaction`. Sensitive operations are fully serialized, and failed transactions roll back 100% of mutations without leaving orphan state.
 
 ### F. Initial SUPER_ADMIN Bootstrap Protocol
 - **Controlled CLI Bootstrap:** Initial bootstrapping is executed exclusively via an interactive CLI tool (`npx tsx scripts/create-admin.ts`).

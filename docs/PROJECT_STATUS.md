@@ -1,8 +1,8 @@
 # PROJECT_STATUS.md — VOIDTECH SOLUTION Status Dashboard
 
 > **Current Status as of:** 2026-11-12  
-> **Active Milestone:** Milestone 5 — Phase 7: Admin Authentication, Session Management & Role-Based Access Control (Milestones 7.1 & 7.2 Complete; Single SUPER_ADMIN Architecture Documented)  
-> **Strict Stop Condition:** STRICTLY DO NOT START MILESTONE 7.3 until owner reviews and explicitly authorizes start.
+> **Active Milestone:** Milestone 5 — Phase 7: Admin Authentication, Session Management & Role-Based Access Control (Milestones 7.1, 7.2, & 7.3 Complete & Verified)  
+> **Strict Stop Condition:** STRICTLY DO NOT START MILESTONE 7.4 until owner reviews and explicitly authorizes start.
 
 ---
 
@@ -16,7 +16,7 @@
 | **Phase 4: Home & Services** | M3 | Hero, Brand Intro, 18-Service Catalog, Why Us, 7-Stage Process, Concept Lab, INR Pricing Preview, FAQ Accordion, Closing CTA | ✅ Complete | Verified 96 tests, clean build |
 | **Phase 5: About & Portfolio**| M3 | Agency story, engineering approach, 6 values, tech matrix, interactive portfolio discovery, dynamic case studies | ✅ Complete | Verified 112 tests, clean build |
 | **Phase 6: Pricing & Contact**| M4 | 10 approved INR packages, interactive cost calculator, 3-step lead enquiry intake, Nodemailer transactional mailer, rate limiting & anti-spam | ✅ Complete | Verified 130 tests (9 suites), clean build |
-| **Phase 7: Authentication** | M5 | Admin login, dual-layer sessions, CSRF & Origin defense, Single SUPER_ADMIN governance | ⏸️ Paused for Review | Milestones 7.1 & 7.2 Verified (174 unit tests, 11 E2E tests). Single SUPER_ADMIN Architecture Documented. |
+| **Phase 7: Authentication** | M5 | Admin login, dual-layer sessions, CSRF & Origin defense, Single SUPER_ADMIN governance, Concurrency-Safe RBAC | ⏸️ Paused for Review | Milestones 7.1, 7.2 & 7.3 Verified (207 unit tests, 29 E2E tests). Strict Stop for M7.4. |
 | **Phase 8: Admin Shell** | M5 | Admin layout, navigation, analytics overview | ⬜ Pending | Architecture specified |
 | **Phase 9: Enquiry Pipeline**| M6 | Lead triage Kanban, status management, email triggers | ⬜ Pending | Data model specified |
 | **Phase 10: Admin CMS** | M6 | Portfolio, Service, and Pricing administration | ⬜ Pending | Repositories implemented |
@@ -94,16 +94,29 @@
   - Absolute 8-hour session lifetime and server-side 30-minute idle timeout.
   - Write amplification defense: `TOUCH_INTERVAL_MS = 5 * 60 * 1000` (5 minutes) throttles session touches to protect PostgreSQL connection poolers.
   - Automatic session invalidation: Password updates, role updates, and account deactivations call `revokeAllUserSessions(userId)` immediately.
+- [x] **Milestone 7.3: Centralized RBAC System & Exactly One SUPER_ADMIN Invariants (`src/server/security/rbac.ts`):**
+  - Strict mapping for 14 administrative permissions across `SUPER_ADMIN`, `ADMIN`, and `EDITOR`.
+  - `hasPermission()`, `requirePermission()`, `requireRole()` authoritative server-side guards.
+  - Exactly One `SUPER_ADMIN` Invariant: Only CLI bootstrap script may create the master account; standard user creation of `SUPER_ADMIN` is strictly forbidden.
+  - Sole Master Account Protection: Prevents demotion, deactivation, or deletion of the master `SUPER_ADMIN` across all repository and action code paths.
+  - Non-escalation invariants: Self-role modification, self-deactivation, and self-deletion strictly prohibited.
+- [x] **Milestone 7.3: Concurrency-Safe PostgreSQL Transaction Advisory Locking (`src/server/repositories/users.repo.ts`):**
+  - PostgreSQL transaction advisory locks (`SELECT pg_advisory_xact_lock(hashtext('super_admin_lifecycle_lock'))`) serializing sensitive account lifecycle operations.
+  - Automatic rollback on invariant violations.
+- [x] **Milestone 7.3: Administrative Server Actions & Route Handlers:**
+  - `src/server/actions/admin-management.actions.ts`: `createAdminUserAction`, `updateAdminRoleAction`, `setAdminStatusAction`, `deleteAdminUserAction` with origin check, session resolution, and `AuditLog` generation.
+  - `src/app/api/admin/users/route.ts`: Protected GET and POST route handlers enforcing `admins:manage`.
 - [x] **Empirical Quality Gates:**
   - `tsc --noEmit`: 0 TypeScript compiler errors.
   - `next lint`: 0 ESLint warnings or errors.
-  - `vitest run`: 10 test suites passed, 171/171 unit tests passed (100%).
-  - `next build`: Next.js production build succeeded with clean static generation of 13 routes.
+  - `vitest run`: 11 test suites passed, 207/207 unit tests passed (100%).
+  - `playwright test`: 29/29 E2E tests passed (100%).
+  - `next build`: Next.js production build succeeded with clean generation of 14 static and dynamic routes.
 
 ---
 
 ## 4. Strict Stop Boundary Enforced
-- **Zero Real Remote Migrations:** Local migration script staged (`20261112000001_add_admin_sessions`). Remote PostgreSQL database untouched.
-- **Zero Admin Accounts Created:** No production administrative credentials generated or stored.
+- **Zero Real Remote Migrations:** Local migration scripts staged. Remote PostgreSQL database untouched.
+- **Zero Real Production Admin Accounts Created:** No production administrative credentials generated or stored.
 - **Zero Real Emails:** Real SMTP mocked in automated verification test suites.
-- **Strict Stop Condition:** Stopped after Milestone 7.1 & 7.2 Security Closure Review. Strictly awaiting user approval before starting Milestone 7.3.
+- **Strict Stop Condition:** Stopped after Milestone 7.3. Strictly awaiting user approval before starting Milestone 7.4.
