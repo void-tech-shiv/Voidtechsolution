@@ -6,6 +6,7 @@ import { Container, Section } from "@/components/layout";
 import { buttonVariants } from "@/components/ui/button";
 import { PublicPageHero } from "@/components/layout/public-page-hero";
 import { Badge } from "@/components/ui/badge";
+import { siteConfig } from "@/config/site";
 import { PortfolioFilter } from "@/components/sections/portfolio-filter";
 
 export const metadata: Metadata = {
@@ -17,7 +18,10 @@ export const metadata: Metadata = {
     description:
       "Selected work, architecture prototypes, and engineering experiments developed by VOIDTECH SOLUTION.",
     type: "website",
-    url: "https://voidtechsolution.com/portfolio",
+    url: `${siteConfig.url}/portfolio`,
+  },
+  alternates: {
+    canonical: `${siteConfig.url}/portfolio`,
   },
 };
 

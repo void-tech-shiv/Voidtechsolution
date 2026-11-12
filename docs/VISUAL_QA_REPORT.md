@@ -72,3 +72,22 @@ Automated Playwright captures saved in `docs/screenshots/`:
 - CSS keyframe floating animations degrade gracefully to static display for users with `prefers-reduced-motion`.
 - Production bundle size optimized: ultra-efficient WebP asset (211 KB) loaded via Next.js `<Image priority fill sizes="100vw">`.
 
+---
+
+## 4. Phase 8.4 Full Website Visual & Functional Acceptance Verification
+
+- **10-Viewport Matrix Verification (320px–1920px):** Guaranteed zero horizontal overflow across all 6 core public routes (`scrollWidth <= clientWidth`).
+- **Phase 8.3 Mobile Bug Fix Proofs:**
+  - `contact-button-375px.png` & `contact-button-320px.png`: Confirms single-line flexbox alignment of text and arrow icon without wrapping.
+  - `mobile-drawer-fixed-375px.png`: Confirms single BrandLogo and single accessible toggle control in mobile header, with drawer attached cleanly beneath.
+  - `contact-viewport-fixed-375px.png`: Confirms normalized vertical rhythm and purple/violet aside card styling.
+- **Dedicated 3D Artworks Across Every Page:**
+  - Home: `/hero/voidtech-hero-violet.webp`
+  - About: `/hero/voidtech-about-3d.webp`
+  - Services: `/hero/voidtech-services-3d.webp`
+  - Pricing: `/hero/voidtech-pricing-3d.webp`
+  - Portfolio: `/hero/voidtech-portfolio-3d.webp`
+  - Contact: `/hero/voidtech-contact-3d.webp`
+- **Official Brand Logo System:** Origami ribbon `V` emblem and symbol applied uniformly across header, mobile drawer, footer, admin login, and favicons.
+- **Final Verdict:** 100% VISUAL & FUNCTIONAL ACCEPTANCE PASS.
+

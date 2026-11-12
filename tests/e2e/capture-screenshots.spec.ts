@@ -26,7 +26,7 @@ test.describe("Visual Responsive Proofs", () => {
         await page.goto("/");
         const trigger = page.getByRole("button", { name: "Open navigation menu" });
         await trigger.click();
-        await page.waitForTimeout(300);
+        await page.waitForTimeout(400);
         await page.screenshot({
           path: `test-results/screenshots/drawer-open-${vp.name}.png`,
           fullPage: false,
@@ -34,6 +34,40 @@ test.describe("Visual Responsive Proofs", () => {
       });
     }
   }
+
+  // Bug 2 Proof: Capture Step 1 "Continue: Technical Specs" button
+  test("captures contact step 1 button at 375px", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto("/contact");
+    const continueBtn = page.locator("button:has-text('Continue: Technical Specs')");
+    await continueBtn.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(300);
+    await continueBtn.screenshot({
+      path: `test-results/screenshots/contact-button-375px.png`,
+    });
+  });
+
+  test("captures contact step 1 button at 320px", async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.goto("/contact");
+    const continueBtn = page.locator("button:has-text('Continue: Technical Specs')");
+    await continueBtn.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(300);
+    await continueBtn.screenshot({
+      path: `test-results/screenshots/contact-button-320px.png`,
+    });
+  });
+
+  // Bug 3 Proof: Capture /contact mobile hero and vertical rhythm
+  test("captures contact hero and spacing at 375px", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto("/contact");
+    await page.waitForTimeout(400);
+    await page.screenshot({
+      path: `test-results/screenshots/contact-mobile-viewport-375px.png`,
+      fullPage: false,
+    });
+  });
 
   const dedicatedPages = [
     { path: "/about", name: "about" },
@@ -66,4 +100,3 @@ test.describe("Visual Responsive Proofs", () => {
     });
   }
 });
-

@@ -222,11 +222,11 @@
 
 .public-page-hero__aside {
   min-width: 0;
-  border: 1px solid rgba(70, 180, 230, 0.24);
+  border: 1px solid rgba(168, 85, 247, 0.25);
   border-radius: 1.25rem;
-  background: linear-gradient(145deg, rgba(11, 32, 51, 0.88), rgba(6, 19, 33, 0.94));
-  padding: clamp(1rem, 3vw, 1.5rem);
-  box-shadow: 0 24px 60px -40px rgba(0, 212, 255, 0.48), inset 0 1px rgba(255, 255, 255, 0.04);
+  background: linear-gradient(145deg, rgba(23, 17, 38, 0.90), rgba(16, 13, 27, 0.95));
+  padding: clamp(0.875rem, 2.5vw, 1.5rem);
+  box-shadow: 0 24px 60px -40px rgba(139, 92, 246, 0.35), inset 0 1px rgba(255, 255, 255, 0.06);
 }
 
 .public-editorial input,

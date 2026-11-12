@@ -316,3 +316,34 @@ npm run build
 
 
 
+
+---
+
+## 9. Phase 8.4: Full Website Visual & Functional Acceptance Test Suites
+
+### 9.1 Technical SEO & Canonical Domain Unit Tests (`tests/unit/seo.test.ts`)
+- **Suite Execution:** `npx vitest run tests/unit/seo.test.ts` (4 / 4 passing).
+- **Verified Invariants:**
+  1. `siteConfig.url` strictly defaults to `https://voidtechsolution.codedev.co.in`.
+  2. `robots()` dynamically returns compliant rules: disallowing `/admin/` and `/api/`, allowing `/`, and referencing `${siteConfig.url}/sitemap.xml`.
+  3. `sitemap()` dynamically indexes all 6 public routes (`/`, `/about`, `/services`, `/pricing`, `/portfolio`, `/contact`) and portfolio concept slugs (`/portfolio/[slug]`).
+  4. All public route metadata declare `alternates.canonical` pointing to the canonical domain.
+
+### 9.2 Comprehensive 10-Viewport & 6-User-Journey Acceptance Suite (`tests/e2e/phase-8-4-acceptance.spec.ts`)
+- **Suite Execution:** `npx playwright test tests/e2e/phase-8-4-acceptance.spec.ts` (48 / 48 passing).
+- **Scope Covered:**
+  - **10 Viewports:** 320px, 360px, 375px, 390px, 430px, 768px, 1024px, 1280px, 1440px, 1920px. Proves `scrollWidth <= clientWidth` on all 6 public routes.
+  - **User Journey A (Services Catalog & Prefill):** Filters 18 services, searches "AI" -> "AI Agents", navigates to `/contact?service=AI%20Agents` with prefilled focus banner.
+  - **User Journey B (Pricing Packages & Estimator):** Displays all 10 INR starting pricing tiers, verifies `#calculator` section, selects package CTA -> `/contact?package=basic-static`.
+  - **User Journey C (Portfolio Concepts):** Displays Concept Lab disclosures, opens case study, validates architecture blueprint and simulated benchmark metrics.
+  - **User Journey D (Contact Intake & Validation):** 3-step intake form enforces validation at each boundary. Step 1 selects track; Step 2 validates brief text length (>= 10 chars); Step 3 validates name, work email, and consultation consent.
+  - **User Journey E (Navigation & Mobile Drawer):** Single BrandLogo in mobile header; opens and closes drawer via menu button, Escape key, backdrop click, and link navigation; restores focus.
+  - **User Journey F (Admin Security & RBAC):** Unauthenticated visits to 9 protected admin routes redirect to `/admin/login?callbackUrl=...` with HTTP 307.
+
+### 9.3 Overall Regression Suite Status
+- **Typecheck:** `npm run typecheck` — 0 errors.
+- **Lint:** `npm run lint` — 0 warnings, 0 errors.
+- **Unit & Integration Suite (Vitest):** 368 / 368 passing across 23 test files.
+- **Playwright Regression Suite:** 118 / 118 passing across all viewports.
+- **Visual Capture Suite:** 66 / 66 screenshots captured.
+- **Production Compilation:** 29 routes built cleanly via `npm run build`.

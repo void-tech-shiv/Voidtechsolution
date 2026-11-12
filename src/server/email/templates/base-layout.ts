@@ -90,7 +90,7 @@ ${bodyText}
 
 ------------------------------------------------------------
 (c) ${new Date().getFullYear()} VOIDTECH SOLUTION. All rights reserved.
-Official Website: https://voidtechsolution.com
+Official Website: https://voidtechsolution.codedev.co.in
 If you did not initiate this action, please contact VOIDTECH SOLUTION support at voidtechsolutionsupport@gmail.com.
 ============================================================`;
 }

@@ -28,6 +28,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { PublicPageHero } from "@/components/layout/public-page-hero";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { siteConfig } from "@/config/site";
 
 export const metadata: Metadata = {
   title: "About Us | VOIDTECH SOLUTION",
@@ -38,7 +39,10 @@ export const metadata: Metadata = {
     description:
       "VOIDTECH SOLUTION builds practical digital products through modern engineering, thoughtful design, and technology-driven problem solving.",
     type: "website",
-    url: "https://voidtechsolution.com/about",
+    url: `${siteConfig.url}/about`,
+  },
+  alternates: {
+    canonical: `${siteConfig.url}/about`,
   },
 };
 

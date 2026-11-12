@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.8.4] — 2026-11-13
+### Phase 8.4: Complete Website Visual & Functional Acceptance
+
+#### Added
+- **Canonical Domain & Technical SEO Files:**
+  - Configured `siteConfig.url` to strictly default to the approved production canonical domain: `https://voidtechsolution.codedev.co.in`.
+  - Added dynamic standard Next.js metadata routes:
+    - `src/app/robots.ts`: Allows public crawler indexing (`/`), disallows sensitive endpoints (`/admin/`, `/api/`), and declares XML sitemap location (`https://voidtechsolution.codedev.co.in/sitemap.xml`).
+    - `src/app/sitemap.ts`: Generates compliant XML sitemap indexing all 6 core public routes plus dynamic portfolio case studies (`/portfolio/[slug]`).
+  - Added unit test suite `tests/unit/seo.test.ts` (4 tests) verifying canonical domain enforcement, robots disallow rules, and sitemap entries.
+  - Added canonical links and OpenGraph URL normalization across `/`, `/about`, `/services`, `/pricing`, `/portfolio`, `/portfolio/[slug]`, and `/contact`.
+  - Added production canonical fallback in request origin CSRF defense (`src/server/security/origin.ts`).
+- **Comprehensive 10-Viewport & 6-User-Journey Acceptance Suite (`tests/e2e/phase-8-4-acceptance.spec.ts`):**
+  - 48 automated Playwright tests covering:
+    - Zero horizontal overflow across all 6 public routes at 10 target viewports: 320px, 360px, 375px, 390px, 430px, 768px, 1024px, 1280px, 1440px, 1920px.
+    - User Journey A: Services catalog, category filtering, keyword search, prefilled inquiry routing.
+    - User Journey B: 10 INR starting pricing tiers, interactive calculator accessibility, package prefill routing.
+    - User Journey C: Portfolio concept prototype disclosures, case study blueprints, and simulated benchmark metrics.
+    - User Journey D: 3-step contact form validation, error states, and submission flow.
+    - User Journey E: Mobile navigation drawer lifecycle, keyboard focus trap, Escape key, backdrop click, and single header brand logo.
+    - User Journey F: Unauthenticated administrative portal protection and safe callback URL redirects.
+- **CodeRabbit Review Protocol Documentation:**
+  - Audited CodeRabbit CLI status (`coderabbit --version` = 0.9.5).
+  - Documented CLI authentication failure (`coderabbit auth status` returned `Status: signed out`) as an environment boundary blocker per system guidelines.
+  - Performed manual deep code, security, and responsive review fallback.
+
+---
+
+## [0.8.3] — 2026-11-13
+### Phase 8.3: Mobile UI Bug Fixes & Responsive Polish
+
+#### Fixed
+- **Mobile Header Overlap & Squashed Navigation Drawer (Bug 1 & Bug 5):**
+  - Resolved `position: fixed` containment bug caused by `<header>`'s CSS `backdrop-filter: blur(...)`.
+  - Migrated `#mobile-nav-drawer` to React `createPortal(drawer, document.body)` with client mounting check to avoid hydration mismatch.
+  - Unified mobile header to guarantee strictly ONE visible brand logo and ONE accessible menu/close toggle button in a single 64px row.
+  - Implemented keyboard focus trap, Esc key dismissal, backdrop click closing, and body scroll locking.
+- **Button Arrow Wrapping on Mobile (Bug 2):**
+  - Removed internal redundant unstyled `<span>` wrapping `{children}` inside `src/components/ui/button.tsx`.
+  - Added `whitespace-nowrap flex-nowrap` to `buttonBaseStyles` design system tokens.
+  - Hardened Step 1 "Continue: Technical Specs" button with `min-h-12 w-full sm:w-auto px-5 sm:px-6` and `shrink-0` on SVG icons.
+- **Excessive Vertical Whitespace on `/contact` (Bug 3):**
+  - Balanced vertical rhythm in `PublicPageHero` and `/contact` page sections (`py-8 sm:py-14 lg:py-20`, `mt-3.5 sm:mt-6`, `p-4 sm:p-5`).
+  - Updated hero aside component colors from legacy cyan to approved purple/violet brand tokens.
+- **Viewport Overflow & Narrow Layout Constraints (Bug 4):**
+  - Validated and guaranteed zero horizontal page overflow across 320px, 360px, 375px, 390px, 430px, 768px, 1024px, and 1440px.
+
+#### Added
+- **Automated Regression Suite (`tests/e2e/mobile-ui-bugs.spec.ts`):**
+  - 16 automated Playwright tests verifying single brand logo, single toggle button, button text/arrow single-line alignment, zero horizontal overflow, and full drawer interaction behavior.
+
+---
+
 ## [0.8.2] — 2026-11-12
 ### Phase 8.2: Global Brand Identity & Complete Multi-Page UI Correction
 

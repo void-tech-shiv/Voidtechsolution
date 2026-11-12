@@ -53,8 +53,8 @@ export function getTrustedHosts(options?: OriginValidationOptions): Set<string> 
     }
   }
 
-  // 3. Environment variable: NEXT_PUBLIC_SITE_URL or APP_URL
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.APP_URL;
+  // 3. Environment variable: NEXT_PUBLIC_SITE_URL or APP_URL (with production canonical fallback)
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.APP_URL || "https://voidtechsolution.codedev.co.in";
   if (siteUrl) {
     try {
       const parsed = new URL(siteUrl);

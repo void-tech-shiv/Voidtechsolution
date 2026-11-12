@@ -404,10 +404,10 @@ export function ContactEnquiryForm() {
       <div className="h-1 w-full bg-gradient-to-r from-electric-purple via-electric-violet to-electric-neon" />
 
       {/* Progressive Step Navigation Header */}
-      <div className="border-b border-void-border/60 bg-void-surface/40 p-4 sm:p-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="border-b border-void-border/60 bg-void-surface/40 p-3.5 sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="border-electric-purple/40 text-electric-purple font-mono text-[11px]">
+            <Badge variant="outline" className="border-electric-purple/40 text-electric-purple font-mono text-[10px] sm:text-[11px] shrink-0">
               STEP {currentStep} OF 3
             </Badge>
             <span className="font-mono text-xs font-semibold text-void-light">
@@ -416,7 +416,7 @@ export function ContactEnquiryForm() {
               {currentStep === 3 && "Contact & Organization Details"}
             </span>
           </div>
-          <span className="text-xs font-mono text-void-muted">
+          <span className="text-xs font-mono text-void-muted shrink-0">
             {currentStep === 1 && "33% Complete"}
             {currentStep === 2 && "66% Complete"}
             {currentStep === 3 && "99% Complete"}
@@ -443,7 +443,7 @@ export function ContactEnquiryForm() {
         </div>
       </div>
 
-      <CardContent className="p-6 sm:p-8">
+      <CardContent className="p-4 sm:p-8">
         {/* Error Alert Banner (Preserves Data) */}
         {submitError && (
           <div
@@ -497,7 +497,7 @@ export function ContactEnquiryForm() {
           {/* STEP 1: SERVICE CATEGORY & BASELINE PACKAGE                           */}
           {/* ===================================================================== */}
           {currentStep === 1 && (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {initialServiceParam && (
                 <div className="flex items-center gap-2.5 rounded-lg border border-electric-purple/40 bg-electric-purple/10 px-4 py-2.5 text-xs font-mono text-electric-purple">
                   <Sparkles className="h-4 w-4 shrink-0 text-electric-neon" />
@@ -568,15 +568,15 @@ export function ContactEnquiryForm() {
                 </select>
               </div>
 
-              <div className="pt-4 flex justify-end">
+              <div className="pt-4 flex flex-col sm:flex-row justify-end">
                 <Button
                   type="button"
                   variant="glow"
                   onClick={handleNext}
-                  className="gap-2 px-6"
+                  className="w-full sm:w-auto min-h-12 px-5 sm:px-6 text-xs sm:text-sm font-semibold whitespace-nowrap flex-nowrap shrink-0 gap-2"
                 >
-                  <span>Continue: Technical Specs</span>
-                  <ArrowRight className="h-4 w-4" />
+                  <span className="whitespace-nowrap">Continue: Technical Specs</span>
+                  <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
                 </Button>
               </div>
             </div>
@@ -586,7 +586,7 @@ export function ContactEnquiryForm() {
           {/* STEP 2: TECHNICAL SPECIFICATIONS & TIMELINE                           */}
           {/* ===================================================================== */}
           {currentStep === 2 && (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               <div>
                 <label className="block font-mono text-sm font-semibold text-white mb-1">
                   1. Estimated Investment Range <span className="text-electric-neon">*</span>
@@ -720,25 +720,25 @@ export function ContactEnquiryForm() {
                 )}
               </div>
 
-              <div className="pt-4 flex items-center justify-between">
+              <div className="pt-4 flex flex-col-reverse sm:flex-row items-center justify-between gap-3">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleBack}
-                  className="gap-2 border-void-border hover:border-electric-purple/40"
+                  className="w-full sm:w-auto min-h-12 px-4 sm:px-5 text-xs sm:text-sm font-semibold whitespace-nowrap flex-nowrap shrink-0 gap-2 border-void-border hover:border-electric-purple/40"
                 >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span>Back: Scope</span>
+                  <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span className="whitespace-nowrap">Back: Scope</span>
                 </Button>
 
                 <Button
                   type="button"
                   variant="glow"
                   onClick={handleNext}
-                  className="gap-2 px-6"
+                  className="w-full sm:w-auto min-h-12 px-5 sm:px-6 text-xs sm:text-sm font-semibold whitespace-nowrap flex-nowrap shrink-0 gap-2"
                 >
-                  <span>Continue: Contact Info</span>
-                  <ArrowRight className="h-4 w-4" />
+                  <span className="whitespace-nowrap">Continue: Contact Info</span>
+                  <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
                 </Button>
               </div>
             </div>
@@ -748,7 +748,7 @@ export function ContactEnquiryForm() {
           {/* STEP 3: CONTACT & ORGANIZATION DETAILS                                */}
           {/* ===================================================================== */}
           {currentStep === 3 && (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="fullName" className="block font-mono text-xs font-semibold text-white mb-1">
@@ -885,33 +885,33 @@ export function ContactEnquiryForm() {
                 </div>
               </div>
 
-              <div className="pt-4 flex items-center justify-between">
+              <div className="pt-4 flex flex-col-reverse sm:flex-row items-center justify-between gap-3">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleBack}
                   disabled={isSubmitting}
-                  className="gap-2 border-void-border hover:border-electric-purple/40"
+                  className="w-full sm:w-auto min-h-12 px-4 sm:px-5 text-xs sm:text-sm font-semibold whitespace-nowrap flex-nowrap shrink-0 gap-2 border-void-border hover:border-electric-purple/40"
                 >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span>Back: Specs</span>
+                  <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span className="whitespace-nowrap">Back: Specs</span>
                 </Button>
 
                 <Button
                   type="submit"
                   variant="glow"
                   disabled={isSubmitting}
-                  className="gap-2 px-8 shadow-glow-sm"
+                  className="w-full sm:w-auto min-h-12 px-6 sm:px-8 text-xs sm:text-sm font-semibold whitespace-nowrap flex-nowrap shrink-0 gap-2 shadow-glow-sm"
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      <span>Transmitting Brief...</span>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent shrink-0" />
+                      <span className="whitespace-nowrap">Transmitting Brief...</span>
                     </>
                   ) : (
                     <>
-                      <Send className="h-4 w-4" />
-                      <span>Submit Project Enquiry</span>
+                      <Send className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      <span className="whitespace-nowrap">Submit Project Enquiry</span>
                     </>
                   )}
                 </Button>

@@ -20,6 +20,7 @@ import { Container, Section } from "@/components/layout";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { siteConfig } from "@/config/site";
 
 interface CaseStudyPageProps {
   params: Promise<{ slug: string }>;
@@ -58,7 +59,10 @@ export async function generateMetadata({
       title: `${project.title} — Engineering Case Study`,
       description: project.summary,
       type: "article",
-      url: `https://voidtechsolution.com/portfolio/${project.slug}`,
+      url: `${siteConfig.url}/portfolio/${project.slug}`,
+    },
+    alternates: {
+      canonical: `${siteConfig.url}/portfolio/${project.slug}`,
     },
   };
 }

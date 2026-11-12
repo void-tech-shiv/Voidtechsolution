@@ -11,7 +11,7 @@ export interface ButtonProps
 }
 
 export const buttonBaseStyles =
-  "inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-purple/70 focus-visible:ring-offset-2 focus-visible:ring-offset-void-black disabled:opacity-50 disabled:pointer-events-none select-none cursor-pointer tracking-wide";
+  "inline-flex items-center justify-center whitespace-nowrap flex-nowrap font-medium rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-purple/70 focus-visible:ring-offset-2 focus-visible:ring-offset-void-black disabled:opacity-50 disabled:pointer-events-none select-none cursor-pointer tracking-wide";
 
 export const buttonVariantsMap = {
   primary:
@@ -96,7 +96,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ) : (
           <>
             {leftIcon && <span className="inline-flex shrink-0">{leftIcon}</span>}
-            <span>{children}</span>
+            {children}
             {rightIcon && <span className="inline-flex shrink-0">{rightIcon}</span>}
           </>
         )}
