@@ -208,3 +208,36 @@ The approved administrative access model is restricted strictly to three defined
 - **Forced Password Rotation:** First-time login flags can enforce an immediate password change on initial sign-in.
 - **Audit Logging:** The bootstrap event is recorded immutably in `AuditLog` (`action: "ADMIN_BOOTSTRAP_SUCCESS"`).
 
+---
+
+## 7. Edge Route Protection & Open Redirect Defense (Milestone 7.4)
+
+### A. Next.js Edge Middleware Security Model (`src/middleware.ts`)
+- **First Line of Defense:** Edge Middleware intercepts all requests matching `/admin/:path*` and `/api/admin/:path*`.
+- **Zero Database Overhead in Edge Runtime:** Signature verification is performed exclusively using standard Web Crypto API (`crypto.subtle`) HMAC-SHA256 implemented in an isolated module (`src/server/security/cookie.ts`) with zero Prisma or Node.js native dependencies.
+- **Early Rejection Filtering:**
+  - Tampered, expired, or missing `vts_session` cookies redirect UI visitors to `/admin/login?callbackUrl=...`.
+  - Unauthenticated callers to `/api/admin/*` receive HTTP 401 Unauthorized with `{ error: "...", code: "UNAUTHORIZED_ADMIN_SESSION" }`.
+  - Authenticated administrators visiting `/admin/login` are automatically redirected to their intended destination or `/admin`.
+- **Authoritative Database Verification:** Middleware serves as a fast rejection filter only. All Server Components, Server Actions, and Route Handlers independently verify PostgreSQL database records, idle timeouts (30 min), absolute expirations (8 hrs), and active account status via `getCurrentAdmin()` and `requirePermission()`.
+- **HTTP Security Headers:** Injected on all Edge middleware responses:
+  - `X-Frame-Options: DENY` (Clickjacking mitigation)
+  - `X-Content-Type-Options: nosniff` (MIME-sniffing prevention)
+  - `Referrer-Policy: strict-origin-when-cross-origin` (Referrer leakage protection)
+  - `X-Permitted-Cross-Domain-Policies: none` (Flash / PDF boundary protection)
+
+### B. Open Redirect Prevention (`sanitizeCallbackUrl`)
+- **Strict Relative Path Invariant:** Return URLs (`callbackUrl`) passed during unauthenticated redirects are strictly validated:
+  - Must begin with a single forward slash (`/`).
+  - Protocol-relative URLs (`//evil.com`) are unconditionally rejected.
+  - Windows backslash bypasses (`/\evil.com`) are unconditionally rejected.
+  - Control characters (CR `\r`, LF `\n`, Tab `\t`) are stripped to prevent HTTP response splitting.
+  - Absolute URI schemes (`javascript:`, `data:`, `https:`, `ftp:`) are unconditionally rejected.
+  - Fallback: Invalid or malicious URLs safely default to `/admin`.
+
+### C. Single Shared Login UI & Anti-Enumeration
+- **Unified Portal:** Exactly ONE authentication portal at `/admin/login` serves all three roles (`SUPER_ADMIN`, `ADMIN`, `EDITOR`).
+- **Timing-Safe Generic Responses:** Authentication failures return an identical generic alert (*"Invalid email or password."*) whether the email does not exist, the account is deactivated, or the password was incorrect.
+- **Client & Server Redirection Guard:** Both Edge middleware and Server Component `AdminLoginPage` evaluate session state, preventing authenticated users from viewing or submitting the login form.
+
+

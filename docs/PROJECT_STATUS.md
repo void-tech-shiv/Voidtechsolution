@@ -1,8 +1,8 @@
 # PROJECT_STATUS.md — VOIDTECH SOLUTION Status Dashboard
 
 > **Current Status as of:** 2026-11-12  
-> **Active Milestone:** Milestone 5 — Phase 7: Admin Authentication, Session Management & Role-Based Access Control (Milestones 7.1, 7.2, & 7.3 Complete & Verified)  
-> **Strict Stop Condition:** STRICTLY DO NOT START MILESTONE 7.4 until owner reviews and explicitly authorizes start.
+> **Active Milestone:** Milestone 5 — Phase 7: Admin Authentication, Session Management & Role-Based Access Control (Milestones 7.1, 7.2, 7.3, & 7.4 Complete & Verified)  
+> **Strict Stop Condition:** STRICTLY DO NOT START MILESTONE 7.5 until owner reviews and explicitly authorizes start.
 
 ---
 
@@ -16,8 +16,8 @@
 | **Phase 4: Home & Services** | M3 | Hero, Brand Intro, 18-Service Catalog, Why Us, 7-Stage Process, Concept Lab, INR Pricing Preview, FAQ Accordion, Closing CTA | ✅ Complete | Verified 96 tests, clean build |
 | **Phase 5: About & Portfolio**| M3 | Agency story, engineering approach, 6 values, tech matrix, interactive portfolio discovery, dynamic case studies | ✅ Complete | Verified 112 tests, clean build |
 | **Phase 6: Pricing & Contact**| M4 | 10 approved INR packages, interactive cost calculator, 3-step lead enquiry intake, Nodemailer transactional mailer, rate limiting & anti-spam | ✅ Complete | Verified 130 tests (9 suites), clean build |
-| **Phase 7: Authentication** | M5 | Admin login, dual-layer sessions, CSRF & Origin defense, Single SUPER_ADMIN governance, Concurrency-Safe RBAC | ⏸️ Paused for Review | Milestones 7.1, 7.2 & 7.3 Verified (207 unit tests, 29 E2E tests). Strict Stop for M7.4. |
-| **Phase 8: Admin Shell** | M5 | Admin layout, navigation, analytics overview | ⬜ Pending | Architecture specified |
+| **Phase 7: Authentication** | M5 | Admin login, Edge middleware, dual-layer sessions, CSRF & Origin defense, Single SUPER_ADMIN governance, Concurrency-Safe RBAC, Role-gated dashboard | ⏸️ Paused for Review | Milestones 7.1, 7.2, 7.3 & 7.4 Verified (246 unit tests, 47 E2E tests). Strict Stop for M7.5. |
+| **Phase 8: Admin Shell** | M5 | Admin layout, navigation, analytics overview | 🔄 Integrated in M7.4 | Base shell implemented & verified |
 | **Phase 9: Enquiry Pipeline**| M6 | Lead triage Kanban, status management, email triggers | ⬜ Pending | Data model specified |
 | **Phase 10: Admin CMS** | M6 | Portfolio, Service, and Pricing administration | ⬜ Pending | Repositories implemented |
 | **Phase 11: Testing & SEO** | M7 | Playwright E2E, Core Web Vitals, OpenGraph, sitemap | ⬜ Pending | Test harness established |

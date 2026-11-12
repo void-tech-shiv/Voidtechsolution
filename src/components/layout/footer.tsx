@@ -1,8 +1,17 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { siteConfig } from "@/config/site";
 
 export function Footer() {
+  const pathname = usePathname();
   const currentYear = new Date().getFullYear();
+
+  // Hide public footer inside administrative portal routes
+  if (pathname?.startsWith("/admin")) {
+    return null;
+  }
 
   const featuredServices = [
     { title: "Website Development", href: "/#services" },

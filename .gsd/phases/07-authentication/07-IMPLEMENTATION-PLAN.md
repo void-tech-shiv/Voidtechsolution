@@ -86,31 +86,51 @@ Phase 7 will be implemented in strict sequential milestones. Each milestone defi
 
 ---
 
-### Milestone 7.4 — Next.js Route Protection Middleware & Single Shared Admin UI
+### Milestone 7.4 — Next.js Route Protection Middleware & Single Shared Admin UI [COMPLETED & VERIFIED]
 * **Objective:** Implement Edge-compatible routing guards and an agency-grade responsive shared admin login screen at `/admin/login`.
 * **Deliverables:**
+  * `src/server/security/cookie.ts`:
+    * Isolated, Edge-safe cookie signature engine with Web Crypto API (`crypto.subtle`) HMAC-SHA256 (`signSessionCookie`, `verifySessionCookie`).
+    * Open Redirect protection (`sanitizeCallbackUrl`): strictly enforces same-origin relative paths, rejects protocol-relative URLs (`//`), Windows backslashes (`/\`), control characters, and external URI schemes.
+    * Standardized OWASP secure cookie configuration (`getSessionCookieOptions`).
   * `src/middleware.ts`:
-    * Edge middleware inspecting incoming requests.
+    * Edge middleware inspecting incoming requests with zero database overhead.
     * Guards `/admin/*` routes (redirects unauthenticated users to `/admin/login?callbackUrl=...`).
+    * Guards `/api/admin/*` routes (rejects unauthenticated requests with HTTP 401 Unauthorized `UNAUTHORIZED_ADMIN_SESSION`).
     * Allows unauthenticated access to `/admin/login`.
-    * Redirects already-authenticated admins visiting `/admin/login` directly to `/admin`.
+    * Redirects already-authenticated admins visiting `/admin/login` directly to destination or `/admin`.
     * Public website routes remain untouched.
-    * Injects HTTP security headers (`X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`).
-  * `src/app/admin/login/page.tsx` — **Single Shared Authentication Portal**:
+    * Injects HTTP security headers (`X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`).
+  * `src/app/admin/login/page.tsx` & `src/components/admin/admin-login-form.tsx` — **Single Shared Authentication Portal**:
     * Exactly ONE shared login portal for `SUPER_ADMIN`, `ADMIN`, and `EDITOR`.
     * Dark theme matching VOIDTECH visual identity (`#050507`, `#0a0a0f`, electric violet glow).
-    * Email and password inputs with accessible validation error alerts.
+    * Email and password inputs with accessible validation error alerts (`data-testid="auth-error-banner"`).
     * Generic authentication error handling (zero user enumeration).
     * "Remember me" option extending session lifetime.
     * Dynamic loading spinners and disabled submit buttons during flight.
-  * `src/app/admin/page.tsx` — **Role-Aware Admin Shell**:
+    * Password visibility toggle with accessible labels.
+    * Return to public site link.
+    * Server-side session check via `getCurrentAdmin()` immediately redirects already-authenticated admins.
+  * `src/app/admin/(dashboard)/page.tsx` — **Role-Aware Admin Overview Dashboard**:
     * Authenticated admin shell landing dashboard with dynamic, role-aware presentation:
-      * `SUPER_ADMIN`: Displays full suite (User management, Audit logs, Site Settings, Enquiries with Delete, Services, Pricing, Portfolio, FAQs).
-      * `ADMIN`: Displays operations suite (Enquiries status updates, Services, Pricing, Portfolio, FAQs). User management and audit logs hidden.
-      * `EDITOR`: Displays content curation suite (Portfolio, FAQs, Services copywriting, Read-only enquiries). Pricing, Admin management, Settings, and Audit logs hidden.
-    * Displays active administrator email, role badge, session status, and quick telemetry.
-  * `src/app/admin/layout.tsx`:
-    * Admin layout wrapper ensuring authenticated session context, navigation sidebar tailored by role, and secure sign-out CTA.
+      * `SUPER_ADMIN`: Displays full suite (Team account management, Audit trail, Platform configuration, Enquiries with status management, Services catalog, Pricing tiers).
+      * `ADMIN`: Displays operations suite (Enquiries status updates, Services catalog, Pricing matrix, Portfolio showcase). Team management and audit logs hidden.
+      * `EDITOR`: Displays content curation suite (Portfolio showcase, FAQs knowledgebase, Services copywriting, Read-only enquiries). Pricing, Admin management, Settings, and Audit logs hidden.
+    * Displays active administrator name, email, role badge, session status, and operational telemetry.
+    * Active session security advisory explaining dual-layer timeout policies (8h absolute, 30m idle).
+  * `src/app/admin/(dashboard)/layout.tsx` & `src/components/admin/*`:
+    * `AdminLayoutShell`: Responsive desktop sidebar and mobile navigation drawer with scroll locking and Escape support.
+    * `AdminSidebar`: Role-aware navigation gating with active path indicators.
+    * `AdminHeader`: Administrator name, email, color-coded role badge, live site preview, and Sign Out action.
+    * Public header and footer automatically suppressed on `/admin/*` paths to prevent navigation clashes.
+  * **Automated Verification Testing:**
+    * `tests/unit/cookie.test.ts` (14 unit tests)
+    * `tests/unit/middleware.test.ts` (14 unit tests)
+    * `tests/unit/admin-ui.test.tsx` (11 unit tests)
+    * `tests/e2e/auth.spec.ts` (18 Playwright E2E tests across 3 viewports: `mobile-375`, `mobile-320`, `desktop`)
+    * Vitest unit suite: **246 / 246 passed (100% across 14 test suites)**.
+    * Playwright E2E suite: **47 / 47 passed (4 skipped as mobile-only on desktop)**.
+    * Production build: **16 / 16 routes compiled cleanly** (Edge middleware 35 kB).
 
 ---
 

@@ -1,5 +1,24 @@
 import { prisma } from "@/lib/prisma";
 import type { AdminUser, AdminSession } from "@prisma/client";
+import {
+  SESSION_COOKIE_NAME,
+  ABSOLUTE_SESSION_LIFETIME_MS,
+  signSessionCookie,
+  verifySessionCookie,
+  sanitizeCallbackUrl,
+  getSessionCookieOptions,
+  type SessionCookiePayload,
+} from "./cookie";
+
+export {
+  SESSION_COOKIE_NAME,
+  ABSOLUTE_SESSION_LIFETIME_MS,
+  signSessionCookie,
+  verifySessionCookie,
+  sanitizeCallbackUrl,
+  getSessionCookieOptions,
+  type SessionCookiePayload,
+};
 
 /**
  * VOIDTECH SOLUTION — Session Engine & Security Configuration
@@ -11,8 +30,6 @@ import type { AdminUser, AdminSession } from "@prisma/client";
  * - Tokens stored in DB strictly as SHA-256 hashes (OWASP session storage standard).
  */
 
-export const SESSION_COOKIE_NAME = "vts_session";
-export const ABSOLUTE_SESSION_LIFETIME_MS = 8 * 60 * 60 * 1000; // 8 hours
 export const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 // Write Amplification Protection:
 // Throttled to at most once per 5 minutes to prevent saturating PostgreSQL / PgBouncer connection pools
@@ -38,81 +55,6 @@ export async function hashSessionToken(token: string): Promise<string> {
   return Array.from(new Uint8Array(hashBuffer))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-}
-
-/**
- * Imports the server secret key into an Edge-compatible Web Crypto HMAC key.
- */
-async function getHmacKey(secret: string): Promise<CryptoKey> {
-  const enc = new TextEncoder();
-  return await crypto.subtle.importKey(
-    "raw",
-    enc.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign", "verify"]
-  );
-}
-
-export interface SessionCookiePayload {
-  sessionId: string;
-  rawToken: string;
-  exp: number;
-}
-
-/**
- * Signs the session token payload using Web Crypto API HMAC-SHA256.
- * Output format: `<base64url_json>.<hex_signature>`
- */
-export async function signSessionCookie(
-  payload: SessionCookiePayload,
-  secret: string
-): Promise<string> {
-  const data = JSON.stringify(payload);
-  const key = await getHmacKey(secret);
-  const enc = new TextEncoder();
-  const sigBuffer = await crypto.subtle.sign("HMAC", key, enc.encode(data));
-  const sigHex = Array.from(new Uint8Array(sigBuffer))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  const encodedData = Buffer.from(data, "utf8").toString("base64url");
-  return `${encodedData}.${sigHex}`;
-}
-
-/**
- * Verifies the HMAC-SHA256 signature of a session cookie value.
- * Returns payload if signature and expiration check pass; otherwise null.
- */
-export async function verifySessionCookie(
-  cookieValue: string,
-  secret: string
-): Promise<SessionCookiePayload | null> {
-  if (!cookieValue || !cookieValue.includes(".")) return null;
-  const [encodedData, sigHex] = cookieValue.split(".");
-  if (!encodedData || !sigHex) return null;
-
-  try {
-    const data = Buffer.from(encodedData, "base64url").toString("utf8");
-    const parsed = JSON.parse(data) as SessionCookiePayload;
-    if (!parsed.sessionId || !parsed.rawToken || !parsed.exp) return null;
-
-    if (Date.now() > parsed.exp) {
-      return null; // Expired cryptographically
-    }
-
-    const key = await getHmacKey(secret);
-    const enc = new TextEncoder();
-    const sigBytes = new Uint8Array(
-      sigHex.match(/.{1,2}/g)?.map((byte) => parseInt(byte, 16)) || []
-    );
-
-    const isValid = await crypto.subtle.verify("HMAC", key, sigBytes, enc.encode(data));
-    if (!isValid) return null;
-
-    return parsed;
-  } catch {
-    return null;
-  }
 }
 
 /**

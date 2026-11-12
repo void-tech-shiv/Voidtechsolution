@@ -97,6 +97,11 @@ export function Header() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [mobileMenuOpen]);
 
+  // Hide public navigation header inside administrative portal routes
+  if (pathname?.startsWith("/admin")) {
+    return null;
+  }
+
   return (
     <header className="sticky top-0 z-40 w-full border-b border-void-border/70 bg-void-black/85 backdrop-blur-xl transition-all">
       <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">

@@ -332,13 +332,19 @@ flowchart TD
    - `SUPER_ADMIN`, `ADMIN`, and `EDITOR` authenticate through this single unified portal using identical credentials processing.
    - Zero separate login routes or role-specific URL pathways exist.
 2. **Authoritative Server-Side Governance:**
-   - Client-side navigation adaptions are strictly ergonomic. Security is enforced authoritatively on the server inside Server Actions and Route Handlers via `requirePermission(user, permission)`.
-3. **Single SUPER_ADMIN Account Governance:**
+   - Client-side navigation adaptions are strictly ergonomic. Security is enforced authoritatively on the server inside Server Components, Server Actions, and Route Handlers via `requirePermission(user, permission)` and `getCurrentAdmin()`.
+3. **Edge Route Protection & Rejection Filter (`src/middleware.ts`):**
+   - Edge-compatible Web Crypto HMAC-SHA256 signature verification in isolated module (`src/server/security/cookie.ts`) with zero database dependencies.
+   - Unauthenticated UI requests are redirected to `/admin/login?callbackUrl=...` with strict open-redirect sanitization (`sanitizeCallbackUrl`).
+   - Unauthenticated API calls to `/api/admin/*` receive HTTP 401 Unauthorized (`UNAUTHORIZED_ADMIN_SESSION`).
+   - Authenticated administrators visiting `/admin/login` are redirected away to destination or `/admin`.
+4. **Single SUPER_ADMIN Account Governance & Exactly One Invariant:**
+   - The platform enforces strictly **EXACTLY ONE SUPER_ADMIN** account across the system lifecycle.
    - Only `SUPER_ADMIN` can provision `ADMIN` and `EDITOR` accounts, modify roles, activate/deactivate accounts, revoke active sessions, and view sensitive audit logs.
+   - Concurrency safety is guaranteed using PostgreSQL advisory transaction locks (`SELECT pg_advisory_xact_lock(hashtext('super_admin_lifecycle_lock'))`).
    - Non-super admins have zero administrative user management capabilities.
-4. **Sole Active SUPER_ADMIN Invariant Protection:**
-   - Atomic verification ensures `count(where: { role: 'SUPER_ADMIN', isActive: true }) >= 1`.
-   - The platform strictly rejects any action that would deactivate, delete, or demote the sole remaining active `SUPER_ADMIN`, eliminating total administrative lockout risks.
-5. **Controlled Initial Bootstrap:**
+5. **Sole Active SUPER_ADMIN Invariant Protection:**
+   - The platform strictly rejects any action that would deactivate, delete, or demote the master `SUPER_ADMIN`, eliminating total administrative lockout risks.
+6. **Controlled Initial Bootstrap:**
    - Initial `SUPER_ADMIN` account is provisioned exclusively through an interactive CLI script (`scripts/create-admin.ts`).
    - Zero database seed provisioning; zero public user registration; zero hardcoded passwords.
