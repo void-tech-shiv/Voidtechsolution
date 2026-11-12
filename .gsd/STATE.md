@@ -1,30 +1,29 @@
 ---
-updated: 2026-11-13T03:05:00+05:30
+updated: 2026-11-13T03:25:00+05:30
 ---
 
 # Project State — VOIDTECH SOLUTION
 
 ## Current Position
 
-**Milestone:** 9.1 — Database Schema Migration & Model Hydration  
+**Milestone:** 9.1 — Database Schema Migration & Model Hydration (INTEGRITY AUDIT COMPLETE)  
 **Phase:** 9 — Admin Lead Management & Enquiry Pipeline  
-**Status:** completed (Milestone 9.1 Database Schema Migration, Model Hydration, 5 Repositories, Disaster Recovery Rollback Spec & Unit Test Suite Complete; 393 Vitest Tests Passing; Awaiting Owner Approval for Milestone 9.2 UI Implementation)  
+**Status:** audited (Phase 9.1 Final Database Integrity Audit Complete; Atomic OCC Implemented; Corrective Migration 20261113010000 Staged; Real Concurrency Integration Tests Passing; 399 Vitest Tests Passing; Ready for Owner Approval)  
 **Visual Reference:** SmartStruct Cybernetic Layout + Official Purple/Violet Brand Identity  
 
 ## Last Action
 
-- **Milestone 9.1 Database Schema Migration & Model Hydration Completed:**
-  - Migrated Prisma schema with approved 8-stage `EnquiryStatus` enum, extended `Enquiry` model, extended `AdminUser` model, and 5 new relational models (`LeadNote`, `LeadFollowUp`, `LeadActivity`, `LeadAssignment`, `AdminNotification`).
-  - Authored incremental migration `prisma/migrations/20261113000000_crm_lead_pipeline/migration.sql` with partial unique index on active lead assignments and legacy `internalNotes` backfill.
-  - Authored disaster recovery specification `docs/MIGRATION_ROLLBACK_CRM.md`.
-  - Implemented 5 new domain repositories in `src/server/repositories/` (`lead-notes.repo.ts`, `lead-followups.repo.ts`, `lead-activities.repo.ts`, `lead-assignments.repo.ts`, `notifications.repo.ts`) and updated `enquiries.repo.ts` with safe hydration, Optimistic Concurrency Control (OCC), and 8-stage statistics.
-  - Authored unit test suite `tests/unit/crm-models.test.ts` (25 tests covering all models, OCC, constraints, and recipient isolation).
-  - All 393 Vitest tests passing across 24 test files; 0 TypeScript errors; 0 ESLint warnings; 29 routes built cleanly via `next build`.
-  - Updated `docs/DATABASE_DESIGN.md`, `docs/ARCHITECTURE.md`, `docs/SECURITY.md`, `docs/TESTING.md`, `docs/PROJECT_STATUS.md`, and `docs/CHANGELOG.md`.
+- **Phase 9.1 Final Database Integrity Audit Completed:**
+  - Audited legacy status mappings: Identified that `IN_REVIEW -> QUALIFIED` in migration `20261113000000` prematurely promoted uncontacted leads. Staged incremental corrective migration `prisma/migrations/20261113010000_crm_status_mapping_correction/migration.sql` to map `IN_REVIEW -> CONTACTED` and handle `CLOSED/ARCHIVED -> ON_HOLD`.
+  - Audited legacy note attribution: Verified `authorName = 'System (Legacy Migration)'` with `authorId = NULL` respects foreign key constraints and prevents fabricated user records.
+  - Hardened Optimistic Concurrency Control (OCC): Eliminated 1000ms window and TOCTOU race conditions by implementing atomic conditional database updates via `prisma.enquiry.updateMany({ where: { id, updatedAt: expectedUpdatedAt } })`, raising `ConcurrencyConflictError` (code: `"CONFLICT_DETECTED"`).
+  - Enforced Business Invariants: Validated that `LOST` requires a non-empty `lostReason`; implemented `syncEnquiryNextFollowUpAt` to maintain dynamic consistency of `enquiry.nextFollowUpAt` across task lifecycle; verified partial unique index `lead_assignments_single_active_unique` on real PostgreSQL.
+  - Real PostgreSQL Concurrency Suite: Authored `tests/integration/crm-concurrency.integration.test.ts` with 4 tests verifying multi-connection atomic OCC, assignment uniqueness, and follow-up cache resync.
+  - Quality Gates: All 399 tests passing across 25 test files; 0 TypeScript errors (`tsc --noEmit`); 0 ESLint warnings (`next lint`); 29/29 routes built cleanly (`next build`).
 
 ## Next Steps
 
-1. Present Milestone 9.1 Completion Report to the project owner.
+1. Present Phase 9.1 Final Database Integrity Audit Report to the project owner.
 2. Await owner review and formal written authorization before proceeding to Milestone 9.2 (CRM Dashboard UI, Kanban Board & Pipeline Filters).
 3. Maintain zero-production boundaries (zero remote migrations applied to Neon; zero production admin accounts created; zero real emails dispatched; zero deployments to Vercel).
 
@@ -49,7 +48,8 @@ updated: 2026-11-13T03:05:00+05:30
 | CRM Lifecycle Model | 8-stage state machine (`NEW`, `CONTACTED`, `QUALIFIED`, `PROPOSAL_SENT`, `NEGOTIATION`, `WON`, `LOST`, `ON_HOLD`) | 2026-11-13 | Architecture, DB, UI |
 | Relational Note Threading | Normalized `LeadNote` child entity replacing single string `internalNotes` | 2026-11-13 | DB Schema, Repos, UI |
 | Internal Note Isolation | Internal notes strictly excluded from customer email templates | 2026-11-13 | Email System, Security |
-| Optimistic Concurrency | OCC via `updatedAt` comparison on all mutating status actions | 2026-11-13 | Server Actions, UI |
+| Atomic Database OCC | `updateMany({ where: { id, updatedAt } })` eliminating TOCTOU & tolerance window | 2026-11-13 | `enquiries.repo.ts`, Integration |
 | Single Active Assignment | Partial unique index `lead_assignments_single_active_unique` on `(enquiryId) WHERE isActive = true` | 2026-11-13 | DB Schema, LeadAssignmentsRepo |
 | Recipient Isolation | `AdminNotification` strictly partitioned by `recipientId` | 2026-11-13 | NotificationsRepo, Security |
+| Dynamic Follow-up Sync | `syncEnquiryNextFollowUpAt` computes earliest active uncompleted task | 2026-11-13 | `lead-followups.repo.ts` |
 | GitHub Remote Backup | Verified fast-forward push to `https://github.com/void-tech-shiv/Voidtechsolution.git` | 2026-11-13 | Version Control, Backup |

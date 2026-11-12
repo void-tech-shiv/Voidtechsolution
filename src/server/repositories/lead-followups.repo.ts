@@ -11,6 +11,29 @@ export interface CreateLeadFollowUpInput {
 }
 
 /**
+ * Synchronizes an enquiry's nextFollowUpAt cache to always reflect the earliest uncompleted follow-up.
+ */
+export async function syncEnquiryNextFollowUpAt(
+  enquiryId: string,
+  tx?: Prisma.TransactionClient
+): Promise<void> {
+  const db = tx || prisma;
+  try {
+    const nextEarliest = await db.leadFollowUp.findFirst({
+      where: { enquiryId, isCompleted: false },
+      orderBy: { dueAt: "asc" },
+      select: { dueAt: true },
+    });
+    await db.enquiry.update({
+      where: { id: enquiryId },
+      data: { nextFollowUpAt: nextEarliest ? nextEarliest.dueAt : null },
+    });
+  } catch (error) {
+    console.warn(`[lead-followups.repo] syncEnquiryNextFollowUpAt failed for '${enquiryId}':`, error);
+  }
+}
+
+/**
  * Creates a scheduled follow-up task for a lead.
  */
 export async function createLeadFollowUp(
@@ -31,11 +54,8 @@ export async function createLeadFollowUp(
       },
     });
 
-    // Update enquiry nextFollowUpAt if this is earlier or first
-    await db.enquiry.update({
-      where: { id: input.enquiryId },
-      data: { nextFollowUpAt: input.dueAt },
-    });
+    // Synchronize enquiry nextFollowUpAt with the earliest active uncompleted task
+    await syncEnquiryNextFollowUpAt(input.enquiryId, db);
 
     return followUp;
   } catch (error) {
@@ -92,7 +112,7 @@ export async function toggleFollowUpComplete(
   completedById?: string
 ): Promise<LeadFollowUp> {
   try {
-    return await prisma.leadFollowUp.update({
+    const updated = await prisma.leadFollowUp.update({
       where: { id: followUpId },
       data: {
         isCompleted,
@@ -100,6 +120,11 @@ export async function toggleFollowUpComplete(
         completedById: isCompleted ? completedById || null : null,
       },
     });
+
+    // Synchronize enquiry nextFollowUpAt cache
+    await syncEnquiryNextFollowUpAt(updated.enquiryId);
+
+    return updated;
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error";
     console.error(`[lead-followups.repo] toggleFollowUpComplete failed for '${followUpId}':`, msg);
@@ -112,12 +137,18 @@ export async function toggleFollowUpComplete(
  */
 export async function deleteLeadFollowUp(followUpId: string): Promise<LeadFollowUp> {
   try {
-    return await prisma.leadFollowUp.delete({
+    const deleted = await prisma.leadFollowUp.delete({
       where: { id: followUpId },
     });
+
+    // Synchronize enquiry nextFollowUpAt cache
+    await syncEnquiryNextFollowUpAt(deleted.enquiryId);
+
+    return deleted;
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error";
     console.error(`[lead-followups.repo] deleteLeadFollowUp failed for '${followUpId}':`, msg);
     throw new Error(`Failed to delete follow-up '${followUpId}': Database write operation failed.`);
   }
 }
+

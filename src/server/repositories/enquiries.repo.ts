@@ -23,6 +23,14 @@ export interface PaginatedEnquiries {
   totalPages: number;
 }
 
+export class ConcurrencyConflictError extends Error {
+  readonly code = "CONFLICT_DETECTED";
+  constructor(message = "Concurrency conflict: Enquiry was modified by another administrator.") {
+    super(message);
+    this.name = "ConcurrencyConflictError";
+  }
+}
+
 /**
  * Creates a new client lead enquiry in the database.
  * Write operation strictly throws descriptive errors on failure without leaking connection details.
@@ -221,30 +229,56 @@ export async function updateEnquiryStatus(
       ? { internalNotes: optionsOrNotes }
       : optionsOrNotes || {};
 
-  const current = await prisma.enquiry.findUnique({ where: { id } });
-  if (!current) {
-    throw new Error(`Enquiry with id '${id}' not found`);
-  }
-
-  // Optimistic Concurrency Control guard
-  if (options.expectedUpdatedAt) {
-    const currentMs = current.updatedAt.getTime();
-    const expectedMs = options.expectedUpdatedAt.getTime();
-    if (Math.abs(currentMs - expectedMs) > 1000) {
-      throw new Error(`Concurrency conflict: Enquiry was modified by another administrator.`);
-    }
-  }
-
   const data: Prisma.EnquiryUpdateInput = { status };
+
+  // Business Invariant: LOST status strictly requires a documented non-empty lostReason
+  if (status === "LOST") {
+    const reason = options.lostReason?.trim();
+    if (!reason) {
+      throw new Error("A non-empty lostReason is mandatory when transitioning an enquiry to LOST status.");
+    }
+    data.lostReason = reason;
+  } else if (options.lostReason !== undefined) {
+    data.lostReason = options.lostReason?.trim() || null;
+  }
 
   if (options.internalNotes !== undefined) {
     data.internalNotes = options.internalNotes;
   }
-  if (options.lostReason !== undefined) {
-    data.lostReason = options.lostReason;
-  }
   if (options.estimatedValueInr !== undefined) {
     data.estimatedValueInr = options.estimatedValueInr;
+  }
+
+  // Optimistic Concurrency Control (OCC): Atomic database-level conditional update
+  if (options.expectedUpdatedAt) {
+    try {
+      const result = await prisma.enquiry.updateMany({
+        where: {
+          id,
+          updatedAt: options.expectedUpdatedAt,
+        },
+        data,
+      });
+
+      if (result.count === 0) {
+        const existing = await prisma.enquiry.findUnique({ where: { id } });
+        if (!existing) {
+          throw new Error(`Enquiry with id '${id}' not found`);
+        }
+        throw new ConcurrencyConflictError(
+          "Concurrency conflict: Enquiry was modified by another administrator."
+        );
+      }
+
+      return (await prisma.enquiry.findUnique({ where: { id } }))!;
+    } catch (error) {
+      if (error instanceof ConcurrencyConflictError) {
+        throw error;
+      }
+      const msg = error instanceof Error ? error.message : "Unknown error";
+      console.error("[enquiries.repo] updateEnquiryStatus (OCC) failed:", msg);
+      throw new Error(`Failed to update status for enquiry '${id}': ${msg}`);
+    }
   }
 
   try {

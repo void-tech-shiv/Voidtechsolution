@@ -8,7 +8,6 @@ import {
 } from "@/server/repositories/lead-notes.repo";
 import {
   createLeadFollowUp,
-  getLeadFollowUps,
   getOverdueFollowUps,
   toggleFollowUpComplete,
   deleteLeadFollowUp,
@@ -21,7 +20,6 @@ import {
   assignLeadToAdmin,
   unassignLead,
   getActiveAssignment,
-  getLeadAssignmentHistory,
 } from "@/server/repositories/lead-assignments.repo";
 import {
   createAdminNotification,
@@ -104,7 +102,7 @@ describe("Phase 9.1: CRM Lead Management & Pipeline Repositories", () => {
 
       const notes = await getLeadNotes("enq_001");
       expect(notes).toHaveLength(2);
-      expect(notes[0].isPinned).toBe(true);
+      expect(notes[0]?.isPinned).toBe(true);
       expect(prisma.leadNote.findMany).toHaveBeenCalledWith({
         where: { enquiryId: "enq_001" },
         orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
@@ -157,6 +155,7 @@ describe("Phase 9.1: CRM Lead Management & Pipeline Repositories", () => {
       };
 
       vi.spyOn(prisma.leadFollowUp, "create").mockResolvedValueOnce(mockFollowUp as any);
+      vi.spyOn(prisma.leadFollowUp, "findFirst").mockResolvedValueOnce({ dueAt } as any);
       vi.spyOn(prisma.enquiry, "update").mockResolvedValueOnce({} as any);
 
       const result = await createLeadFollowUp({
@@ -176,6 +175,19 @@ describe("Phase 9.1: CRM Lead Management & Pipeline Repositories", () => {
       });
     });
 
+    it("clears enquiry.nextFollowUpAt when all follow-ups are completed", async () => {
+      vi.spyOn(prisma.leadFollowUp, "findFirst").mockResolvedValueOnce(null);
+      vi.spyOn(prisma.enquiry, "update").mockResolvedValueOnce({} as any);
+
+      const { syncEnquiryNextFollowUpAt } = await import("@/server/repositories/lead-followups.repo");
+      await syncEnquiryNextFollowUpAt("enq_001");
+
+      expect(prisma.enquiry.update).toHaveBeenCalledWith({
+        where: { id: "enq_001" },
+        data: { nextFollowUpAt: null },
+      });
+    });
+
     it("queries overdue follow-ups (dueAt < now and isCompleted = false)", async () => {
       const mockOverdue = [
         {
@@ -191,9 +203,9 @@ describe("Phase 9.1: CRM Lead Management & Pipeline Repositories", () => {
 
       const overdue = await getOverdueFollowUps();
       expect(overdue).toHaveLength(1);
-      expect(overdue[0].id).toBe("fu_overdue_1");
+      expect(overdue[0]?.id).toBe("fu_overdue_1");
 
-      const callArgs = vi.mocked(prisma.leadFollowUp.findMany).mock.calls[0][0];
+      const callArgs = vi.mocked(prisma.leadFollowUp.findMany).mock.calls[0]?.[0];
       expect(callArgs?.where?.isCompleted).toBe(false);
       expect(callArgs?.where?.dueAt).toBeDefined();
     });
@@ -201,6 +213,7 @@ describe("Phase 9.1: CRM Lead Management & Pipeline Repositories", () => {
     it("toggles follow-up complete state and sets completedAt timestamp", async () => {
       vi.spyOn(prisma.leadFollowUp, "update").mockResolvedValueOnce({
         id: "fu_1",
+        enquiryId: "enq_001",
         isCompleted: true,
         completedAt: new Date(),
       } as any);
@@ -220,6 +233,7 @@ describe("Phase 9.1: CRM Lead Management & Pipeline Repositories", () => {
     it("deletes a follow-up record", async () => {
       vi.spyOn(prisma.leadFollowUp, "delete").mockResolvedValueOnce({
         id: "fu_1",
+        enquiryId: "enq_001",
       } as any);
 
       await deleteLeadFollowUp("fu_1");
@@ -401,7 +415,7 @@ describe("Phase 9.1: CRM Lead Management & Pipeline Repositories", () => {
 
       const active = await getActiveAssignment("enq_001");
       expect(active?.id).toBe("asgn_1");
-      expect(active?.admin?.name).toBe("Assigned Dev");
+      expect((active as any)?.admin?.name).toBe("Assigned Dev");
       expect(prisma.leadAssignment.findFirst).toHaveBeenCalledWith({
         where: { enquiryId: "enq_001", isActive: true },
         include: {
@@ -559,15 +573,15 @@ describe("Phase 9.1: CRM Lead Management & Pipeline Repositories", () => {
 
       const result = await getEnquiryById("enq_rel_1", true);
       expect(result).toBeDefined();
-      expect(result?.notes).toHaveLength(1);
-      expect(result?.followUps).toHaveLength(1);
-      expect(result?.assignedAdmin).toBeDefined();
-      expect(result?.assignedAdmin?.name).toBe("Lead Lead");
+      expect((result as any)?.notes).toHaveLength(1);
+      expect((result as any)?.followUps).toHaveLength(1);
+      expect((result as any)?.assignedAdmin).toBeDefined();
+      expect((result as any)?.assignedAdmin?.name).toBe("Lead Lead");
       // Security Invariant: passwordHash must not be in the selection
-      expect((result?.assignedAdmin as any)?.passwordHash).toBeUndefined();
+      expect(((result as any)?.assignedAdmin as any)?.passwordHash).toBeUndefined();
 
-      const callArgs = vi.mocked(prisma.enquiry.findUnique).mock.calls[0][0];
-      const adminSelect = callArgs?.include?.assignedAdmin?.select;
+      const callArgs = vi.mocked(prisma.enquiry.findUnique).mock.calls[0]?.[0];
+      const adminSelect = (callArgs?.include as any)?.assignedAdmin?.select;
       expect(adminSelect).toBeDefined();
       expect(adminSelect.passwordHash).toBeUndefined();
       expect(adminSelect.id).toBe(true);
@@ -575,14 +589,14 @@ describe("Phase 9.1: CRM Lead Management & Pipeline Repositories", () => {
     });
 
     it("enforces Optimistic Concurrency Control (OCC) throwing error when expectedUpdatedAt mismatches", async () => {
-      const serverDate = new Date("2026-11-13T01:00:00Z");
       const clientStaleDate = new Date("2026-11-13T00:30:00Z");
 
+      // updateMany returns count: 0 because updatedAt does not match
+      vi.spyOn(prisma.enquiry, "updateMany").mockResolvedValueOnce({ count: 0 });
       vi.spyOn(prisma.enquiry, "findUnique").mockResolvedValueOnce({
         id: "enq_occ",
         status: "NEW",
         email: "lead@test.com",
-        updatedAt: serverDate,
       } as any);
 
       await expect(
@@ -595,14 +609,8 @@ describe("Phase 9.1: CRM Lead Management & Pipeline Repositories", () => {
     it("succeeds OCC check when expectedUpdatedAt matches server state", async () => {
       const matchingDate = new Date("2026-11-13T01:00:00Z");
 
+      vi.spyOn(prisma.enquiry, "updateMany").mockResolvedValueOnce({ count: 1 });
       vi.spyOn(prisma.enquiry, "findUnique").mockResolvedValueOnce({
-        id: "enq_occ_match",
-        status: "NEW",
-        email: "lead@test.com",
-        updatedAt: matchingDate,
-      } as any);
-
-      vi.spyOn(prisma.enquiry, "update").mockResolvedValueOnce({
         id: "enq_occ_match",
         status: "QUALIFIED",
         email: "lead@test.com",
@@ -614,10 +622,42 @@ describe("Phase 9.1: CRM Lead Management & Pipeline Repositories", () => {
       });
 
       expect(updated.status).toBe("QUALIFIED");
-      expect(prisma.enquiry.update).toHaveBeenCalledWith({
-        where: { id: "enq_occ_match" },
+      expect(prisma.enquiry.updateMany).toHaveBeenCalledWith({
+        where: { id: "enq_occ_match", updatedAt: matchingDate },
         data: {
           status: "QUALIFIED",
+        },
+      });
+    });
+
+    it("strictly requires a non-empty lostReason when transitioning to LOST status", async () => {
+      // 1. Missing lostReason
+      await expect(
+        updateEnquiryStatus("enq_lost_1", "LOST")
+      ).rejects.toThrow(/non-empty lostReason is mandatory/);
+
+      // 2. Whitespace-only lostReason
+      await expect(
+        updateEnquiryStatus("enq_lost_1", "LOST", { lostReason: "   " })
+      ).rejects.toThrow(/non-empty lostReason is mandatory/);
+
+      // 3. Valid lostReason succeeds
+      vi.spyOn(prisma.enquiry, "update").mockResolvedValueOnce({
+        id: "enq_lost_1",
+        status: "LOST",
+        lostReason: "Client chose competitor due to budget limitations.",
+      } as any);
+
+      const updated = await updateEnquiryStatus("enq_lost_1", "LOST", {
+        lostReason: "Client chose competitor due to budget limitations.",
+      });
+
+      expect(updated.status).toBe("LOST");
+      expect(prisma.enquiry.update).toHaveBeenCalledWith({
+        where: { id: "enq_lost_1" },
+        data: {
+          status: "LOST",
+          lostReason: "Client chose competitor due to budget limitations.",
         },
       });
     });
@@ -654,7 +694,7 @@ describe("Phase 9.1: CRM Lead Management & Pipeline Repositories", () => {
         hasOverdueFollowUp: true,
       });
 
-      const findCall = vi.mocked(prisma.enquiry.findMany).mock.calls[0][0];
+      const findCall = vi.mocked(prisma.enquiry.findMany).mock.calls[0]?.[0];
       expect(findCall?.where?.assignedAdminId).toBe("admin_filter_1");
       expect(findCall?.where?.followUps).toBeDefined();
     });
