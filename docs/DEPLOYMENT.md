@@ -53,11 +53,29 @@ Ensure the following variables are configured in the Production Host Settings:
 - [ ] `OTP_PEPPER_SECRET` (Cryptographic pepper for OTP SHA-256 HMAC hashing)
 - [ ] `ADMIN_EMAIL` (Initial bootstrap administrator email address)
 - [ ] `ADMIN_PASSWORD` (Initial bootstrap password; hashed via scrypt on seed)
-- [ ] `NEXT_PUBLIC_SITE_URL` (Production canonical URL: `https://voidtechsolution.com`)
+- [ ] `NEXT_PUBLIC_SITE_URL` (Production canonical URL: `https://voidtechsolution.codedev.co.in`)
 - [ ] `NODE_ENV` (`production`)
 
 ### SMTP & Transactional Email (Nodemailer):
 - [ ] `SMTP_HOST` (e.g. `smtp.mailgun.org` or `smtp.sendgrid.net`)
+- [ ] `SMTP_PORT` (`587` for STARTTLS / `465` for SSL)
+- [ ] `SMTP_SECURE` (`false` for 587, `true` for 465)
+- [ ] `SMTP_USER` (SMTP authenticated user)
+- [ ] `SMTP_PASS` (SMTP authenticated password)
+- [ ] `SMTP_FROM_NAME` (`VOIDTECH SOLUTION`)
+- [ ] `SMTP_FROM_EMAIL` (`notifications@voidtechsolution.codedev.co.in`)
+- [ ] `ADMIN_ALERT_EMAIL` (`voidtechsolutionsupport@gmail.com`)
+
+---
+
+## 5. GitHub Remote Repository & Branch Strategy
+
+- **Remote URL:** `https://github.com/void-tech-shiv/Voidtechsolution.git`
+- **Remote Name:** `origin`
+- **Active Development Branch:** `session/phase-7-admin-auth`
+- **Baseline Release Branch:** `main`
+- **Security Invariant:** Zero `.env` files or plaintext production credentials committed to remote history. All secrets managed via environment variables on hosting providers.
+
 - [ ] `SMTP_PORT` (e.g. `587` or `465`)
 - [ ] `SMTP_SECURE` (`true` for port 465 SSL, `false` for 587 STARTTLS)
 - [ ] `SMTP_USER` (Authenticated SMTP username / API credential)
