@@ -6,6 +6,7 @@ test.describe("Visual Responsive Proofs", () => {
     { name: "375px", width: 375, height: 667 },
     { name: "768px", width: 768, height: 1024 },
     { name: "1440px", width: 1440, height: 900 },
+    { name: "1920px", width: 1920, height: 1080 },
   ];
 
   for (const vp of viewports) {

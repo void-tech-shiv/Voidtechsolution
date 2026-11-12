@@ -49,3 +49,4 @@ export function TechEcosystemRibbon() {
     </div>
   );
 }
+

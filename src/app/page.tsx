@@ -16,7 +16,7 @@ import { QuickInquiry } from "@/components/sections/quick-inquiry";
 import { buttonVariants } from "@/components/ui/button";
 import { GlassCard, PricingCard } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { HeroArchitectureVisual } from "@/components/sections/hero-architecture-visual";
+import { CinematicHero } from "@/components/sections/cinematic-hero";
 import { TechEcosystemRibbon } from "@/components/sections/tech-ecosystem-ribbon";
 
 export const metadata: Metadata = {
@@ -61,104 +61,9 @@ export default async function HomePage() {
       />
 
       {/* ========================================================================= */}
-      {/* SECTION 1: BESPOKE FLAGSHIP HERO (SMARTSTRUCT-INSPIRED AESTHETIC)        */}
+      {/* SECTION 1: CINEMATIC 3D TECHNOLOGY HERO ENVIRONMENT                       */}
       {/* ========================================================================= */}
-      <section
-        id="hero"
-        className="relative overflow-hidden border-b border-[rgba(70,180,230,0.18)] bg-gradient-to-b from-[#020914] via-[#061321] to-[#020914] py-12 sm:py-16 lg:py-24"
-        aria-labelledby="hero-headline"
-      >
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
-            {/* Left Column: Mission, Headlines, Actions & Metrics */}
-            <div className="flex flex-col items-start">
-              {/* Eyebrow Badge */}
-              <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(70,180,230,0.35)] bg-[rgba(0,212,255,0.08)] px-3.5 py-1.5 text-xs font-mono font-semibold text-cyan-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#00D4FF] animate-pulse" />
-                <span>VOIDTECH SOLUTION • {siteConfig.tagline}</span>
-              </div>
-
-              {/* Main Headline */}
-              <h1
-                id="hero-headline"
-                className="mt-6 font-sans text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.08]"
-              >
-                Turning Ideas Into{" "}
-                <span className="bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-500 bg-clip-text text-transparent filter drop-shadow-[0_0_25px_rgba(0,212,255,0.3)]">
-                  Powerful Digital Products.
-                </span>
-              </h1>
-
-              {/* Subtitle Description */}
-              <p className="mt-6 text-base sm:text-lg leading-relaxed text-slate-300 max-w-2xl">
-                We design, develop, and deliver modern digital solutions — from websites and applications to custom software, APIs, and AI-powered automation.
-              </p>
-
-              {/* Dual Action CTAs */}
-              <div className="mt-8 flex w-full flex-col gap-3.5 sm:w-auto sm:flex-row sm:items-center">
-                <Link
-                  href="/contact"
-                  className={buttonVariants({
-                    variant: "glow",
-                    size: "lg",
-                    className:
-                      "min-h-12 w-full sm:w-auto gap-2 bg-gradient-to-r from-blue-600 via-cyan-500 to-cyan-400 text-white font-semibold shadow-[0_0_20px_rgba(0,212,255,0.4)] hover:shadow-[0_0_30px_rgba(0,212,255,0.6)]",
-                  })}
-                >
-                  <span>Start Your Project</span>
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </Link>
-                <Link
-                  href="/services"
-                  className={buttonVariants({
-                    variant: "outline",
-                    size: "lg",
-                    className:
-                      "min-h-12 w-full sm:w-auto border-[rgba(70,180,230,0.4)] text-cyan-300 hover:bg-cyan-950/40 hover:border-cyan-400",
-                  })}
-                >
-                  Explore Our Services
-                </Link>
-              </div>
-
-              {/* 4-Metric Trust Strip (Directly from SmartStruct Reference Model) */}
-              <div className="mt-12 grid w-full grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 border-t border-[rgba(70,180,230,0.18)] pt-8">
-                {[
-                  { value: "18+", label: "Specialized Tracks", sub: "Web, AI & APIs" },
-                  { value: "100%", label: "Code Handover", sub: "Full Source & IP" },
-                  { value: "₹999", label: "Starting Rate", sub: "Transparent INR" },
-                  { value: "30-Day", label: "Warranty Shield", sub: "Bug-Fix Included" },
-                ].map((stat, i) => (
-                  <div
-                    key={i}
-                    className="rounded-xl border border-[rgba(70,180,230,0.15)] bg-[#081A2B]/60 p-3 sm:p-4 backdrop-blur-md transition-all hover:border-cyan-400/40"
-                  >
-                    <p className="font-mono text-xl font-bold text-white sm:text-2xl">
-                      {stat.value}
-                    </p>
-                    <p className="mt-1 font-mono text-xs font-semibold text-cyan-300">
-                      {stat.label}
-                    </p>
-                    <p className="mt-0.5 text-[10px] text-slate-400">
-                      {stat.sub}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Approach Note */}
-              <p className="mt-4 text-[11px] text-slate-400">
-                Full repository handover and project-specific architecture are part of the engineering approach. Pricing begins at ₹999 INR.
-              </p>
-            </div>
-
-            {/* Right Column: 3D Isometric Software Architecture & HUD Dashboards */}
-            <div className="relative w-full">
-              <HeroArchitectureVisual />
-            </div>
-          </div>
-        </div>
-      </section>
+      <CinematicHero />
 
       {/* ========================================================================= */}
       {/* SECTION 2: BRAND INTRODUCTION                                             */}

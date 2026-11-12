@@ -48,15 +48,19 @@ Glow Border (Hover)      rgba(0, 212, 255, 0.40)    Active interactive hover hig
 
 ## 4. Architectural Components
 
-### 4.1 3D Isometric Software Wireframe Visual
-- Grounded on an SVG perspective grid (`transform: perspective(600px) rotateX(60deg)`).
-- Layered isometric cubes depicting microservices, neural AI gateways, and clustered databases.
-- Animated cyan data pulses running along interconnected network paths.
-- Three floating HUD widgets:
-  1. **Top Right:** Circular SVG radial progress ring (`99.9% Uptime SLA`).
-  2. **Middle Right:** Live telemetry monitor card (`12ms Global Latency`, `0.00% Packet Loss`).
-  3. **Bottom Right:** Animated waveform health index card (`98% Verified`).
-- Bottom category pill tabs for rapid technical filtering (`Next.js`, `AI Agents`, `PostgreSQL`, `DevOps`).
+### 4.1 Cinematic 3D Digital Infrastructure Hero Environment
+- **Full-Width Canvas:** The hero section spans 90vh to 94vh with full-bleed Next.js optimized `<Image>` artwork (`/hero/voidtech-hero-3d.webp`, 211 KB, with fallback `/hero/voidtech-hero-3d.jpg`).
+- **3D Isometric Architecture:** Rendered in an Octane / Unreal Engine style featuring multi-tiered glowing crystalline glass server structures, cyan (`#00D4FF`) and deep blue (`#168BFF`) neon data pathways, cloud cluster nodes, and global mesh geometry.
+- **Layered Gradient Protection:**
+  - *Left Horizontal Shield:* Linear gradient from `#020914` via `#020914`/95% to transparent, preserving 100% legibility of headline, copy, and CTAs.
+  - *Mobile/Tablet Wash:* Adaptive `#020914`/75% wash on viewports below 1024px ensuring text clarity regardless of screen aspect ratio.
+  - *Seamless Vertical Blends:* Top fade blending into the frosted glass sticky header and bottom fade blending into `#about`.
+- **Floating Holographic HUD Widgets:**
+  1. **Top Right:** Live Uptime SLA widget (`99.9% HIGH AVAILABILITY SLA` with pulsating beacon).
+  2. **Center Right:** Live Mesh Telemetry monitor (`12ms EDGE LATENCY • 0.00% LOSS`).
+  3. **Lower Right:** Security Posture badge (`98% VERIFIED • ZERO VULNERABILITIES`).
+  - Animated using gentle floating keyframes (`animate-float-slow` and `animate-float-slow-reverse`), respecting user accessibility settings via `@media (prefers-reduced-motion: reduce)`.
+- **Ambient Lighting & Micro-Particles:** Floating luminescent particles and an ambient cyan radial bloom (`blur-[120px]`) behind the isometric structures for depth.
 
 ### 4.2 4-Metric Trust Strip
 - Positioned directly beneath hero action buttons.
@@ -76,3 +80,4 @@ Glow Border (Hover)      rgba(0, 212, 255, 0.40)    Active interactive hover hig
 - Left: Holographic cybernetic emblem with concentric scanning rings and `<V/>` monogram.
 - Center: Clear value proposition and dual action CTAs.
 - Right: Real-time readiness telemetry card (`2-4 Hours Average Response`, `100% NDA Protection`).
+

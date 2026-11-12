@@ -69,6 +69,8 @@ const config: Config = {
       animation: {
         "pulse-subtle": "pulseSubtle 4s ease-in-out infinite",
         "glow-breathe": "glowBreathe 5s ease-in-out infinite",
+        "float-slow": "floatSlow 6s ease-in-out infinite",
+        "float-slow-reverse": "floatSlowReverse 8s ease-in-out infinite",
       },
       keyframes: {
         pulseSubtle: {
@@ -78,6 +80,14 @@ const config: Config = {
         glowBreathe: {
           "0%, 100%": { filter: "drop-shadow(0 0 14px rgba(0, 212, 255, 0.35))" },
           "50%": { filter: "drop-shadow(0 0 28px rgba(0, 212, 255, 0.6))" },
+        },
+        floatSlow: {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-8px)" },
+        },
+        floatSlowReverse: {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(8px)" },
         },
       },
     },

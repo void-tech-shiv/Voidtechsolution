@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.8.1] — 2026-11-12
+### Phase 8.1: Cinematic 3D Hero Technology Background Upgrade
+
+#### Added
+- **Cinematic 3D Hero Technology Background (`src/components/sections/cinematic-hero.tsx`):**
+  - Replaced the framed SVG architecture card with a full-bleed, cinematic 3D digital infrastructure environment (`/hero/voidtech-hero-3d.webp` with `/hero/voidtech-hero-3d.jpg` fallback).
+  - Features luminous isometric cybernetic architecture, glowing multi-tiered crystalline server structures, cyan (`#00D4FF`) and cobalt (`#168BFF`) neon data pathways, and ambient global data mesh.
+  - Multi-layer dark navy gradients ensuring WCAG AAA text contrast across desktop, tablet, and mobile:
+    - Left-to-right gradient (`#020914` to 95% opacity to transparent) protecting headline, description, and dual CTAs.
+    - Responsive dark wash (`bg-[#020914]/75` on `<lg` viewports) ensuring crisp legibility on compact screens.
+    - Seamless top and bottom vertical fade masks blending into the frosted glass header and `#about` section.
+  - 3 floating animated holographic HUD chips on desktop viewports:
+    - `99.9% HIGH AVAILABILITY SLA` with pulsating beacon.
+    - `12ms EDGE LATENCY • 0.00% LOSS` live mesh telemetry monitor.
+    - `98% VERIFIED • ZERO VULNERABILITIES` system security posture badge.
+  - Added `floatSlow` and `floatSlowReverse` CSS keyframes and animations to `tailwind.config.ts`, respecting `prefers-reduced-motion`.
+  - Preserved 100% of approved content: Headline, Subtitle, Dual CTAs, and the 4 commercial trust cards.
+- **Responsive Screenshot Captures:**
+  - Automated visual captures across 320px, 375px, 768px, 1440px, and 1920px viewports archived in `docs/screenshots/`.
+
+#### Verified
+- 364 / 364 Vitest unit and integration tests passing.
+- 47 / 47 Playwright E2E tests passing (including 7 visual proofs across all 5 viewports).
+- 25 / 25 routes compiling cleanly with `next build`.
+- Zero TypeScript and ESLint errors.
+
+---
+
 ## [0.8.0] — 2026-11-12
 ### Phase 8: Complete UI/UX Redesign — Reference-Inspired Cybernetic Engineering Experience
 

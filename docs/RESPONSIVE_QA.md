@@ -54,3 +54,20 @@ Running 33 tests using 1 worker
 
 25 passed in core suite, 15 passed in design smoke suite (40/40 E2E total).
 ```
+
+---
+
+## 4. Cinematic 3D Hero Viewport Verification & Screenshot Evidence
+
+Playwright automated visual capture executed across all five designated responsive breakpoints:
+
+| Viewport | Target Device | Screenshot File | Visual & Layout Behavior |
+|---|---|---|---|
+| **320px** | iPhone SE / Compact Mobile | `docs/screenshots/hero-320px.png` | Dark navy wash (`bg-[#020914]/75`) covers 3D background behind text; headline wraps cleanly with 0px horizontal scroll; 4 commercial cards stack 2x2. |
+| **375px** | iPhone 12/13/14 / Standard Mobile | `docs/screenshots/hero-375px.png` | Crisp typography contrast; action CTAs stacked full-width for effortless touch targeting (≥48px tap targets); background 3D architecture visible beneath wash. |
+| **768px** | iPad Portrait / Tablet | `docs/screenshots/hero-768px.png` | Dual CTAs arrange side-by-side; commercial cards display across 4 equal columns; subtle cyan particle bloom active; navigation bar displays full links. |
+| **1440px** | MacBook Pro / Standard Desktop | `docs/screenshots/hero-1440px.png` | Left gradient shield protects headline; 3D isometric architecture anchors center-right; 3 floating HUD telemetry chips actively float with live pings. |
+| **1920px** | Full HD / Ultra-wide Display | `docs/screenshots/hero-1920px.png` | Container constrained to `max-w-7xl` with centered balance; 3D digital infrastructure expands edge-to-edge with seamless navy fades; 0px overflow. |
+
+All captured screenshot artifacts are archived under `docs/screenshots/` and verified.
+

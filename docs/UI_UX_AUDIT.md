@@ -46,7 +46,7 @@ The SmartStruct benchmark establishes an authoritative standard for complex tech
 
 ---
 
-## 4. Modernization Strategy & Verification Results
+### 4. Automated Verification Results
 
 1. **100% Invariant Preservation:**
    - 18 core services preserved with starting INR prices and detailed deliverables.
@@ -60,3 +60,27 @@ The SmartStruct benchmark establishes an authoritative standard for complex tech
    - **25 / 25 Core Multi-Page & Mobile Navigation E2E Tests Passing** (Playwright).
    - **15 / 15 Responsive Design Smoke Tests Passing** across 320px, 768px, 1280px, and 1920px viewports.
    - Clean Next.js 15 production build across 25 routes.
+
+---
+
+## 5. Cinematic 3D Hero Environment (Phase 8.1 Upgrade)
+
+### 5.1 Evolution from Framed SVG to Full-Width 3D Environment
+- **Initial Implementation:** An enclosed, bordered SVG card on the right column containing an isometric server wireframe with floating badges. While functional, it felt constrained within a card border and lacked the cinematic atmospheric depth of leading agency benchmarks.
+- **Cinematic 3D Upgrade:** Replaced the isolated card visual with an immersive, full-bleed 3D technology environment (`/hero/voidtech-hero-3d.webp` / `voidtech-hero-3d.jpg`).
+- **Composition & Visual Balance:**
+  - Luminous isometric digital infrastructure rendered in Octane/Unreal Engine aesthetic.
+  - Multi-tier glowing crystalline glass server structures with cyan and cobalt neon data pathways.
+  - Connected data grid and subtle wireframe telemetry nodes.
+  - Positioned with `object-[center_right]` / `sm:object-right-top` to anchor visual weight naturally on the right two-thirds.
+- **Multi-Layer Dark Navy Atmospheric Masking:**
+  - **Left Fade Gradient:** Deep navy (`#020914` to 95% opacity to transparent) protects headline, description, and CTAs from visual noise, preserving AAA text contrast.
+  - **Mobile/Tablet Protection:** Responsive dark overlay (`bg-[#020914]/75` on `<lg`) guarantees crisp legibility on compact screens where text overlays the 3D artwork.
+  - **Bottom Gradient Blend:** Smooth transitional fade into the `#about` section.
+  - **Top Gradient Blend:** Seamless dark fade beneath the fixed frosted glass navigation bar.
+- **Floating Holographic HUD Chips:**
+  - HUD 1: `99.9% HIGH AVAILABILITY SLA` with pulsating live ping beacon.
+  - HUD 2: `12ms EDGE LATENCY • 0.00% LOSS` live mesh telemetry monitor.
+  - HUD 3: `98% VERIFIED • ZERO VULNERABILITIES` system security posture badge.
+  - Animated with subtle floating keyframes (`animate-float-slow` and `animate-float-slow-reverse`), degrading to static display for users with `prefers-reduced-motion`.
+
