@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.7.5] — 2026-11-12
+### Phase 7: Secure SUPER_ADMIN Bootstrap CLI & Append-Only Audit Logging Engine
+
+#### Added
+- **Initial SUPER_ADMIN Bootstrap CLI (`scripts/create-admin.ts`):**
+  - Interactive terminal provisioning utility executed via `npm run admin:create`.
+  - Hidden terminal input via `process.stdin.setRawMode(true)` ensuring master password entry is never echoed on screen (cross-platform Windows & POSIX support with non-TTY CI fallback).
+  - Pre-flight database connectivity diagnostics (`SELECT 1`) with connection string credential sanitization.
+  - Enforces the **Strictly Exactly One `SUPER_ADMIN`** invariant: halts immediately with exit code 1 if a `SUPER_ADMIN` account is already registered.
+  - Input validation with Zod (`bootstrapInputSchema`): full name (2–100 chars), valid email format, high-entropy password requirements (12–128 chars, uppercase, lowercase, number, symbol), and password confirmation matching.
+  - Constant-time Scrypt password hashing with 16-byte cryptographically secure random salt.
+  - PostgreSQL advisory transaction locking (`SELECT pg_advisory_xact_lock(hashtext('super_admin_lifecycle_lock'))`) guaranteeing atomic serialization against race conditions.
+  - Comprehensive runbook authored at [`docs/ADMIN_BOOTSTRAP.md`](./docs/ADMIN_BOOTSTRAP.md).
+- **Centralized Append-Only Audit Logging Engine (`src/server/security/audit.ts`):**
+  - Type-safe audit action registry (`AUDIT_ACTIONS`) for administrative, authentication, and content lifecycle events.
+  - Recursive credential scrubbing (`sanitizeAuditDetails`): deeply scrubs sensitive fields (`password`, `passwordHash`, `rawToken`, `sessionToken`, `secret`, `cookie`, `otp`, `databaseUrl`, etc.) replacing values with `"[REDACTED]"`.
+  - Defensive recursion depth cap (maximum 6 levels) preventing payload-induced stack overflow DoS attacks.
+  - Transaction-aware log generation (`recordAuditEvent`): supports Prisma transaction clients (`tx`), guaranteeing atomic commit or rollback alongside administrative entity modifications.
+  - Read-only audit query APIs (`getAuditHistory`, `getAuditLogById`).
+  - Zero exposed delete or update operations, enforcing append-only tamper-resistant persistence.
+  - Decoupled relational schema in Prisma (`actorId` and `actorEmail` stored as scalar strings without cascading foreign keys), preserving audit trails even if administrative accounts are modified or removed.
+- **Automated Verification Test Suites:**
+  - `tests/unit/audit.test.ts` (10 unit tests): verifies credential scrubbing, nested redaction, recursion depth capping, transaction participation, append-only guarantees, and paginated query filtering.
+  - `tests/unit/admin-bootstrap.test.ts` (14 unit tests): verifies CLI input validation, password complexity, database pre-flight checks, existing account rejection, scrypt hashing, and audit log generation.
+  - `tests/unit/bootstrap-concurrency.test.ts` (3 unit tests): verifies PostgreSQL advisory xact lock execution, concurrent bootstrap serialization (exactly one succeeds, duplicate rejected), and atomic transaction rollback on audit failure.
+  - Vitest test suite expanded to **273 / 273 tests passing (100% across 17 test suites)**.
+
+---
+
 ## [0.6.0] — 2026-11-12
 ### Phase 6: Interactive Pricing Calculator, Contact System & Enquiry Management Backend
 

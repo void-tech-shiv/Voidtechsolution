@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { AuditLog, Prisma } from "@prisma/client";
+import { sanitizeAuditDetails } from "@/server/security/audit";
 
 export interface CreateAuditLogParams {
   action: string;
@@ -14,20 +15,26 @@ export interface CreateAuditLogParams {
 
 /**
  * Creates an immutable audit log entry.
- * Write operation strictly catches and reports without leaking credentials.
+ * Sanitizes details to ensure credentials/tokens are never persisted unredacted.
  */
-export async function createAuditLog(params: CreateAuditLogParams): Promise<AuditLog> {
+export async function createAuditLog(
+  params: CreateAuditLogParams,
+  tx?: Prisma.TransactionClient | typeof prisma
+): Promise<AuditLog> {
+  const db = tx || prisma;
+  const safeDetails = params.details ? sanitizeAuditDetails(params.details) : undefined;
+
   try {
-    return await prisma.auditLog.create({
+    return await db.auditLog.create({
       data: {
         action: params.action,
         entity: params.entity,
         entityId: params.entityId || null,
         actorId: params.actorId || null,
-        actorEmail: params.actorEmail || null,
+        actorEmail: params.actorEmail ? params.actorEmail.trim().toLowerCase() : null,
         ipAddress: params.ipAddress || null,
         userAgent: params.userAgent || null,
-        details: params.details || undefined,
+        details: safeDetails || undefined,
       },
     });
   } catch (error) {

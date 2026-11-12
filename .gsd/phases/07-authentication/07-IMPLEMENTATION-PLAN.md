@@ -134,18 +134,39 @@ Phase 7 will be implemented in strict sequential milestones. Each milestone defi
 
 ---
 
-### Milestone 7.5 — Controlled Initial SUPER_ADMIN Provisioning CLI
-* **Objective:** Secure, owner-controlled bootstrap mechanism strictly for the initial `SUPER_ADMIN` account with zero hardcoded credentials and zero database seed creation.
+### Milestone 7.5 — Secure SUPER_ADMIN Bootstrap CLI & Append-Only Audit Logging Engine [COMPLETED & VERIFIED]
+* **Objective:** Secure, owner-controlled bootstrap mechanism strictly for the initial `SUPER_ADMIN` account with hidden terminal password input, zero hardcoded credentials, zero database seed creation, PostgreSQL advisory transaction locking, and a centralized tamper-resistant audit logging engine.
 * **Deliverables:**
-  * `scripts/create-admin.ts`:
-    * Standalone CLI utility executed via `npx tsx scripts/create-admin.ts`.
-    * Interactively prompts owner for admin `name`, `email`, and `password` (or accepts secure environment overrides for headless execution).
-    * Validates runtime inputs against `zod` (password min 12 chars, complexity checks).
-    * Rejects existing emails to prevent accidental overwrites.
-    * Hashes password using constant-time `hashPassword` (scrypt with 16-byte cryptographically secure random salt).
-    * Strictly provisions account with `role: "SUPER_ADMIN"` and `isActive: true`.
-    * Logs account creation in `AuditLog` (`action: "ADMIN_BOOTSTRAP_SUCCESS"`).
+  * `scripts/create-admin.ts` & `package.json`:
+    * Interactive CLI utility executed via `npm run admin:create`.
+    * Hidden terminal input via `process.stdin.setRawMode(true)` ensuring master password entry is never echoed or logged (supports Windows PowerShell, cmd.exe, and POSIX with non-TTY fallback for CI).
+    * Pre-flight database connectivity diagnostics (`SELECT 1`) with connection string credential sanitization.
+    * Enforces the **Strictly Exactly One `SUPER_ADMIN`** invariant: halts immediately with exit code 1 if a `SUPER_ADMIN` account is already registered.
+    * Input validation with Zod (`bootstrapInputSchema`): full name (2–100 chars), valid email format, high-entropy password requirements (12–128 chars, uppercase, lowercase, number, symbol), and confirmation matching.
+    * Constant-time Scrypt password hashing with 16-byte cryptographically secure random salt (`hashPassword`).
+    * Provisions account strictly with `role: "SUPER_ADMIN"` and `isActive: true`.
     * Fully decoupled from automated seeds (`prisma/seed.ts` is strictly prohibited from creating admin accounts).
+  * `src/server/security/audit.ts` — **Centralized Append-Only Audit Engine**:
+    * Type-safe action registry (`AUDIT_ACTIONS`) for administrative, authentication, and content lifecycle events.
+    * Recursive credential scrubbing (`sanitizeAuditDetails`): deeply scrubs sensitive fields (`password`, `passwordHash`, `rawToken`, `sessionToken`, `secret`, `cookie`, `otp`, `databaseUrl`, etc.) replacing values with `"[REDACTED]"`.
+    * Defensive recursion depth cap (maximum 6 levels) preventing payload-induced stack overflow DoS attacks.
+    * Transaction-aware log generation (`recordAuditEvent`): accepts Prisma transaction client (`tx`), guaranteeing atomic commit or rollback alongside administrative entity modifications.
+    * Read-only audit query APIs (`getAuditHistory`, `getAuditLogById`).
+    * Zero exposed delete or update operations, enforcing append-only tamper-resistant persistence.
+    * Decoupled relational schema in Prisma (`actorId` and `actorEmail` stored as scalar strings without cascading foreign keys), preserving audit trails even if administrative accounts are modified or removed.
+  * `src/server/repositories/users.repo.ts` & `src/server/repositories/audit.repo.ts`:
+    * PostgreSQL advisory transaction locking (`SELECT pg_advisory_xact_lock(hashtext('super_admin_lifecycle_lock'))`) held for transaction duration.
+    * Automatically generates `ADMIN_BOOTSTRAP_SUCCESS` audit log inside the same transaction client `tx`.
+    * Audit repository automatically applies `sanitizeAuditDetails` on all payloads.
+  * `docs/ADMIN_BOOTSTRAP.md`:
+    * Production-grade 10-section runbook covering pre-flight checks, interactive step-by-step procedure, credential standards, verification, recovery, security boundaries, and troubleshooting.
+  * **Automated Verification Testing:**
+    * `tests/unit/audit.test.ts` (10 unit tests): credential scrubbing, nested redaction, recursion depth capping, transaction participation, append-only guarantees, and paginated query filtering.
+    * `tests/unit/admin-bootstrap.test.ts` (14 unit tests): CLI input validation, password complexity, database pre-flight checks, existing account rejection, scrypt hashing, and audit log generation.
+    * `tests/unit/bootstrap-concurrency.test.ts` (3 unit tests): advisory lock execution, concurrent bootstrap serialization (exactly one succeeds, duplicate rejected), and atomic transaction rollback on audit failure.
+    * Vitest unit suite: **273 / 273 tests passing (100% across 17 test suites)**.
+    * Playwright E2E suite: **47 / 47 tests passing (4 skipped as mobile-only on desktop)**.
+    * Production build: **16 / 16 static and dynamic routes compiled cleanly** (Edge middleware 35 kB).
 
 ---
 

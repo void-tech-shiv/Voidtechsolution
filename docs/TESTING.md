@@ -179,3 +179,54 @@ npm run build
      - Revokes all active sessions upon account deactivation (`setAdminActiveStatus`).
      - Throttles session `lastActiveAt` touch to prevent database write amplification within `TOUCH_INTERVAL_MS` (5 minutes).
   9. **Sliding-Window Rate Limiting:** Verifies initial attempt allowances and throttles upon 5 failed attempts with active cooldown window.
+
+---
+
+## 8. Milestone 7.3 Test Suite — RBAC, Exactly One SUPER_ADMIN Invariant & Advisory Locks
+
+- **Test File:** `tests/unit/rbac.test.ts` (33 tests)
+- **Coverage Areas:**
+  1. Role permissions mapping matrix across all 14 `PermissionKey` permissions for `SUPER_ADMIN`, `ADMIN`, and `EDITOR`.
+  2. `hasPermission`, `requirePermission`, `requireRole` guards.
+  3. Non-escalation invariants: `ADMIN` and `EDITOR` prohibited from user management or role elevation.
+  4. Self-modification guard: Administrators cannot alter own roles, deactivate self, or delete self.
+  5. Exactly One `SUPER_ADMIN` Invariant: Only `isBootstrap: true` creates a `SUPER_ADMIN`; standard creation rejected with `ExactlyOneSuperAdminError`.
+  6. Sole `SUPER_ADMIN` Protection: Demotion, deactivation, or deletion of the master account rejected across all paths (`SoleSuperAdminProtectionError`).
+  7. PostgreSQL advisory lock integration (`SELECT pg_advisory_xact_lock(hashtext('super_admin_lifecycle_lock'))`).
+  8. Server Actions authorization and immutable audit logging.
+
+---
+
+## 9. Milestone 7.4 Test Suite — Route Protection Middleware & Shared Admin UI
+
+- **Test Files:**
+  - `tests/unit/middleware.test.ts` (14 tests)
+  - `tests/unit/cookie.test.ts` (14 tests)
+  - `tests/unit/admin-ui.test.tsx` (11 tests)
+  - `tests/e2e/auth.spec.ts` (18 Playwright E2E tests across 3 viewports: mobile-375, mobile-320, desktop)
+- **Coverage Areas:**
+  1. Edge middleware route protection: Unauthenticated visits to `/admin/*` redirect to `/admin/login?callbackUrl=...`.
+  2. Unauthenticated API calls to `/api/admin/*` receive HTTP 401 Unauthorized.
+  3. Tampered or expired cookie rejection.
+  4. Open redirect protection (`sanitizeCallbackUrl`): Strips protocol-relative URLs (`//evil.com`), Windows backslashes (`/\evil.com`), control characters, and external URI schemes.
+  5. Single shared login UI: Form rendering, accessible labels, generic error banner (`data-testid="auth-error-banner"`), password visibility toggle.
+  6. Role-aware admin dashboard shell: `AdminSidebar` dynamically adjusts navigation items based on `SUPER_ADMIN`, `ADMIN`, or `EDITOR` role.
+
+---
+
+## 10. Milestone 7.5 Test Suite — Bootstrap CLI & Audit Logging Engine
+
+- **Test Files:**
+  - `tests/unit/admin-bootstrap.test.ts` (14 tests)
+  - `tests/unit/bootstrap-concurrency.test.ts` (3 tests)
+  - `tests/unit/audit.test.ts` (10 tests)
+- **Total Project Tests:** **273 passing across 17 test suites (100% pass rate)**.
+- **Coverage Areas:**
+  1. **Bootstrap Input Validation (`bootstrapInputSchema`):** Full name length constraints, valid email format, master password strength (min 12 chars, uppercase, lowercase, digit, symbol), and confirmation match.
+  2. **Database Pre-Flight Diagnostics:** Connection readiness, table detection, existing `SUPER_ADMIN` count check, and sanitized error reporting (`[REDACTED_CREDENTIALS]`).
+  3. **Bootstrap Execution & Invariant Enforcement:** Single initial account creation holding `isBootstrap: true`, scrypt hashing with 16-byte random salt, and atomic transaction commit.
+  4. **PostgreSQL Advisory Lock Serialization:** Concurrency testing with `Promise.all` verifying that out of two simultaneous bootstrap attempts, exactly one succeeds and the other is rejected with `ExactlyOneSuperAdminError`.
+  5. **Transaction Rollback Protection:** Verifies that if an error occurs during account creation or audit logging, the transaction rolls back cleanly without leaving partial records.
+  6. **Automated Credential Redaction (`sanitizeAuditDetails`):** Recursively redacts passwords, hashes, tokens, secrets, cookies, OTPs, and connection strings from audit metadata.
+  7. **Append-Only Immutability:** Verifies zero update or delete methods exist in the audit engine.
+

@@ -1,3 +1,4 @@
+export * from "./audit";
 export * from "./cookie";
 export * from "./otp.service";
 export * from "./password";

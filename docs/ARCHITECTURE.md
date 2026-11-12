@@ -345,6 +345,12 @@ flowchart TD
    - Non-super admins have zero administrative user management capabilities.
 5. **Sole Active SUPER_ADMIN Invariant Protection:**
    - The platform strictly rejects any action that would deactivate, delete, or demote the master `SUPER_ADMIN`, eliminating total administrative lockout risks.
-6. **Controlled Initial Bootstrap:**
+6. **Controlled Initial Bootstrap (`scripts/create-admin.ts`):**
    - Initial `SUPER_ADMIN` account is provisioned exclusively through an interactive CLI script (`scripts/create-admin.ts`).
+   - Run via `npm run admin:create` with hidden password inputs and database pre-flight checks.
    - Zero database seed provisioning; zero public user registration; zero hardcoded passwords.
+7. **Centralized Append-Only Audit Logging Engine (`src/server/security/audit.ts`):**
+   - Tamper-resistant, immutable audit trail capturing lifecycle events (`AUTH_LOGIN_SUCCESS`, `AUTH_LOGIN_FAILED`, `AUTH_LOGOUT`, `ADMIN_BOOTSTRAP_SUCCESS`, `ADMIN_CREATED`, `ADMIN_ROLE_UPDATED`, `ADMIN_STATUS_UPDATED`, `ADMIN_DELETED`).
+   - Automated credential redaction removes passwords, hashes, raw tokens, and connection strings from metadata payloads.
+   - Preserved upon user deletion through decoupled scalar foreign keys.
+   - Transactional participation ensures state mutations and audit records commit or roll back together atomically.

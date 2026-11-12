@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { AdminUser, UserRole, Prisma } from "@prisma/client";
 import { revokeAllUserSessions } from "@/server/security/session";
+import { recordAuditEvent } from "@/server/security/audit";
 import {
   requirePermission,
   assertCanCreateAdmin,
@@ -109,7 +110,7 @@ export async function createAdminUser(
       throw new Error(`Administrator with email '${data.email.trim().toLowerCase()}' already exists.`);
     }
 
-    return await tx.adminUser.create({
+    const created = await tx.adminUser.create({
       data: {
         email: data.email.trim().toLowerCase(),
         passwordHash: data.passwordHash,
@@ -118,6 +119,36 @@ export async function createAdminUser(
         isActive: true,
       },
     });
+
+    if (options?.isBootstrap) {
+      try {
+        if (typeof tx.auditLog?.create === "function" || typeof prisma.auditLog?.create === "function") {
+          await recordAuditEvent(
+            {
+              action: "ADMIN_BOOTSTRAP_SUCCESS",
+              entity: "AdminUser",
+              entityId: created.id,
+              actorId: created.id,
+              actorEmail: created.email,
+              userAgent: "CLI Bootstrap",
+              details: {
+                name: created.name,
+                email: created.email,
+                role: created.role,
+                isBootstrap: true,
+              },
+            },
+            tx
+          );
+        }
+      } catch (auditErr) {
+        if (!shouldExecuteDirect("create")) {
+          throw auditErr;
+        }
+      }
+    }
+
+    return created;
   };
 
   if (shouldExecuteDirect("create")) {

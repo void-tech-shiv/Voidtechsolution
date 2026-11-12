@@ -19,7 +19,8 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:verify": "tsx scripts/verify-db-deployment.ts",
-    "verify:env": "tsx scripts/verify-live-env.ts"
+    "verify:env": "tsx scripts/verify-live-env.ts",
+    "admin:create": "tsx scripts/create-admin.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

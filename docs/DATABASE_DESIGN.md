@@ -206,8 +206,8 @@ All database queries are encapsulated in strongly-typed repository modules in `s
 | **`PricingRepo`** | `src/server/repositories/pricing.repo.ts` | `getAllPricingPackages`, `getActivePricingPackages`, `getPricingPackageBySlug`, `createPricingPackage` | Falls back to 10 approved INR packages |
 | **`FaqRepo`** | `src/server/repositories/faq.repo.ts` | `getAllFaqs`, `getActiveFaqs`, `getFaqsByCategory`, `createFaq` | Falls back to baseline categorized FAQs |
 | **`SettingsRepo`** | `src/server/repositories/settings.repo.ts` | `getSetting`, `setSetting`, `getAllSettings` | Falls back to default site configuration map |
-| **`UsersRepo`** | `src/server/repositories/users.repo.ts` | `getAdminByEmail`, `createAdminUser`, `updateAdminLastLogin`, `getAllAdminUsers` | Database authentication |
-| **`AuditRepo`** | `src/server/repositories/audit.repo.ts` | `createAuditLog`, `getRecentAuditLogs`, `getAuditLogsByEntity` | Immutable audit trail |
+| **`UsersRepo`** | `src/server/repositories/users.repo.ts` | `getAdminByEmail`, `getAdminById`, `createAdminUser`, `updateAdminRole`, `setAdminActiveStatus`, `deleteAdminUser`, `updateLastLogin` | Concurrency-safe advisory lock `super_admin_lifecycle_lock` & Exactly One SUPER_ADMIN invariant |
+| **`AuditRepo`** | `src/server/repositories/audit.repo.ts` | `createAuditLog`, `getRecentAuditLogs`, `getAuditLogsByEntity` | Immutable append-only audit trail with automatic credential redaction |
 | **`DeliveryRepo`** | `src/server/repositories/delivery.repo.ts` | `createEmailDelivery`, `updateEmailDeliveryStatus`, `getRecentEmailDeliveries` | Persistent delivery log |
 
 ---

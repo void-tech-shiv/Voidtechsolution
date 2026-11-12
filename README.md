@@ -83,6 +83,14 @@ npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+### Administrative Account Bootstrap
+The initial `SUPER_ADMIN` account is provisioned exclusively through an interactive CLI utility with hidden terminal password input (zero hardcoded seeds, zero public registration):
+```bash
+# Provision the initial SUPER_ADMIN master account
+npm run admin:create
+```
+See [`docs/ADMIN_BOOTSTRAP.md`](./docs/ADMIN_BOOTSTRAP.md) for pre-flight diagnostics, credential requirements, recovery protocols, and runbook procedures.
+
 ### Quality Verification
 ```bash
 # Run unit & component tests
@@ -107,10 +115,11 @@ Comprehensive architectural and engineering documentation is maintained in the [
 - [Project Overview](./docs/PROJECT_OVERVIEW.md) — Mission, personas, and platform scope.
 - [Requirements](./docs/REQUIREMENTS.md) — Functional and non-functional requirements.
 - [Architecture Blueprint](./docs/ARCHITECTURE.md) — System design, data flow, and technology choices.
-- [Database Design](./docs/DATABASE_DESIGN.md) — PostgreSQL ERD and table schemas *(Pending Phase 3)*.
+- [Database Design](./docs/DATABASE_DESIGN.md) — PostgreSQL ERD, table schemas, and repositories.
 - [API Documentation](./docs/API_DOCUMENTATION.md) — Route handlers, envelopes, and endpoints.
 - [Design System](./docs/DESIGN_SYSTEM.md) — Color tokens, typography, glassmorphism, and UI primitives.
-- [Security Specifications](./docs/SECURITY.md) — Threat mitigation, CSP headers, and access controls.
+- [Security Specifications](./docs/SECURITY.md) — Threat mitigation, CSP headers, Scrypt hashing, and access controls.
+- [Admin Bootstrap Runbook](./docs/ADMIN_BOOTSTRAP.md) — Step-by-step initial SUPER_ADMIN provisioning guide and recovery protocol.
 - [Testing Strategy](./docs/TESTING.md) — Vitest, RTL, and Playwright verification protocols.
 - [Deployment Architecture](./docs/DEPLOYMENT.md) — Vercel infrastructure, free-tier boundaries, and CI/CD.
 - [Changelog](./docs/CHANGELOG.md) — Release notes and phase history.
@@ -121,7 +130,7 @@ Comprehensive architectural and engineering documentation is maintained in the [
 ## 6. Project Governance & Status
 
 Project planning, state snapshots, and milestone verification are governed by **GSD Mission Control**:
-- Current Milestone: **Milestone 3 — Public Marketing Website**
-- Current Phase: **Phase 5 — About Page, Portfolio & Detailed Project Case Studies (Completed & Verified)**
-- Active Branch: `session/phase-5-about-portfolio`
+- Current Milestone: **Milestone 7.5 — Secure SUPER_ADMIN Bootstrap CLI & Append-Only Audit Logging Engine (Completed & Verified)**
+- Current Phase: **Phase 7 — Admin Authentication, Session Management & Role-Based Access Control**
+- Active Branch: `session/phase-7-admin-auth`
 

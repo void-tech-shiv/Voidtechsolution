@@ -240,4 +240,29 @@ The approved administrative access model is restricted strictly to three defined
 - **Timing-Safe Generic Responses:** Authentication failures return an identical generic alert (*"Invalid email or password."*) whether the email does not exist, the account is deactivated, or the password was incorrect.
 - **Client & Server Redirection Guard:** Both Edge middleware and Server Component `AdminLoginPage` evaluate session state, preventing authenticated users from viewing or submitting the login form.
 
+---
+
+## 8. Secure SUPER_ADMIN Bootstrap CLI & Audit Logging Engine (Milestone 7.5)
+
+### A. Controlled Bootstrap CLI Architecture (`scripts/create-admin.ts`)
+- **Explicit Operator Action Required:** The initial master account can only be created by manually running `npm run admin:create`. No automated execution during installation, container builds, or database seeding.
+- **Hidden Terminal Input:** Passwords and confirmations are typed invisibly in raw terminal mode (`stdin.setRawMode(true)`), suppressing all terminal echoing and eliminating shell history credential leakage.
+- **Strict Master Password Standard:** Enforces minimum 12 characters with mandatory uppercase, lowercase, digit, and symbol character sets (`bootstrapInputSchema`).
+- **Cryptographic Key Derivation:** Uses Node.js native `crypto.scryptSync` with a unique 16-byte random salt and 64-byte derived key.
+- **Advisory Transaction Lock Serialization:**
+  - `SELECT pg_advisory_xact_lock(hashtext('super_admin_lifecycle_lock'))` fully serializes concurrent bootstrap attempts.
+  - Re-evaluates `count(where: { role: 'SUPER_ADMIN' })` inside the lock.
+  - If count > 0, throws `ExactlyOneSuperAdminError` and aborts.
+- **Sanitized Failure Reporting:** Connection errors strip database URLs and passwords (`[REDACTED_CREDENTIALS]`), ensuring operator logs never leak credentials.
+
+### B. Centralized Append-Only Audit Logging Engine (`src/server/security/audit.ts`)
+- **Immutability & Zero Mutation Interfaces:** The audit engine exposes strictly creation (`recordAuditEvent`) and read-only query methods (`getAuditHistory`, `getAuditLogById`). Zero update, edit, truncate, or delete functions exist.
+- **Decoupled Relational Schema:** The `AuditLog` Prisma model stores scalar strings for `actorId` and `actorEmail` without cascading foreign keys (`onDelete: Cascade`), guaranteeing audit records persist permanently even if an administrator account is deleted.
+- **Automated Credential Redaction (`sanitizeAuditDetails`):**
+  - All audit details payloads undergo recursive sanitization before insertion.
+  - Sensitive keys (`password`, `passwordHash`, `rawToken`, `sessionToken`, `secret`, `cookie`, `otp`, `databaseUrl`, etc.) are automatically scrubbed and replaced with `"[REDACTED]"`.
+  - Recursion depth is capped to defend against circular or oversized payload DoS.
+- **Transactional Consistency:** `recordAuditEvent` accepts an optional `Prisma.TransactionClient`, enabling atomic state mutations where administrative actions and their audit logs commit or roll back together.
+
+
 

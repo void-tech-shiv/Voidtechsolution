@@ -210,3 +210,61 @@ Retrieves public list of all active services (cached via Next.js ISR / tag reval
 
 #### `GET /api/portfolio`
 Retrieves published case studies with tech stack filters.
+
+---
+
+## 3. Administrative Management & Audit Logging Endpoints (Milestones 7.3 – 7.5)
+
+### `GET /api/admin/users`
+Retrieves list of registered administrators.
+
+- **Access:** Restricted to `SUPER_ADMIN` (Permission `admins:manage`)
+- **Headers:** `Cookie: vts_session=...`
+- **Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "users": [
+      {
+        "id": "cm3...",
+        "email": "master@voidtechsolution.com",
+        "name": "Master Admin",
+        "role": "SUPER_ADMIN",
+        "isActive": true,
+        "lastLoginAt": "2026-11-12T16:00:00.000Z",
+        "createdAt": "2026-11-12T15:00:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+### `POST /api/admin/users`
+Provisions an `ADMIN` or `EDITOR` account.
+
+- **Access:** Restricted to `SUPER_ADMIN` (Permission `admins:manage`)
+- **Validation:** `createAdminSchema` (Role strictly limited to `ADMIN` or `EDITOR`; `SUPER_ADMIN` creation forbidden)
+- **Response (201 Created):**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "cm3...",
+      "email": "editor@voidtechsolution.com",
+      "name": "Content Editor",
+      "role": "EDITOR",
+      "isActive": true
+    }
+  }
+}
+```
+
+### `CLI: npm run admin:create`
+Interactive terminal command executing `scripts/create-admin.ts`.
+
+- **Access:** Local/operator console only (zero public network exposure).
+- **Security:** Hidden password input, database connection check, advisory lock `super_admin_lifecycle_lock`, Exactly One `SUPER_ADMIN` invariant, scrypt password hashing, and atomic `ADMIN_BOOTSTRAP_SUCCESS` audit logging.
+- **Reference:** See [`docs/ADMIN_BOOTSTRAP.md`](file:///d:/voidtechsolution/docs/ADMIN_BOOTSTRAP.md) for full execution runbook.
+
