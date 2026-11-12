@@ -63,67 +63,75 @@ export default async function HomePage() {
       {/* ========================================================================= */}
       <section
         id="hero"
-        className="relative mx-auto max-w-7xl px-4 pt-20 pb-16 sm:px-6 sm:pt-28 sm:pb-24 lg:px-8"
+        className="relative mx-auto max-w-7xl px-4 pt-12 pb-14 sm:px-6 sm:pt-24 sm:pb-20 lg:px-8 overflow-hidden"
         aria-labelledby="hero-headline"
       >
         <div className="mx-auto max-w-4xl text-center">
           {/* Tagline / Positioning Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-electric-purple/40 bg-electric-purple/10 px-4 py-1.5 text-xs font-mono text-electric-purple mb-8 shadow-glow-xs">
-            <span className="relative flex h-2 w-2">
+          <div className="inline-flex max-w-full items-center gap-1.5 sm:gap-2 rounded-full border border-electric-purple/40 bg-electric-purple/10 px-3 py-1 sm:px-4 sm:py-1.5 text-[11px] sm:text-xs font-mono text-electric-purple mb-6 sm:mb-8 shadow-glow-xs">
+            <span className="relative flex h-2 w-2 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-electric-neon opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-electric-purple" />
             </span>
-            <span>VOIDTECH SOLUTION &bull; {siteConfig.tagline}</span>
+            <span className="truncate">VOIDTECH SOLUTION &bull; {siteConfig.tagline}</span>
           </div>
 
           {/* Approved Hero Headline */}
           <h1
             id="hero-headline"
-            className="font-mono text-4xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl leading-tight sm:leading-none"
+            className="font-mono text-3xl min-[360px]:text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.18] sm:leading-[1.1] break-words"
           >
             Turning Ideas Into{" "}
-            <span className="bg-gradient-to-r from-electric-purple via-electric-violet to-electric-neon bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-electric-purple via-electric-violet to-electric-neon bg-clip-text text-transparent inline-block">
               Powerful Digital Products.
             </span>
           </h1>
 
           {/* Approved Supporting Copy */}
-          <p className="mt-6 text-base leading-relaxed text-void-light sm:text-lg lg:text-xl max-w-2xl mx-auto">
+          <p className="mt-5 sm:mt-6 text-sm leading-relaxed text-void-light sm:text-lg lg:text-xl max-w-2xl mx-auto px-1 sm:px-0">
             We design, develop, and deliver modern digital solutions — from websites and applications to custom software, APIs, and AI-powered automation.
           </p>
 
           {/* Primary & Secondary Action CTAs */}
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-            <Link href="/#contact" tabIndex={-1}>
-              <Button size="lg" variant="glow" className="gap-2">
+          <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto max-w-xs sm:max-w-none mx-auto">
+            <Link href="/#contact" className="w-full sm:w-auto">
+              <Button
+                size="lg"
+                variant="glow"
+                className="w-full sm:w-auto min-h-[48px] px-6 gap-2"
+              >
                 <span>Start Your Project</span>
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
               </Button>
             </Link>
-            <Link href="/#services" tabIndex={-1}>
-              <Button size="lg" variant="outline">
+            <Link href="/#services" className="w-full sm:w-auto">
+              <Button
+                size="lg"
+                variant="outline"
+                className="w-full sm:w-auto min-h-[48px] px-6"
+              >
                 Explore Our Services
               </Button>
             </Link>
           </div>
 
           {/* Authentic Technical Highlights (Zero Fake Numbers) */}
-          <div className="mt-16 grid grid-cols-2 gap-4 border-t border-void-border/60 pt-8 sm:grid-cols-4">
-            <div className="flex flex-col items-center justify-center p-3 rounded-lg border border-void-border/40 bg-void-surface/30">
-              <span className="font-mono text-lg font-bold text-white">18 Tracks</span>
-              <span className="text-[11px] text-void-muted">Web, Mobile, AI & APIs</span>
+          <div className="mt-12 sm:mt-16 grid grid-cols-2 gap-2.5 sm:gap-4 border-t border-void-border/60 pt-6 sm:pt-8 sm:grid-cols-4">
+            <div className="flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-lg border border-void-border/40 bg-void-surface/30 text-center">
+              <span className="font-mono text-base sm:text-lg font-bold text-white">18 Tracks</span>
+              <span className="text-[10px] sm:text-[11px] text-void-muted">Web, Mobile, AI & APIs</span>
             </div>
-            <div className="flex flex-col items-center justify-center p-3 rounded-lg border border-void-border/40 bg-void-surface/30">
-              <span className="font-mono text-lg font-bold text-electric-purple">Custom Build</span>
-              <span className="text-[11px] text-void-muted">Tailored Architecture</span>
+            <div className="flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-lg border border-void-border/40 bg-void-surface/30 text-center">
+              <span className="font-mono text-base sm:text-lg font-bold text-electric-purple">Custom Build</span>
+              <span className="text-[10px] sm:text-[11px] text-void-muted">Tailored Architecture</span>
             </div>
-            <div className="flex flex-col items-center justify-center p-3 rounded-lg border border-void-border/40 bg-void-surface/30">
-              <span className="font-mono text-lg font-bold text-white">Code Delivery</span>
-              <span className="text-[11px] text-void-muted">Full Repository Handover</span>
+            <div className="flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-lg border border-void-border/40 bg-void-surface/30 text-center">
+              <span className="font-mono text-base sm:text-lg font-bold text-white">Code Delivery</span>
+              <span className="text-[10px] sm:text-[11px] text-void-muted">Full Repo Handover</span>
             </div>
-            <div className="flex flex-col items-center justify-center p-3 rounded-lg border border-void-border/40 bg-void-surface/30">
-              <span className="font-mono text-lg font-bold text-electric-neon">From ₹999</span>
-              <span className="text-[11px] text-void-muted">Transparent INR Pricing</span>
+            <div className="flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-lg border border-void-border/40 bg-void-surface/30 text-center">
+              <span className="font-mono text-base sm:text-lg font-bold text-electric-neon">From ₹999</span>
+              <span className="text-[10px] sm:text-[11px] text-void-muted">Transparent INR Pricing</span>
             </div>
           </div>
         </div>

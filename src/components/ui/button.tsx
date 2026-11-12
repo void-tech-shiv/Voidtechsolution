@@ -10,6 +10,40 @@ export interface ButtonProps
   rightIcon?: React.ReactNode;
 }
 
+export const buttonBaseStyles =
+  "inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-purple/70 focus-visible:ring-offset-2 focus-visible:ring-offset-void-black disabled:opacity-50 disabled:pointer-events-none select-none cursor-pointer tracking-wide";
+
+export const buttonVariantsMap = {
+  primary:
+    "bg-gradient-to-r from-electric-violet to-electric-purple text-white shadow-glow-sm hover:shadow-glow-md hover:brightness-110 active:scale-[0.98] border border-electric-purple/40",
+  secondary:
+    "bg-void-charcoal text-void-light border border-void-border hover:border-electric-purple/40 hover:text-white hover:bg-void-surface active:scale-[0.98]",
+  outline:
+    "border border-electric-purple/60 text-electric-purple hover:bg-electric-purple/10 active:bg-electric-purple/20 active:scale-[0.98]",
+  ghost:
+    "text-void-muted hover:text-void-white hover:bg-void-surface/80 active:bg-void-surface",
+  glow:
+    "bg-void-charcoal text-white border border-electric-purple shadow-glow-md hover:shadow-glow-lg hover:border-electric-neon active:scale-[0.98]",
+};
+
+export const buttonSizesMap = {
+  sm: "h-8 px-3 text-xs gap-1.5",
+  md: "h-10 px-4 text-sm gap-2",
+  lg: "h-12 px-6 text-base gap-2.5",
+};
+
+export function buttonVariants({
+  variant = "primary",
+  size = "md",
+  className,
+}: {
+  variant?: keyof typeof buttonVariantsMap;
+  size?: keyof typeof buttonSizesMap;
+  className?: string;
+} = {}) {
+  return cn(buttonBaseStyles, buttonVariantsMap[variant], buttonSizesMap[size], className);
+}
+
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
@@ -26,34 +60,12 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
-    const baseStyles =
-      "inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-purple/70 focus-visible:ring-offset-2 focus-visible:ring-offset-void-black disabled:opacity-50 disabled:pointer-events-none select-none cursor-pointer tracking-wide";
-
-    const variants = {
-      primary:
-        "bg-gradient-to-r from-electric-violet to-electric-purple text-white shadow-glow-sm hover:shadow-glow-md hover:brightness-110 active:scale-[0.98] border border-electric-purple/40",
-      secondary:
-        "bg-void-charcoal text-void-light border border-void-border hover:border-electric-purple/40 hover:text-white hover:bg-void-surface active:scale-[0.98]",
-      outline:
-        "border border-electric-purple/60 text-electric-purple hover:bg-electric-purple/10 active:bg-electric-purple/20 active:scale-[0.98]",
-      ghost:
-        "text-void-muted hover:text-void-white hover:bg-void-surface/80 active:bg-void-surface",
-      glow:
-        "bg-void-charcoal text-white border border-electric-purple shadow-glow-md hover:shadow-glow-lg hover:border-electric-neon active:scale-[0.98]",
-    };
-
-    const sizes = {
-      sm: "h-8 px-3 text-xs gap-1.5",
-      md: "h-10 px-4 text-sm gap-2",
-      lg: "h-12 px-6 text-base gap-2.5",
-    };
-
     return (
       <button
         ref={ref}
         type={type}
         disabled={disabled || isLoading}
-        className={cn(baseStyles, variants[variant], sizes[size], className)}
+        className={buttonVariants({ variant, size, className })}
         {...props}
       >
         {isLoading ? (

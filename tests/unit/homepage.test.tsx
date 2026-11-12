@@ -282,5 +282,63 @@ describe("Phase 4: Homepage & Marketing Experience", () => {
         expect(el).not.toBeNull();
       }
     });
+
+    it("opens and closes mobile navigation drawer with accessible focus and scroll locking", () => {
+      render(<Header />);
+
+      // Initially closed
+      expect(screen.queryByRole("dialog", { name: "Mobile Navigation Menu" })).not.toBeInTheDocument();
+
+      const openButton = screen.getByRole("button", { name: "Open navigation menu" });
+      expect(openButton).toHaveAttribute("aria-expanded", "false");
+
+      // Click to open
+      fireEvent.click(openButton);
+
+      // Verify dialog is open and modal
+      const drawer = screen.getByRole("dialog", { name: "Mobile Navigation Menu" });
+      expect(drawer).toBeInTheDocument();
+      expect(drawer).toHaveAttribute("aria-modal", "true");
+      expect(openButton).toHaveAttribute("aria-expanded", "true");
+
+      // Verify scroll lock
+      expect(document.body.style.overflow).toBe("hidden");
+
+      // Verify close button
+      const closeButton = screen.getByRole("button", { name: "Close navigation drawer" });
+      expect(closeButton).toBeInTheDocument();
+
+      // Click close button
+      fireEvent.click(closeButton);
+      expect(screen.queryByRole("dialog", { name: "Mobile Navigation Menu" })).not.toBeInTheDocument();
+      expect(document.body.style.overflow).toBe("");
+    });
+
+    it("closes mobile navigation drawer on Escape key press", () => {
+      render(<Header />);
+
+      const openButton = screen.getByRole("button", { name: "Open navigation menu" });
+      fireEvent.click(openButton);
+      expect(screen.getByRole("dialog", { name: "Mobile Navigation Menu" })).toBeInTheDocument();
+
+      fireEvent.keyDown(window, { key: "Escape" });
+      expect(screen.queryByRole("dialog", { name: "Mobile Navigation Menu" })).not.toBeInTheDocument();
+      expect(document.body.style.overflow).toBe("");
+    });
+
+    it("closes mobile drawer upon selecting a navigation link", () => {
+      render(<Header />);
+
+      const openButton = screen.getByRole("button", { name: "Open navigation menu" });
+      fireEvent.click(openButton);
+
+      const mobileLinks = screen.getAllByRole("link", { name: "Services" });
+      // Mobile link is inside drawer
+      const drawerServicesLink = mobileLinks[mobileLinks.length - 1]!;
+      fireEvent.click(drawerServicesLink);
+
+      expect(screen.queryByRole("dialog", { name: "Mobile Navigation Menu" })).not.toBeInTheDocument();
+      expect(document.body.style.overflow).toBe("");
+    });
   });
 });
