@@ -354,3 +354,50 @@ flowchart TD
    - Automated credential redaction removes passwords, hashes, raw tokens, and connection strings from metadata payloads.
    - Preserved upon user deletion through decoupled scalar foreign keys.
    - Transactional participation ensures state mutations and audit records commit or roll back together atomically.
+
+---
+
+## 11. Phase 9: Admin Lead Management & CRM Pipeline Architecture
+
+### Data Architecture & Relationship Topology
+Phase 9 transforms the administrative dashboard into an enterprise CRM pipeline. Phase 9.1 implements the complete database schema foundation and repository layer:
+
+```mermaid
+flowchart TD
+    subgraph CRM_Entities["CRM Data Models (Prisma)"]
+        Enquiry["Enquiry (8 Stages, OCC, Value INR, Source)"]
+        LeadNote["LeadNote (Internal Notes, Pinned Flag, Author FK)"]
+        LeadFollowUp["LeadFollowUp (Task Scheduling, Priority, Due Date)"]
+        LeadActivity["LeadActivity (Append-only CRM Audit Trail)"]
+        LeadAssignment["LeadAssignment (Reassignment History, Partial Unique Active)"]
+        AdminNotification["AdminNotification (Isolated In-App Notifications)"]
+    end
+
+    subgraph Repositories["Domain Repository Layer (src/server/repositories/)"]
+        ERepo["enquiries.repo.ts (OCC, Hydration, Stage Stats)"]
+        LNRepo["lead-notes.repo.ts (Isolation, Pin Toggle)"]
+        LFRepo["lead-followups.repo.ts (Overdue Query, Auto-next)"]
+        LARepo["lead-activities.repo.ts (Timeline Log)"]
+        LASRepo["lead-assignments.repo.ts (Atomic Assignment Tx)"]
+        NRepo["notifications.repo.ts (Recipient Isolation)"]
+    end
+
+    ERepo --> Enquiry
+    LNRepo --> LeadNote
+    LFRepo --> LeadFollowUp
+    LARepo --> LeadActivity
+    LASRepo --> LeadAssignment
+    NRepo --> AdminNotification
+```
+
+### Key Phase 9 Architectural Invariants:
+1. **Optimistic Concurrency Control (OCC):**
+   - `updateEnquiryStatus` enforces `expectedUpdatedAt` timestamps, rejecting conflicting concurrent edits with `ConcurrencyConflictError`.
+2. **Single Active Assignment Invariant:**
+   - PostgreSQL partial unique index `lead_assignments_single_active_unique` on `(enquiryId) WHERE isActive = true` guarantees at most one active administrator per lead.
+3. **Strict Recipient Isolation:**
+   - Administrative notifications are strictly partitioned by `recipientId` at both the database query and mutation layers, preventing cross-admin data leakage.
+4. **Safe Admin Projection:**
+   - Relational hydration for `assignedAdmin` and `author` strictly selects `{ id, name, email, role, isActive }`, eliminating credential exposure (`passwordHash`).
+5. **Internal Note Confidentiality:**
+   - `LeadNote` queries are strictly server-side within authenticated admin contexts and are never serialized to public client APIs or notification emails.

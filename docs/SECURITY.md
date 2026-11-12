@@ -322,6 +322,36 @@ The platform strictly implements the owner-approved three-role hierarchy:
 - **Absolute Session Lifetime (8 hr):** Absolute expiration enforced via `expiresAt`. Sessions older than 8 hours are rejected with `ABSOLUTE_TIMEOUT`.
 - **Credential Scrubbing in User Management:** `getAllAdmins` returns `SafeAdmin` objects strictly omitting `passwordHash` and `sessionToken` fields, preventing credential exposure to administrative interfaces.
 
+---
+
+## 11. Phase 9 CRM Lead Pipeline Security & Data Isolation
+
+### A. Optimistic Concurrency Control (OCC)
+In multi-admin environments, concurrent status or stage edits risk silent state overwrites. `updateEnquiryStatus` enforces OCC:
+- The mutation checks `options.expectedUpdatedAt` against the PostgreSQL record's `updatedAt` timestamp.
+- If another admin updated the lead within the editing interval (> 1000ms drift), the update is aborted and raises `ConcurrencyConflictError`.
+- Eliminates lost updates on commercial lead records.
+
+### B. Single Active Assignment Invariant
+- Lead ownership race conditions are prevented at the database level by a PostgreSQL partial unique index:
+  `CREATE UNIQUE INDEX "lead_assignments_single_active_unique" ON "lead_assignments"("enquiryId") WHERE "isActive" = true;`
+- Reassignment transactions in `assignLeadToAdmin` atomically set previous active records to `isActive = false` before inserting the new assignment, preventing multiple concurrent claims.
+
+### C. Recipient Notification Isolation
+- In-app administrative notifications (`AdminNotification`) are strictly isolated by `recipientId` across all repository methods:
+  - `getAdminNotifications` enforces `where: { recipientId }`.
+  - `getUnreadNotificationCount` enforces `where: { recipientId, isRead: false }`.
+  - `markNotificationAsRead` validates that the notification record belongs to the calling administrator before updating.
+- Cross-admin data leakage is prevented at both the database query and application layers.
+
+### D. Safe Admin Relational Projection
+- When hydrating lead relations via `getEnquiryById` or `getEnquiries`, administrator relations (`assignedAdmin`, `author`, `admin`) strictly project only `{ id, name, email, role, isActive }`.
+- `passwordHash` and active session tokens are excluded by design from all CRM relational hydration.
+
+### E. Internal Note Confidentiality
+- `LeadNote` records are internal-only artifacts accessible exclusively to authenticated administrators within the `/admin` route group.
+- Internal notes are never exposed in public endpoints (`/api/enquiries`), public enquiry confirmation emails, or client-facing responses.
+
 
 
 

@@ -138,14 +138,14 @@ describe("Admin Content Server Actions", () => {
   describe("updateEnquiryStatusAction", () => {
     it("rejects untrusted origin", async () => {
       mockHeaders.set("origin", "https://malicious-attacker.com");
-      const res = await updateEnquiryStatusAction("enq_1", "IN_REVIEW");
+      const res = await updateEnquiryStatusAction("enq_1", "QUALIFIED");
       expect(res.success).toBe(false);
       expect(res.error).toContain("Cross-origin request rejected");
     });
 
     it("rejects unauthenticated request", async () => {
       vi.mocked(authActions.getCurrentAdmin).mockResolvedValueOnce(null);
-      const res = await updateEnquiryStatusAction("enq_1", "IN_REVIEW");
+      const res = await updateEnquiryStatusAction("enq_1", "QUALIFIED");
       expect(res.success).toBe(false);
       expect(res.error).toBe("Authentication required.");
     });
@@ -156,7 +156,7 @@ describe("Admin Content Server Actions", () => {
         session: { id: "sess_1" } as any,
       });
 
-      const res = await updateEnquiryStatusAction("enq_1", "IN_REVIEW");
+      const res = await updateEnquiryStatusAction("enq_1", "QUALIFIED");
       expect(res.success).toBe(false);
       expect(res.error).toContain("Forbidden");
     });
@@ -169,13 +169,13 @@ describe("Admin Content Server Actions", () => {
 
       vi.mocked(enquiriesRepo.updateEnquiryStatus).mockResolvedValueOnce({
         id: "enq_1",
-        status: "IN_REVIEW",
+        status: "QUALIFIED",
         email: "client@example.com",
       } as any);
 
-      const res = await updateEnquiryStatusAction("enq_1", "IN_REVIEW");
+      const res = await updateEnquiryStatusAction("enq_1", "QUALIFIED");
       expect(res.success).toBe(true);
-      expect(enquiriesRepo.updateEnquiryStatus).toHaveBeenCalledWith("enq_1", "IN_REVIEW", undefined);
+      expect(enquiriesRepo.updateEnquiryStatus).toHaveBeenCalledWith("enq_1", "QUALIFIED", undefined);
       expect(auditModule.recordAuditEvent).toHaveBeenCalled();
     });
   });

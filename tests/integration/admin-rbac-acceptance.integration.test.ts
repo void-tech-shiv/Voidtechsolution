@@ -400,13 +400,13 @@ describe("Authenticated Admin Route & RBAC Acceptance Test Suite (Isolated Postg
         if (!isDbAvailable) return;
         currentSessionCookie = adminCookie;
 
-        const res = await updateEnquiryStatusAction(testEnquiryId, "IN_REVIEW", "Reviewing proposal");
+        const res = await updateEnquiryStatusAction(testEnquiryId, "QUALIFIED", "Reviewing proposal");
         expect(res.success).toBe(true);
 
         const updatedEnquiry = await prisma.enquiry.findUnique({
           where: { id: testEnquiryId },
         });
-        expect(updatedEnquiry?.status).toBe("IN_REVIEW");
+        expect(updatedEnquiry?.status).toBe("QUALIFIED");
 
         // Verify audit log
         const auditLogs = await getRecentAuditLogs(5);
@@ -421,14 +421,14 @@ describe("Authenticated Admin Route & RBAC Acceptance Test Suite (Isolated Postg
         if (!isDbAvailable) return;
         currentSessionCookie = editorCookie;
 
-        const res = await updateEnquiryStatusAction(testEnquiryId, "CONVERTED");
+        const res = await updateEnquiryStatusAction(testEnquiryId, "WON");
         expect(res.success).toBe(false);
         expect(res.error).toContain("Forbidden");
 
         const unchangedEnquiry = await prisma.enquiry.findUnique({
           where: { id: testEnquiryId },
         });
-        expect(unchangedEnquiry?.status).not.toBe("CONVERTED");
+        expect(unchangedEnquiry?.status).not.toBe("WON");
       });
 
       it("rejects ADMIN from deleting enquiry (enquiries:delete is SUPER_ADMIN only)", async () => {

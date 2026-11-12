@@ -16,14 +16,17 @@ datasource db {
 }
 
 // ------------------------------------------------------------------------------
-// 1. INBOUND CLIENT ENQUIRIES
+// 1. INBOUND CLIENT ENQUIRIES & CRM LEAD PIPELINE
 // ------------------------------------------------------------------------------
 enum EnquiryStatus {
   NEW
-  IN_REVIEW
   CONTACTED
-  CONVERTED
-  ARCHIVED
+  QUALIFIED
+  PROPOSAL_SENT
+  NEGOTIATION
+  WON
+  LOST
+  ON_HOLD
 }
 
 enum ServiceCategory {
@@ -40,27 +43,47 @@ enum ServiceCategory {
 }
 
 model Enquiry {
-  id              String          @id @default(cuid())
-  name            String
-  email           String
-  phone           String?
-  companyName     String?
-  serviceCategory ServiceCategory @default(WEB_DEVELOPMENT)
-  budgetRange     String?
-  timeline        String?
-  message         String          @db.Text
-  selectedPackage String?
+  id               String              @id @default(cuid())
+  name             String
+  email            String
+  phone            String?
+  companyName      String?
+  serviceCategory  ServiceCategory     @default(WEB_DEVELOPMENT)
+  budgetRange      String?
+  timeline         String?
+  message          String              @db.Text
+  selectedPackage  String?
   additionalConfig Json?
-  referenceUrl    String?
-  consentGiven    Boolean?
-  status          EnquiryStatus   @default(NEW)
-  internalNotes   String?         @db.Text
-  ipHash          String?
-  userAgent       String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  referenceUrl     String?
+  consentGiven     Boolean?
+  status           EnquiryStatus       @default(NEW)
+  internalNotes    String?             @db.Text // Legacy note string preserved for backwards compatibility
+
+  // CRM Extensions (Phase 9)
+  assignedAdminId  String?
+  assignedAdmin    AdminUser?          @relation("AdminAssignedLeads", fields: [assignedAdminId], references: [id], onDelete: SetNull)
+  estimatedValueInr Int?               // Confirmed commercial project value in INR
+  source           String              @default("WEBSITE_CONTACT_FORM")
+  lastContactedAt  DateTime?
+  nextFollowUpAt   DateTime?
+  lostReason       String?             // Documented rationale when lead enters LOST status
+
+  // CRM Relational Collections
+  notes            LeadNote[]
+  followUps        LeadFollowUp[]
+  activities       LeadActivity[]
+  assignments      LeadAssignment[]
+  notifications    AdminNotification[]
+
+  ipHash           String?
+  userAgent        String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
 
   @@index([status])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([assignedAdminId, status])
+  @@index([nextFollowUpAt])
   @@index([email])
   @@index([createdAt])
   @@map("enquiries")
@@ -131,16 +154,21 @@ enum UserRole {
 }
 
 model AdminUser {
-  id           String         @id @default(cuid())
-  email        String         @unique
-  passwordHash String
-  name         String
-  role         UserRole       @default(ADMIN)
-  isActive     Boolean        @default(true)
-  lastLoginAt  DateTime?
-  sessions     AdminSession[]
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id              String              @id @default(cuid())
+  email           String              @unique
+  passwordHash    String
+  name            String
+  role            UserRole            @default(ADMIN)
+  isActive        Boolean             @default(true)
+  lastLoginAt     DateTime?
+  sessions        AdminSession[]
+  assignedLeads   Enquiry[]           @relation("AdminAssignedLeads")
+  leadNotes       LeadNote[]          @relation("AuthorNotes")
+  leadFollowUps   LeadFollowUp[]      @relation("AssignedFollowUps")
+  leadAssignments LeadAssignment[]    @relation("AdminAssignments")
+  notifications   AdminNotification[] @relation("RecipientNotifications")
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
 
   @@map("admin_users")
 }
@@ -296,4 +324,99 @@ model EmailDelivery {
   @@index([template])
   @@index([createdAt])
   @@map("email_deliveries")
+}
+
+// ------------------------------------------------------------------------------
+// 11. CRM LEAD MANAGEMENT & PIPELINE (Phase 9)
+// ------------------------------------------------------------------------------
+
+model LeadNote {
+  id         String     @id @default(cuid())
+  enquiryId  String
+  enquiry    Enquiry    @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  authorId   String?
+  author     AdminUser? @relation("AuthorNotes", fields: [authorId], references: [id], onDelete: SetNull)
+  authorName String
+  content    String     @db.Text
+  isPinned   Boolean    @default(false)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([enquiryId, createdAt(sort: Desc)])
+  @@index([authorId])
+  @@map("lead_notes")
+}
+
+model LeadFollowUp {
+  id            String     @id @default(cuid())
+  enquiryId     String
+  enquiry       Enquiry    @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  assignedToId  String?
+  assignedTo    AdminUser? @relation("AssignedFollowUps", fields: [assignedToId], references: [id], onDelete: SetNull)
+  title         String
+  description   String?    @db.Text
+  dueAt         DateTime
+  priority      String     @default("MEDIUM") // "LOW" | "MEDIUM" | "HIGH" | "URGENT"
+  isCompleted   Boolean    @default(false)
+  completedAt   DateTime?
+  completedById String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([enquiryId])
+  @@index([assignedToId, isCompleted])
+  @@index([dueAt, isCompleted])
+  @@map("lead_follow_ups")
+}
+
+model LeadActivity {
+  id          String   @id @default(cuid())
+  enquiryId   String
+  enquiry     Enquiry  @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  type        String   // "STATUS_CHANGE" | "ASSIGNMENT" | "NOTE_ADDED" | "FOLLOWUP_CREATED" | "FOLLOWUP_COMPLETED"
+  description String
+  actorId     String?
+  actorName   String?
+  metadata    Json?    // e.g. { from: "NEW", to: "QUALIFIED" }
+  createdAt   DateTime @default(now())
+
+  @@index([enquiryId, createdAt(sort: Desc)])
+  @@index([type])
+  @@map("lead_activities")
+}
+
+model LeadAssignment {
+  id             String     @id @default(cuid())
+  enquiryId      String
+  enquiry        Enquiry    @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  adminId        String
+  admin          AdminUser  @relation("AdminAssignments", fields: [adminId], references: [id], onDelete: Cascade)
+  assignedById   String?
+  assignedByName String?
+  assignedAt     DateTime   @default(now())
+  unassignedAt   DateTime?
+  isActive       Boolean    @default(true)
+  notes          String?
+
+  @@index([enquiryId, isActive])
+  @@index([adminId, isActive])
+  @@map("lead_assignments")
+}
+
+model AdminNotification {
+  id          String     @id @default(cuid())
+  recipientId String
+  recipient   AdminUser  @relation("RecipientNotifications", fields: [recipientId], references: [id], onDelete: Cascade)
+  enquiryId   String?
+  enquiry     Enquiry?   @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  type        String     // "NEW_LEAD" | "LEAD_ASSIGNED" | "STATUS_CHANGED" | "FOLLOWUP_DUE" | "LEAD_WON"
+  title       String
+  message     String
+  isRead      Boolean    @default(false)
+  readAt      DateTime?
+  createdAt   DateTime   @default(now())
+
+  @@index([recipientId, isRead, createdAt(sort: Desc)])
+  @@index([enquiryId])
+  @@map("admin_notifications")
 }

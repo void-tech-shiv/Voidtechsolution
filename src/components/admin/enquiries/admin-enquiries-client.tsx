@@ -29,10 +29,13 @@ const STATUS_CONFIG: Record<
   { label: string; badgeClass: string }
 > = {
   NEW: { label: "New", badgeClass: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
-  IN_REVIEW: { label: "In Review", badgeClass: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
   CONTACTED: { label: "Contacted", badgeClass: "bg-violet-500/10 text-violet-400 border-violet-500/20" },
-  CONVERTED: { label: "Converted", badgeClass: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
-  ARCHIVED: { label: "Archived", badgeClass: "bg-neutral-800 text-neutral-400 border-neutral-700" },
+  QUALIFIED: { label: "Qualified", badgeClass: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" },
+  PROPOSAL_SENT: { label: "Proposal Sent", badgeClass: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
+  NEGOTIATION: { label: "Negotiation", badgeClass: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
+  WON: { label: "Won", badgeClass: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
+  LOST: { label: "Lost", badgeClass: "bg-rose-500/10 text-rose-400 border-rose-500/20" },
+  ON_HOLD: { label: "On Hold", badgeClass: "bg-neutral-800 text-neutral-400 border-neutral-700" },
 };
 
 export function AdminEnquiriesClient({

@@ -118,10 +118,13 @@ describe("Authenticated Admin Pages & Server-Side RBAC Enforcement", () => {
     });
     vi.mocked(enquiriesRepo.getEnquiryStats).mockResolvedValue({
       NEW: 0,
-      IN_REVIEW: 0,
       CONTACTED: 0,
-      CONVERTED: 0,
-      ARCHIVED: 0,
+      QUALIFIED: 0,
+      PROPOSAL_SENT: 0,
+      NEGOTIATION: 0,
+      WON: 0,
+      LOST: 0,
+      ON_HOLD: 0,
     });
     vi.mocked(servicesRepo.getAllServices).mockResolvedValue([]);
     vi.mocked(pricingRepo.getAllPricingPackages).mockResolvedValue([]);

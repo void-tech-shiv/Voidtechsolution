@@ -1,33 +1,31 @@
 ---
-updated: 2026-11-13T02:26:00+05:30
+updated: 2026-11-13T03:05:00+05:30
 ---
 
 # Project State — VOIDTECH SOLUTION
 
 ## Current Position
 
-**Milestone:** 9.0 — Discovery, Requirements & Architecture  
+**Milestone:** 9.1 — Database Schema Migration & Model Hydration  
 **Phase:** 9 — Admin Lead Management & Enquiry Pipeline  
-**Status:** completed (Milestone 9.0 Discovery & Architecture Complete; 5 Architectural Specs Created; Zero DB Changes; Awaiting Owner Approval for Phase 9.1 Implementation)  
+**Status:** completed (Milestone 9.1 Database Schema Migration, Model Hydration, 5 Repositories, Disaster Recovery Rollback Spec & Unit Test Suite Complete; 393 Vitest Tests Passing; Awaiting Owner Approval for Milestone 9.2 UI Implementation)  
 **Visual Reference:** SmartStruct Cybernetic Layout + Official Purple/Violet Brand Identity  
 
 ## Last Action
 
-- **Milestone 9.0 Discovery, Requirements & Architecture Completed:**
-  - Fully inspected existing enquiry data models, repositories (`enquiries.repo.ts`), Server Actions (`enquiry.actions.ts`, `admin-content.actions.ts`), email templates (`enquiry-mailer.ts`, `enquiry-status-update.template.ts`), and RBAC architecture (`rbac.ts`).
-  - Authored complete CRM specification suite:
-    - `docs/LEAD_MANAGEMENT_REQUIREMENTS.md`: 8 real-time KPIs (zero fake data), 8-stage Kanban pipeline, lead inspection drawer, multi-author internal notes, follow-up scheduling, multi-channel notifications, faceted search/filtering, and sales velocity analytics.
-    - `docs/LEAD_MANAGEMENT_ARCHITECTURE.md`: Layered system architecture, component breakdown, `LeadStateMachine` transition matrix, Optimistic Concurrency Control (OCC) protocol via `updatedAt`, and strict isolation boundary preventing internal note leakage to customer emails.
-    - `docs/LEAD_MANAGEMENT_DATABASE_DESIGN.md`: Relational schema design with normalized child entities (`lead_notes`, `lead_follow_ups`, `lead_activities`, `admin_notifications`), extended `enquiries` columns (`assignedAdminId`, `estimatedValueInr`, `source`, `nextFollowUpAt`, `lostReason`), performance indexing, and zero-downtime two-phase enum migration script with complete rollback strategy.
-    - `docs/LEAD_MANAGEMENT_RBAC.md`: Granular CRM permission taxonomy (`leads:view`, `leads:update_status`, `leads:assign`, `leads:notes_create`, `leads:notes_delete`, `leads:followup_manage`, `leads:analytics_view`, `leads:export`, `leads:delete`), 11-operation RBAC permission matrix across `SUPER_ADMIN`, `ADMIN`, and `EDITOR`, and server-side assertion patterns.
-    - `docs/LEAD_MANAGEMENT_API_DESIGN.md`: Server Action and REST API interface specifications, standard `ApiResponse<T>` envelopes, machine-readable error codes (`CONFLICT_DETECTED`, `INVALID_TRANSITION`, etc.), and strict Zod validation schemas.
-  - Synchronized `docs/PROJECT_STATUS.md` and `docs/CHANGELOG.md`.
-  - Strictly respected boundaries: Zero database changes, zero migrations run, zero emails sent, zero application code modified.
+- **Milestone 9.1 Database Schema Migration & Model Hydration Completed:**
+  - Migrated Prisma schema with approved 8-stage `EnquiryStatus` enum, extended `Enquiry` model, extended `AdminUser` model, and 5 new relational models (`LeadNote`, `LeadFollowUp`, `LeadActivity`, `LeadAssignment`, `AdminNotification`).
+  - Authored incremental migration `prisma/migrations/20261113000000_crm_lead_pipeline/migration.sql` with partial unique index on active lead assignments and legacy `internalNotes` backfill.
+  - Authored disaster recovery specification `docs/MIGRATION_ROLLBACK_CRM.md`.
+  - Implemented 5 new domain repositories in `src/server/repositories/` (`lead-notes.repo.ts`, `lead-followups.repo.ts`, `lead-activities.repo.ts`, `lead-assignments.repo.ts`, `notifications.repo.ts`) and updated `enquiries.repo.ts` with safe hydration, Optimistic Concurrency Control (OCC), and 8-stage statistics.
+  - Authored unit test suite `tests/unit/crm-models.test.ts` (25 tests covering all models, OCC, constraints, and recipient isolation).
+  - All 393 Vitest tests passing across 24 test files; 0 TypeScript errors; 0 ESLint warnings; 29 routes built cleanly via `next build`.
+  - Updated `docs/DATABASE_DESIGN.md`, `docs/ARCHITECTURE.md`, `docs/SECURITY.md`, `docs/TESTING.md`, `docs/PROJECT_STATUS.md`, and `docs/CHANGELOG.md`.
 
 ## Next Steps
 
-1. Present Milestone 9.0 Discovery & Architecture Report to the project owner.
-2. Await owner review and formal written authorization before proceeding to Milestone 9.1 (Database Migration & Model Hydration).
+1. Present Milestone 9.1 Completion Report to the project owner.
+2. Await owner review and formal written authorization before proceeding to Milestone 9.2 (CRM Dashboard UI, Kanban Board & Pipeline Filters).
 3. Maintain zero-production boundaries (zero remote migrations applied to Neon; zero production admin accounts created; zero real emails dispatched; zero deployments to Vercel).
 
 ## Active Decisions
@@ -52,4 +50,6 @@ updated: 2026-11-13T02:26:00+05:30
 | Relational Note Threading | Normalized `LeadNote` child entity replacing single string `internalNotes` | 2026-11-13 | DB Schema, Repos, UI |
 | Internal Note Isolation | Internal notes strictly excluded from customer email templates | 2026-11-13 | Email System, Security |
 | Optimistic Concurrency | OCC via `updatedAt` comparison on all mutating status actions | 2026-11-13 | Server Actions, UI |
+| Single Active Assignment | Partial unique index `lead_assignments_single_active_unique` on `(enquiryId) WHERE isActive = true` | 2026-11-13 | DB Schema, LeadAssignmentsRepo |
+| Recipient Isolation | `AdminNotification` strictly partitioned by `recipientId` | 2026-11-13 | NotificationsRepo, Security |
 | GitHub Remote Backup | Verified fast-forward push to `https://github.com/void-tech-shiv/Voidtechsolution.git` | 2026-11-13 | Version Control, Backup |

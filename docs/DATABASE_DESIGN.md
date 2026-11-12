@@ -1,8 +1,8 @@
 # DATABASE_DESIGN.md — PostgreSQL Entity-Relationship Specification & Data Layer
 
-> **Implementation Status:** `VERIFIED & AUDITED (ALL 10 MODELS IMPLEMENTED)`
+> **Implementation Status:** `VERIFIED & AUDITED (ALL 15 MODELS & ENUMS IMPLEMENTED — PHASE 9.1 COMPLETE)`
 >
-> ⚠️ **Database Migration Readiness:** The database schema has been verified with Prisma (`npx prisma validate`), Prisma Client generated (`npx prisma generate`), domain repository abstractions built in `src/server/repositories/`, and an automated seed script authored in `prisma/seed.ts`. When connecting a live hosted PostgreSQL instance (e.g. Neon, Supabase, AWS RDS), execute `npx prisma migrate dev --name init` or `npx prisma db push` followed by `npm run db:seed`.
+> ⚠️ **Database Migration Readiness:** The database schema has been verified with Prisma (`npx prisma validate`), Prisma Client generated (`npx prisma generate`), domain repository abstractions built in `src/server/repositories/`, and an automated seed script authored in `prisma/seed.ts`. Phase 9.1 introduces migration `20261113000000_crm_lead_pipeline` with additive schema changes for CRM lead management.
 
 ---
 
@@ -10,6 +10,17 @@
 
 ```mermaid
 erDiagram
+    ENQUIRY ||--o{ LEAD_NOTE : "has"
+    ENQUIRY ||--o{ LEAD_FOLLOW_UP : "schedules"
+    ENQUIRY ||--o{ LEAD_ACTIVITY : "tracks"
+    ENQUIRY ||--o{ LEAD_ASSIGNMENT : "records"
+    ENQUIRY ||--o{ ADMIN_NOTIFICATION : "triggers"
+    ADMIN_USER ||--o{ ENQUIRY : "assigned_leads"
+    ADMIN_USER ||--o{ LEAD_NOTE : "authors"
+    ADMIN_USER ||--o{ LEAD_FOLLOW_UP : "assigned_followups"
+    ADMIN_USER ||--o{ LEAD_ASSIGNMENT : "receives_assignment"
+    ADMIN_USER ||--o{ ADMIN_NOTIFICATION : "receives_notifications"
+
     ENQUIRY {
         string id PK
         string name
@@ -24,10 +35,89 @@ erDiagram
         json additionalConfig
         string referenceUrl
         boolean consentGiven
-        enum status
-        text internalNotes
+        enum status "8 CRM Stages: NEW, CONTACTED, QUALIFIED, PROPOSAL_SENT, NEGOTIATION, WON, LOST, ON_HOLD"
+        text internalNotes "Legacy note backfill"
+        string assignedAdminId FK
+        int estimatedValueInr "Confirmed INR commercial deal value"
+        string source "Acquisition channel, default WEBSITE_CONTACT_FORM"
+        datetime lastContactedAt
+        datetime nextFollowUpAt
+        string lostReason "Documented rationale when entering LOST"
         string ipHash
         string userAgent
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    LEAD_NOTE {
+        string id PK
+        string enquiryId FK
+        string authorId FK
+        string authorName
+        text content
+        boolean isPinned
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    LEAD_FOLLOW_UP {
+        string id PK
+        string enquiryId FK
+        string assignedToId FK
+        string title
+        text description
+        datetime dueAt
+        string priority "LOW, MEDIUM, HIGH, URGENT"
+        boolean isCompleted
+        datetime completedAt
+        string completedById FK
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    LEAD_ACTIVITY {
+        string id PK
+        string enquiryId FK
+        string actorId FK
+        string actorName
+        string type "STATUS_CHANGE, NOTE_ADDED, ASSIGNED, FOLLOWUP_SCHEDULED, etc."
+        text description
+        json metadata
+        datetime createdAt
+    }
+
+    LEAD_ASSIGNMENT {
+        string id PK
+        string enquiryId FK
+        string adminId FK
+        string assignedById FK
+        string assignedByName
+        boolean isActive "Partial unique index: at most one active per lead"
+        datetime assignedAt
+        datetime unassignedAt
+        text notes
+    }
+
+    ADMIN_NOTIFICATION {
+        string id PK
+        string recipientId FK
+        string enquiryId FK
+        string type "NEW_LEAD, LEAD_ASSIGNED, STATUS_CHANGED, FOLLOWUP_DUE, LEAD_WON"
+        string title
+        text message
+        boolean isRead
+        datetime readAt
+        datetime createdAt
+    }
+
+    ADMIN_USER {
+        string id PK
+        string email UK
+        string passwordHash
+        string name
+        enum role "SUPER_ADMIN, ADMIN, EDITOR"
+        boolean isActive
+        datetime lastLoginAt
         datetime createdAt
         datetime updatedAt
     }
@@ -209,6 +299,11 @@ All database queries are encapsulated in strongly-typed repository modules in `s
 | **`UsersRepo`** | `src/server/repositories/users.repo.ts` | `getAdminByEmail`, `getAdminById`, `createAdminUser`, `updateAdminRole`, `setAdminActiveStatus`, `deleteAdminUser`, `updateLastLogin` | Concurrency-safe advisory lock `super_admin_lifecycle_lock` & Exactly One SUPER_ADMIN invariant |
 | **`AuditRepo`** | `src/server/repositories/audit.repo.ts` | `createAuditLog`, `getRecentAuditLogs`, `getAuditLogsByEntity` | Immutable append-only audit trail with automatic credential redaction |
 | **`DeliveryRepo`** | `src/server/repositories/delivery.repo.ts` | `createEmailDelivery`, `updateEmailDeliveryStatus`, `getRecentEmailDeliveries` | Persistent delivery log |
+| **`LeadNotesRepo`** | `src/server/repositories/lead-notes.repo.ts` | `createLeadNote`, `getLeadNotes`, `togglePinLeadNote`, `deleteLeadNote` | Pinned sorting, internal note isolation |
+| **`LeadFollowUpsRepo`** | `src/server/repositories/lead-followups.repo.ts` | `createLeadFollowUp`, `getLeadFollowUps`, `getOverdueFollowUps`, `toggleFollowUpComplete`, `deleteLeadFollowUp` | Auto-updates `nextFollowUpAt`, overdue querying |
+| **`LeadActivitiesRepo`** | `src/server/repositories/lead-activities.repo.ts` | `createLeadActivity`, `getLeadActivities` | Append-only audit trail for CRM lifecycle |
+| **`LeadAssignmentsRepo`** | `src/server/repositories/lead-assignments.repo.ts` | `assignLeadToAdmin`, `unassignLead`, `getLeadAssignmentHistory`, `getActiveAssignment` | Atomic transactions, partial unique single active constraint |
+| **`NotificationsRepo`** | `src/server/repositories/notifications.repo.ts` | `createAdminNotification`, `getAdminNotifications`, `getUnreadNotificationCount`, `markNotificationAsRead`, `markAllNotificationsAsRead` | Strict recipient isolation prevents cross-admin leakage |
 
 ---
 
@@ -216,3 +311,6 @@ All database queries are encapsulated in strongly-typed repository modules in `s
 
 - **No Credential Leakage:** Catch blocks sanitize error details so internal database hostnames, usernames, and connection strings are never exposed in user-facing exceptions.
 - **Fail-Safe Fallbacks:** Read queries for public content gracefully return static registries if PostgreSQL is temporarily unreachable. Write operations throw explicit, observable errors rather than faking success.
+- **Optimistic Concurrency Control (OCC):** `updateEnquiryStatus` enforces `expectedUpdatedAt` timestamps, throwing `ConcurrencyConflictError` if two admins update concurrently.
+- **Recipient Isolation Invariant:** `AdminNotification` queries enforce `where: { recipientId }` at both the repository and database layers, preventing cross-admin data leakage.
+- **Safe Admin Projection:** Relational hydration for `assignedAdmin` and `author` strictly selects `{ id, name, email, role, isActive }`, ensuring `passwordHash` is never exposed.

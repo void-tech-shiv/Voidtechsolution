@@ -343,7 +343,44 @@ npm run build
 ### 9.3 Overall Regression Suite Status
 - **Typecheck:** `npm run typecheck` — 0 errors.
 - **Lint:** `npm run lint` — 0 warnings, 0 errors.
-- **Unit & Integration Suite (Vitest):** 368 / 368 passing across 23 test files.
+- **Unit & Integration Suite (Vitest):** 393 / 393 passing across 24 test files.
 - **Playwright Regression Suite:** 118 / 118 passing across all viewports.
 - **Visual Capture Suite:** 66 / 66 screenshots captured.
 - **Production Compilation:** 29 routes built cleanly via `npm run build`.
+
+---
+
+## 10. Phase 9.1: CRM Lead Management & Pipeline Test Suites
+
+### 10.1 CRM Models & Repositories Unit Suite (`tests/unit/crm-models.test.ts`)
+- **Suite Execution:** `npx vitest run tests/unit/crm-models.test.ts` (25 / 25 passing).
+- **Tested Modules & Invariants:**
+  1. **`LeadNotesRepo`:**
+     - Creates internal notes with author attribution and enquiry linkage.
+     - Retrieves notes sorted with pinned notes first (`isPinned: desc`), then newest (`createdAt: desc`).
+     - Toggles pinned flag and deletes notes securely.
+  2. **`LeadFollowUpsRepo`:**
+     - Schedules follow-ups and automatically updates `enquiry.nextFollowUpAt`.
+     - Queries overdue follow-ups (`dueAt < now` and `isCompleted = false`).
+     - Toggles completion state with `completedAt` timestamp recording.
+     - Safely deletes follow-ups.
+  3. **`LeadActivitiesRepo`:**
+     - Logs immutable activity events (`STATUS_CHANGE`, `NOTE_ADDED`, etc.) with JSON metadata payloads.
+     - Retrieves activity timelines in reverse chronological order with pagination limits.
+  4. **`LeadAssignmentsRepo`:**
+     - Atomically assigns leads inside a transaction, setting previous assignments to `isActive = false` with `unassignedAt` timestamps and updating `enquiry.assignedAdminId`.
+     - Validates that target admin exists and is active before assigning.
+     - Rejects assignment to deactivated administrators (`isActive: false`).
+     - Unassigns leads and clears `enquiry.assignedAdminId`.
+     - Hydrates active assignment with safe admin projection.
+  5. **`NotificationsRepo` & Recipient Isolation:**
+     - Creates notifications strictly targeted to `recipientId`.
+     - Strictly filters queries by `where: { recipientId }` preventing cross-admin data leakage.
+     - Accurately counts unread notifications per recipient.
+     - Validates recipient ownership before marking notifications as read; rejects cross-admin modification attempts.
+     - Bulk marks unread notifications as read for a specific recipient.
+  6. **`EnquiriesRepo` CRM Extensions:**
+     - Safe relational hydration: hydrates notes, followUps, activities, assignments, and assignedAdmin while strictly excluding `passwordHash`.
+     - Optimistic Concurrency Control (OCC): enforces `expectedUpdatedAt`, rejecting stale concurrent updates with `ConcurrencyConflictError`.
+     - Status aggregation: accurately calculates counts across all 8 CRM stages (`NEW`, `CONTACTED`, `QUALIFIED`, `PROPOSAL_SENT`, `NEGOTIATION`, `WON`, `LOST`, `ON_HOLD`).
+     - Filters by `assignedAdminId` and `hasOverdueFollowUp`.

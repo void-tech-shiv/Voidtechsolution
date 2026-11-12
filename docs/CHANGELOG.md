@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.9.1] — 2026-11-13
+### Phase 9.1: Database Schema Migration & Model Hydration
+
+#### Added
+- **Database Schema Migration (`prisma/migrations/20261113000000_crm_lead_pipeline/migration.sql`):**
+  - Expanded `EnquiryStatus` enum from legacy 6 values to the approved 8 CRM stages: `NEW`, `CONTACTED`, `QUALIFIED`, `PROPOSAL_SENT`, `NEGOTIATION`, `WON`, `LOST`, `ON_HOLD`.
+  - Added CRM tracking fields to `enquiries`: `assignedAdminId`, `estimatedValueInr`, `source` (default `WEBSITE_CONTACT_FORM`), `lastContactedAt`, `nextFollowUpAt`, and `lostReason`.
+  - Added new models: `LeadNote`, `LeadFollowUp`, `LeadActivity`, `LeadAssignment`, and `AdminNotification`.
+  - Created partial unique index `lead_assignments_single_active_unique` on `(enquiryId) WHERE isActive = true` guaranteeing at most one active administrator per lead.
+  - Backfilled existing legacy `internalNotes` into `LeadNote` rows with `"LEGACY_MIGRATION"` author attribution.
+  - Authored comprehensive disaster recovery guide `docs/MIGRATION_ROLLBACK_CRM.md`.
+- **Domain Repositories (`src/server/repositories/`):**
+  - `src/server/repositories/lead-notes.repo.ts`: `createLeadNote`, `getLeadNotes` (pinned first), `togglePinLeadNote`, `deleteLeadNote`.
+  - `src/server/repositories/lead-followups.repo.ts`: `createLeadFollowUp` (auto-updates `enquiry.nextFollowUpAt`), `getLeadFollowUps`, `getOverdueFollowUps`, `toggleFollowUpComplete`, `deleteLeadFollowUp`.
+  - `src/server/repositories/lead-activities.repo.ts`: `createLeadActivity` (immutable activity logging with metadata), `getLeadActivities`.
+  - `src/server/repositories/lead-assignments.repo.ts`: `assignLeadToAdmin` (atomic transaction deactivating previous assignments), `unassignLead`, `getLeadAssignmentHistory`, `getActiveAssignment`.
+  - `src/server/repositories/notifications.repo.ts`: `createAdminNotification`, `getAdminNotifications` (strict recipient isolation), `getUnreadNotificationCount`, `markNotificationAsRead`, `markAllNotificationsAsRead`.
+  - Extended `src/server/repositories/enquiries.repo.ts`: added safe relational hydration (strictly omitting `passwordHash`), Optimistic Concurrency Control (OCC via `expectedUpdatedAt`), 8-stage metrics aggregation (`getEnquiryStats`), and filters for `assignedAdminId` and `hasOverdueFollowUp`.
+- **Quality Assurance & Verification:**
+  - Authored `tests/unit/crm-models.test.ts` (25 tests covering all 6 repositories, constraints, OCC, and recipient isolation).
+  - All 393 Vitest unit & integration tests passing across 24 test files.
+  - TypeScript strict typecheck: 0 errors (`npm run typecheck`).
+  - ESLint: 0 warnings, 0 errors (`npm run lint`).
+  - Next.js production build: 29 routes built cleanly (`npm run build`).
+
+---
+
 ## [0.9.0] — 2026-11-13
 ### Phase 9.0: Admin Lead Management & CRM Pipeline — Discovery & Architecture
 

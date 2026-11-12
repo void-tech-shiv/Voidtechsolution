@@ -223,7 +223,7 @@ describe("Phase 3: Site Settings & Database Resilience", () => {
 
     const stats = await getEnquiryStats();
     expect(stats.NEW).toBe(0);
-    expect(stats.CONVERTED).toBe(0);
+    expect(stats.WON).toBe(0);
 
     spy.mockRestore();
   });

@@ -5,9 +5,14 @@ import type { EnquiryInput } from "@/types";
 export interface GetEnquiriesParams {
   status?: EnquiryStatus;
   category?: ServiceCategory;
+  assignedAdminId?: string;
   search?: string;
+  hasOverdueFollowUp?: boolean;
   page?: number;
   limit?: number;
+  includeRelations?: boolean;
+  sortBy?: "createdAt" | "updatedAt" | "name" | "status";
+  sortOrder?: "asc" | "desc";
 }
 
 export interface PaginatedEnquiries {
@@ -59,7 +64,18 @@ export async function createEnquiry(
 export async function getEnquiries(
   params: GetEnquiriesParams = {}
 ): Promise<PaginatedEnquiries> {
-  const { status, category, search, page = 1, limit = 20 } = params;
+  const {
+    status,
+    category,
+    assignedAdminId,
+    search,
+    hasOverdueFollowUp,
+    page = 1,
+    limit = 20,
+    includeRelations = false,
+    sortBy = "createdAt",
+    sortOrder = "desc",
+  } = params;
   const skip = (page - 1) * limit;
 
   const where: Prisma.EnquiryWhereInput = {};
@@ -72,6 +88,19 @@ export async function getEnquiries(
     where.serviceCategory = category;
   }
 
+  if (assignedAdminId) {
+    where.assignedAdminId = assignedAdminId;
+  }
+
+  if (hasOverdueFollowUp) {
+    where.followUps = {
+      some: {
+        isCompleted: false,
+        dueAt: { lt: new Date() },
+      },
+    };
+  }
+
   if (search && search.trim() !== "") {
     where.OR = [
       { name: { contains: search, mode: "insensitive" } },
@@ -81,11 +110,29 @@ export async function getEnquiries(
     ];
   }
 
+  const include = includeRelations
+    ? {
+        assignedAdmin: {
+          select: { id: true, name: true, email: true, role: true, isActive: true },
+        },
+        notes: {
+          orderBy: { createdAt: "desc" as const },
+          take: 5,
+        },
+        followUps: {
+          where: { isCompleted: false },
+          orderBy: { dueAt: "asc" as const },
+          take: 3,
+        },
+      }
+    : undefined;
+
   try {
     const [items, total] = await Promise.all([
       prisma.enquiry.findMany({
         where,
-        orderBy: { createdAt: "desc" },
+        include,
+        orderBy: { [sortBy]: sortOrder },
         skip,
         take: limit,
       }),
@@ -112,12 +159,40 @@ export async function getEnquiries(
 }
 
 /**
- * Retrieves a single enquiry by its unique ID.
+ * Retrieves a single enquiry by its unique ID with optional relation hydration.
  */
-export async function getEnquiryById(id: string): Promise<Enquiry | null> {
+export async function getEnquiryById(
+  id: string,
+  includeRelations = false
+): Promise<Enquiry | null> {
   try {
+    const include = includeRelations
+      ? {
+          assignedAdmin: {
+            select: { id: true, name: true, email: true, role: true, isActive: true },
+          },
+          notes: {
+            orderBy: [{ isPinned: "desc" as const }, { createdAt: "desc" as const }],
+          },
+          followUps: {
+            orderBy: [{ isCompleted: "asc" as const }, { dueAt: "asc" as const }],
+          },
+          activities: {
+            orderBy: { createdAt: "desc" as const },
+            take: 50,
+          },
+          assignments: {
+            include: {
+              admin: { select: { id: true, name: true, email: true, role: true } },
+            },
+            orderBy: { assignedAt: "desc" as const },
+          },
+        }
+      : undefined;
+
     return await prisma.enquiry.findUnique({
       where: { id },
+      include,
     });
   } catch (error) {
     console.warn(`[enquiries.repo] getEnquiryById failed for id '${id}':`, error);
@@ -125,19 +200,51 @@ export async function getEnquiryById(id: string): Promise<Enquiry | null> {
   }
 }
 
+export interface UpdateEnquiryStatusOptions {
+  internalNotes?: string;
+  lostReason?: string;
+  estimatedValueInr?: number;
+  expectedUpdatedAt?: Date;
+}
+
 /**
- * Updates an enquiry status and optionally updates internal notes.
+ * Updates an enquiry status with optional concurrency checking and metadata.
  * Write operation strictly throws descriptive errors on failure.
  */
 export async function updateEnquiryStatus(
   id: string,
   status: EnquiryStatus,
-  internalNotes?: string
+  optionsOrNotes?: string | UpdateEnquiryStatusOptions
 ): Promise<Enquiry> {
+  const options: UpdateEnquiryStatusOptions =
+    typeof optionsOrNotes === "string"
+      ? { internalNotes: optionsOrNotes }
+      : optionsOrNotes || {};
+
+  const current = await prisma.enquiry.findUnique({ where: { id } });
+  if (!current) {
+    throw new Error(`Enquiry with id '${id}' not found`);
+  }
+
+  // Optimistic Concurrency Control guard
+  if (options.expectedUpdatedAt) {
+    const currentMs = current.updatedAt.getTime();
+    const expectedMs = options.expectedUpdatedAt.getTime();
+    if (Math.abs(currentMs - expectedMs) > 1000) {
+      throw new Error(`Concurrency conflict: Enquiry was modified by another administrator.`);
+    }
+  }
+
   const data: Prisma.EnquiryUpdateInput = { status };
 
-  if (internalNotes !== undefined) {
-    data.internalNotes = internalNotes;
+  if (options.internalNotes !== undefined) {
+    data.internalNotes = options.internalNotes;
+  }
+  if (options.lostReason !== undefined) {
+    data.lostReason = options.lostReason;
+  }
+  if (options.estimatedValueInr !== undefined) {
+    data.estimatedValueInr = options.estimatedValueInr;
   }
 
   try {
@@ -207,10 +314,13 @@ export async function deleteEnquiry(id: string): Promise<Enquiry> {
 export async function getEnquiryStats(): Promise<Record<EnquiryStatus, number>> {
   const defaultStats: Record<EnquiryStatus, number> = {
     NEW: 0,
-    IN_REVIEW: 0,
     CONTACTED: 0,
-    CONVERTED: 0,
-    ARCHIVED: 0,
+    QUALIFIED: 0,
+    PROPOSAL_SENT: 0,
+    NEGOTIATION: 0,
+    WON: 0,
+    LOST: 0,
+    ON_HOLD: 0,
   };
 
   try {
