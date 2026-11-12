@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.9.2] — 2026-11-13
+### Phase 9.2: Admin Lead Management & CRM Pipeline — Dashboard UI, Kanban Board & Integrated Lead Workflows
+
+#### Added
+- **CRM Dashboard & Authenticated Route (`src/app/admin/(dashboard)/crm/page.tsx`):**
+  - Full-featured administrative CRM dashboard at `/admin/crm` with server prefetching of KPI metrics, 8-stage Kanban columns, active admins, and unread notification counts.
+  - Edge middleware and RBAC protection enforcing `enquiries:view` permission.
+  - Integrated into administrative navigation in `AdminSidebar` with `LayoutGrid` icon and `AdminHeader` with `AdminNotificationsBell`.
+- **Commercial Performance KPIs (`src/components/admin/crm/crm-dashboard-kpis.tsx`):**
+  - 6 real-time aggregated metric cards: Total Leads, New Leads, Active Pipeline Value (INR), Won Revenue (INR), Win Rate (%), and Overdue Follow-ups.
+  - Interactive stage distribution bar visualizing counts and revenue across all 8 pipeline stages.
+  - Formatted Indian Rupee currency representation (`₹X,XX,XXX`).
+- **8-Stage Kanban Pipeline Board (`src/components/admin/crm/crm-kanban.tsx`, `crm-stage-column.tsx`, `crm-lead-card.tsx`):**
+  - Horizontal scrolling board supporting `NEW`, `CONTACTED`, `QUALIFIED`, `PROPOSAL_SENT`, `NEGOTIATION`, `WON`, `LOST`, `ON_HOLD`.
+  - HTML5 native drag-and-drop combined with accessible quick-action kebab menus.
+  - Optimistic UI updates with column totals recalculation.
+  - Concurrency Conflict Recovery: atomic Optimistic Concurrency Control (OCC) enforcing `expectedUpdatedAt`; automatically rolls back optimistic updates on conflict and displays an amber notification banner with a "Refresh Board" control.
+  - Mandatory Lost Reason Dialog (`src/components/admin/crm/crm-lost-reason-modal.tsx`): requires a non-empty `lostReason` with presets before moving any lead to `LOST`.
+- **Deep Lead Inspection Drawer (`src/components/admin/crm/crm-lead-drawer.tsx`):**
+  - 5-tab slide-over sheet: Overview, Internal Notes, Activity Timeline, Follow-ups, and Assignments.
+  - Pinned and confidential internal notes engine with `SUPER_ADMIN` deletion capability.
+  - Immutable activity history tracking stage movements, assignments, and notes.
+  - Follow-up task scheduling with priority badges (`URGENT`, `HIGH`, `MEDIUM`, `LOW`) and checkbox completion.
+  - Lead reassignment to active administrators with assignment notes.
+- **Dedicated Follow-up Management View (`src/components/admin/crm/crm-followups-view.tsx`):**
+  - Task management view with tabs: Upcoming, Overdue, Completed, All.
+  - Priority filter dropdown and direct deep-linking into parent lead drawer.
+- **Recipient-Isolated Notifications Bell (`src/components/admin/admin-notifications-bell.tsx`):**
+  - Header bell with unread count badge.
+  - Popover action feed displaying new lead arrivals, assignment notices, and overdue task alerts.
+  - Strictly isolated to the calling administrator's ID (`recipientId === auth.admin.id`).
+- **CRM Server Actions & Validation Layer:**
+  - `src/validations/crm.ts`: Zod validation schemas with refined mandatory `lostReason` invariant.
+  - `src/server/actions/crm.actions.ts`: 12 secure server operations enforcing RBAC, origin verification, and audit logging.
+- **Verification & Documentation:**
+  - Authored `tests/unit/crm-actions.test.ts` (18 tests) and `tests/unit/crm-ui.test.tsx` (12 tests).
+  - All 429 Vitest tests passing across 27 suites.
+  - 30 production routes built cleanly with 0 TypeScript and 0 ESLint errors.
+  - Comprehensive milestone report: `docs/PHASE_9_2_CRM_IMPLEMENTATION_REPORT.md`.
+
+---
+
 ## [0.9.1] — 2026-11-13
 ### Phase 9.1: Database Schema Migration & Model Hydration
 

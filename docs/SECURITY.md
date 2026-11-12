@@ -352,6 +352,17 @@ In multi-admin environments, concurrent status or stage edits risk silent state 
 - `LeadNote` records are internal-only artifacts accessible exclusively to authenticated administrators within the `/admin` route group.
 - Internal notes are never exposed in public endpoints (`/api/enquiries`), public enquiry confirmation emails, or client-facing responses.
 
+### F. Phase 9.2 CRM Server Action RBAC Matrix
+Every CRM mutation at `/admin/crm` verifies the caller's session and permissions via `requirePermission`:
+- `enquiries:view`: `SUPER_ADMIN`, `ADMIN`, `EDITOR` (Read-only Kanban board, drawer inspection, metrics)
+- `enquiries:update_status`: `SUPER_ADMIN`, `ADMIN` (Stage transitions, note additions, follow-up scheduling, assignments; `EDITOR` rejected)
+- `enquiries:delete`: `SUPER_ADMIN` only (Permanent note and follow-up deletion; `ADMIN` & `EDITOR` rejected)
+
+### G. Client-Side Rollback & Concurrency UX Safety
+- When a stage update conflict is detected (`CONFLICT_DETECTED`), the client-side state machine rolls back optimistic UI changes to prevent false visual confirmation.
+- The UI surfaces a distinct amber warning alert with a "Refresh Board" trigger to load the canonical state without page reloads.
+
+
 
 
 

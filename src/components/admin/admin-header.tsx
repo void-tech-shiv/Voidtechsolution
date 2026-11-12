@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logoutAction } from "@/server/actions/auth.actions";
+import { AdminNotificationsBell } from "./admin-notifications-bell";
 
 interface AdminHeaderProps {
   user: {
@@ -84,6 +85,9 @@ export function AdminHeader({ user, onOpenMobileMenu }: AdminHeaderProps) {
           <span>Live Site</span>
           <ExternalLink className="w-3.5 h-3.5" />
         </Link>
+
+        {/* In-App Notifications Bell */}
+        <AdminNotificationsBell />
 
         <div className="h-4 w-px bg-void-border hidden md:block" aria-hidden="true" />
 

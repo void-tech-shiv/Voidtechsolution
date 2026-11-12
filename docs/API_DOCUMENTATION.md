@@ -303,8 +303,77 @@ Creates a new question & answer in the agency FAQ knowledgebase.
 - **Security:** Request origin verification, non-empty validation, session resolution.
 
 ### `togglePricingPackageActiveAction(packageId, isActive)`
-Toggles the active availability status of a pricing tier package.
+Toggle the active availability status of a pricing tier package.
 - **Access:** `SUPER_ADMIN` and `ADMIN` (Permission `pricing:manage`; `EDITOR` rejected)
 - **Security:** Request origin verification, session resolution.
+
+---
+
+## 5. Phase 9.2 CRM Pipeline Server Actions (`src/server/actions/crm.actions.ts`)
+
+### `getCrmMetricsAction()`
+Computes aggregated metrics for the CRM dashboard.
+- **Access:** `SUPER_ADMIN`, `ADMIN`, and `EDITOR` (`enquiries:view`)
+- **Returns:** `{ totalLeads, newLeads, activePipelineValueInr, wonRevenueInr, winRatePercentage, overdueFollowUpsCount, stageDistribution }`
+
+### `getKanbanLeadsAction(params?)`
+Retrieves leads grouped into 8 stage columns with optional search, category, and assignee filtering.
+- **Access:** `SUPER_ADMIN`, `ADMIN`, and `EDITOR` (`enquiries:view`)
+- **Returns:** `KanbanStageColumn[]`
+
+### `getLeadDetailAction(enquiryId)`
+Fetches full hydrated relations for a single lead.
+- **Access:** `SUPER_ADMIN`, `ADMIN`, and `EDITOR` (`enquiries:view`)
+- **Returns:** Full enquiry object with notes, follow-ups, activity history, and assignments.
+
+### `updateLeadStageAction(input)`
+Executes atomic stage update with Optimistic Concurrency Control (OCC).
+- **Access:** `SUPER_ADMIN` and `ADMIN` (`enquiries:update_status`; `EDITOR` rejected)
+- **Validation:** Zod schema `leadStageUpdateSchema`. Mandatory `lostReason` if moving to `LOST`.
+- **Concurrency:** Requires `expectedUpdatedAt`. Throws `CONFLICT_DETECTED` if a concurrent update occurred.
+- **Side Effects:** Appends `LeadActivity` log; dispatches `AdminNotification` to assignee.
+
+### `createLeadNoteAction(input)`
+Adds an internal private note to a lead.
+- **Access:** `SUPER_ADMIN` and `ADMIN` (`enquiries:update_status`; `EDITOR` rejected)
+- **Validation:** `createLeadNoteSchema`.
+
+### `togglePinLeadNoteAction(noteId)`
+Toggles the pinned status of an internal note.
+- **Access:** `SUPER_ADMIN` and `ADMIN` (`enquiries:update_status`)
+
+### `deleteLeadNoteAction(noteId)`
+Permanently deletes an internal note.
+- **Access:** Strictly `SUPER_ADMIN` only (`enquiries:delete`; `ADMIN` & `EDITOR` rejected)
+
+### `createLeadFollowUpAction(input)`
+Schedules a follow-up task.
+- **Access:** `SUPER_ADMIN` and `ADMIN` (`enquiries:update_status`)
+- **Validation:** `createLeadFollowUpSchema`.
+- **Side Effects:** Automatically synchronizes `Enquiry.nextFollowUpAt` cache.
+
+### `toggleLeadFollowUpAction(followUpId)`
+Toggles completion state of a follow-up task and updates `completedAt`.
+- **Access:** `SUPER_ADMIN` and `ADMIN` (`enquiries:update_status`)
+
+### `deleteLeadFollowUpAction(followUpId)`
+Deletes a follow-up task.
+- **Access:** Strictly `SUPER_ADMIN` only (`enquiries:delete`)
+
+### `assignLeadAction(input)`
+Assigns or reassigns a lead to an active administrator.
+- **Access:** `SUPER_ADMIN` and `ADMIN` (`enquiries:update_status`)
+- **Validation:** `assignLeadSchema`. Rejects inactive administrators.
+- **Side Effects:** Dispatches `AdminNotification` to assigned admin; appends `LeadActivity`.
+
+### `getAdminNotificationsAction()`
+Retrieves isolated notifications for the currently logged-in administrator.
+- **Access:** Authenticated admin (`SUPER_ADMIN`, `ADMIN`, `EDITOR`).
+- **Security:** Strict recipient isolation (`recipientId === auth.admin.id`).
+
+### `markNotificationReadAction(notificationId)` / `markAllNotificationsReadAction()`
+Marks notifications as read.
+- **Access:** Authenticated admin. Enforces matching `recipientId`.
+
 
 

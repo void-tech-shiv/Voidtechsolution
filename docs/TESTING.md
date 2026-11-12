@@ -384,3 +384,45 @@ npm run build
      - Optimistic Concurrency Control (OCC): enforces `expectedUpdatedAt`, rejecting stale concurrent updates with `ConcurrencyConflictError`.
      - Status aggregation: accurately calculates counts across all 8 CRM stages (`NEW`, `CONTACTED`, `QUALIFIED`, `PROPOSAL_SENT`, `NEGOTIATION`, `WON`, `LOST`, `ON_HOLD`).
      - Filters by `assignedAdminId` and `hasOverdueFollowUp`.
+
+
+---
+
+## 11. Phase 9.2: CRM Dashboard UI & Interactive Workflows Test Suites
+
+### 11.1 CRM Server Actions & RBAC Suite (`tests/unit/crm-actions.test.ts`)
+- **Suite Execution:** `npx vitest run tests/unit/crm-actions.test.ts` (18 / 18 passing).
+- **Tested Scenarios & Invariants:**
+  1. **Authentication & Origin Protection:**
+     - Rejects unauthenticated callers from all CRM actions.
+     - Rejects cross-origin requests (`validateRequestOrigin`).
+  2. **RBAC Policy Guarding:**
+     - Allows `SUPER_ADMIN` and `ADMIN` to fetch metrics, Kanban boards, and update stages.
+     - Allows `EDITOR` to view Kanban board (`enquiries:view`) but rejects stage updates, note creations, follow-up scheduling, and assignments.
+     - Strictly restricts internal note and follow-up deletion to `SUPER_ADMIN` (`enquiries:delete`).
+  3. **Optimistic Concurrency Control (OCC) Conflict Recovery:**
+     - Passes `expectedUpdatedAt` to `updateEnquiryStatus`.
+     - Catches `ConcurrencyConflictError` and returns `code: "CONFLICT_DETECTED"`.
+  4. **Mandatory Lost Reason Invariant:**
+     - Rejects stage updates to `LOST` when `lostReason` is missing or empty.
+     - Accepts transition to `LOST` when non-empty `lostReason` is provided.
+  5. **Internal Notes & Activity Tracking:**
+     - Verifies `LeadActivity` log (`NOTE_ADDED`) and `recordAuditEvent` (`LEAD_NOTE_CREATED`).
+  6. **Follow-Up Scheduling & Cache Synchronization:**
+     - Creates follow-ups and synchronizes `nextFollowUpAt`.
+     - Toggles completion state and records completion activity.
+  7. **Lead Assignments & Notification Dispatch:**
+     - Assigns lead, updates `assignedAdminId`, records activity, and creates targeted notification for the assigned admin.
+  8. **Recipient-Isolated Notifications:**
+     - Queries notifications strictly for the calling administrator's ID.
+
+### 11.2 CRM UI Components & Interaction Suite (`tests/unit/crm-ui.test.tsx`)
+- **Suite Execution:** `npx vitest run tests/unit/crm-ui.test.tsx` (12 / 12 passing).
+- **Tested Components & Interactions:**
+  1. **`CrmDashboardKpis`:** Renders all 6 KPI cards with labels, formatted INR values, and the full 8-stage distribution bar.
+  2. **`CrmLeadCard`:** Renders client name, company, formatted budget/value, priority tags, and quick-move kebab menu.
+  3. **`CrmStageColumn`:** Renders stage title, badge count, total stage value, and empty-state placeholders.
+  4. **`CrmLostReasonModal`:** Accessible modal dialog requiring reason selection or custom text; validates non-empty submission before proceeding.
+  5. **`CrmFilters`:** Debounced search input, category dropdown, assignee dropdown, overdue toggle, and Kanban / Tasks view switcher.
+  6. **`CrmFollowupsView`:** Renders upcoming, overdue, and completed follow-up task queue with priority tags and lead deep links.
+  7. **`AdminNotificationsBell`:** Renders bell trigger with unread badge count, opens popover with action feed, and triggers mark-all-read.

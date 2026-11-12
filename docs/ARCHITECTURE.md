@@ -401,3 +401,61 @@ flowchart TD
    - Relational hydration for `assignedAdmin` and `author` strictly selects `{ id, name, email, role, isActive }`, eliminating credential exposure (`passwordHash`).
 5. **Internal Note Confidentiality:**
    - `LeadNote` queries are strictly server-side within authenticated admin contexts and are never serialized to public client APIs or notification emails.
+
+## 9. Phase 9.2 CRM Dashboard UI & Interactive Workflows
+
+```mermaid
+flowchart TD
+    subgraph UI["CRM Client Components (src/components/admin/crm)"]
+        KPI["CrmDashboardKpis (6 Metrics + Stage Distribution)"]
+        Filters["CrmFilters (Search, Category, Assignee, View Switcher)"]
+        Kanban["CrmKanban (8-Stage Pipeline with Drag & Drop)"]
+        FollowupsView["CrmFollowupsView (Task Queue: Upcoming/Overdue/Completed)"]
+        Drawer["CrmLeadDrawer (Slide-over Sheet: 5 Tabs)"]
+        LostModal["CrmLostReasonModal (Mandatory Lost Reason Dialogue)"]
+    end
+
+    subgraph Actions["Server Actions Layer (src/server/actions/crm.actions.ts)"]
+        GetMetrics["getCrmMetricsAction"]
+        GetKanban["getKanbanLeadsAction"]
+        GetLead["getLeadDetailAction"]
+        UpdateStage["updateLeadStageAction (OCC + Activity + Notif)"]
+        NoteActions["create/toggle/delete LeadNote Actions"]
+        FollowUpActions["create/toggle/delete FollowUp Actions"]
+        AssignActions["assignLead / unassignLead Actions"]
+        NotifActions["get/mark AdminNotifications Actions"]
+    end
+
+    subgraph ServerSecurity["Security & Validation"]
+        Zod["Zod Validation (src/validations/crm.ts)"]
+        RBAC["RBAC Enforcement (requirePermission)"]
+        OCCEngine["Atomic OCC Validation (expectedUpdatedAt)"]
+        AuditEngine["Audit Log Engine (recordAuditEvent)"]
+    end
+
+    Kanban -->|Drag & Drop / Quick Move| UpdateStage
+    Kanban -->|Stage == LOST| LostModal
+    LostModal -->|Confirm with reason| UpdateStage
+    Kanban -->|Click Card| Drawer
+    Drawer -->|Add/Pin Note| NoteActions
+    Drawer -->|Add/Complete Task| FollowUpActions
+    Drawer -->|Reassign Lead| AssignActions
+    Filters -->|View Switch| FollowupsView
+    FollowupsView -->|Click Lead| Drawer
+
+    UpdateStage --> Zod
+    UpdateStage --> RBAC
+    UpdateStage --> OCCEngine
+    UpdateStage --> AuditEngine
+```
+
+### Phase 9.2 UI Architectural Principles:
+1. **Optimistic UI with Rollback Safety:**
+   - Kanban stage changes immediately update local column state and totals.
+   - If the server rejects the update (e.g., OCC conflict or network failure), the board restores the pre-mutation column snapshot and prompts the user with an actionable refresh control.
+2. **Mandatory Lost Reason Invariant:**
+   - Leads cannot enter the `LOST` stage without an explicit non-empty `lostReason`, enforced both at the UI modal level and server-side Zod validation refine rule.
+3. **5-Tab Lead Inspection Drawer:**
+   - Single source of truth slide-over allowing complete lead management (Overview, Notes, Activity, Follow-ups, and Assignments) without leaving the Kanban context.
+4. **Header Bell Notification Popover:**
+   - Real-time unread badge isolated by `recipientId` with instant popover action items for high-priority leads, assignment notices, and overdue follow-up alerts.

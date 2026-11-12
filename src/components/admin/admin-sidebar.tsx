@@ -7,6 +7,7 @@ import type { UserRole } from "@prisma/client";
 import {
   LayoutDashboard,
   Inbox,
+  Kanban,
   Layers,
   CircleDollarSign,
   Briefcase,
@@ -35,6 +36,13 @@ export const ADMIN_NAV_ITEMS: NavItemConfig[] = [
     href: "/admin",
     icon: LayoutDashboard,
     requiredPermission: "dashboard:view",
+  },
+  {
+    name: "CRM Pipeline",
+    href: "/admin/crm",
+    icon: Kanban,
+    requiredPermission: "enquiries:view",
+    badge: "CRM",
   },
   {
     name: "Enquiries",
