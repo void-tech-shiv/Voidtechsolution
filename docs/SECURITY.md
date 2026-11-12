@@ -271,5 +271,57 @@ The approved administrative access model is restricted strictly to three defined
   - Recursion depth is capped at 6 levels to defend against circular or oversized payload DoS.
 - **Transactional Consistency:** `recordAuditEvent` accepts an optional `Prisma.TransactionClient`, enabling atomic state mutations where administrative actions and their audit logs commit or roll back together.
 
+---
+
+## 9. Authenticated Admin Route & Server-Side RBAC Enforcement Architecture
+
+### A. Three-Tier Defense-in-Depth Model
+The admin console enforces defense-in-depth across three architectural layers:
+
+1. **Layer 1: Edge Route Protection Middleware (`src/middleware.ts`):**
+   - Intercepts all requests matching `/admin/:path*` and `/api/admin/:path*`.
+   - Performs low-latency HMAC-SHA256 signature verification on the `vts_session` cookie at the Edge.
+   - Redirects unauthenticated UI requests to `/admin/login?callbackUrl=...` with open-redirect sanitization.
+   - Rejects unauthenticated API calls with HTTP 401 Unauthorized.
+   - Acts as a high-speed rejection barrier; does not evaluate role-based granular permissions.
+
+2. **Layer 2: Server Component Page-Level Access Gate:**
+   - Every administrative dashboard page Server Component independently calls `getCurrentAdmin()` and evaluates `hasPermission(role, requiredPermission)` prior to executing any repository queries or rendering content.
+   - When unauthorized, the page immediately short-circuits and renders `<AdminAccessDenied />` with an HTTP 403 Forbidden state badge, active role indicator, and required permission badge.
+   - **Zero-Data Leakage Guarantee:** Repository queries (`getAllAdmins`, `getRecentAuditLogs`, `getAllSettings`, `getAllPricingPackages`) are strictly bypassed when permission is denied, ensuring zero sensitive records are queried from PostgreSQL or serialized into the React Server Component payload.
+
+3. **Layer 3: Authoritative Server Action & Repository-Level Enforcement:**
+   - All mutations dispatched via Server Actions (`createAdminUserAction`, `updateAdminRoleAction`, `setAdminStatusAction`, `deleteAdminUserAction`, `updateEnquiryStatusAction`, `deleteEnquiryAction`, `updateSiteSettingAction`, `toggleServiceActiveAction`, `createFaqAction`, `togglePricingPackageActiveAction`) independently enforce:
+     - Request origin validation (`validateRequestOrigin`) to prevent cross-origin state-changing attacks (CSRF).
+     - Authoritative session resolution and PostgreSQL active status check (`getCurrentAdmin()`).
+     - Granular permission requirement (`requirePermission(user, permission)`).
+   - Direct repository methods (`createAdminUser`, `updateAdminRole`, `deleteAdminUser`, etc.) independently re-verify actor permissions and enforce business invariants (Sole SUPER_ADMIN protection, Exactly-One-SUPER_ADMIN invariant, Self-modification prevention).
+   - If an unauthorized mutation is attempted, the repository/action throws an `AuthorizationError` (HTTP 403) or returns a generic failure. The database record remains completely unmodified, and zero audit logs are generated.
+
+### B. Authoritative 11-Operation RBAC Matrix
+The platform strictly implements the owner-approved three-role hierarchy:
+
+| Operation | Required Permission | SUPER_ADMIN | ADMIN | EDITOR |
+| :--- | :--- | :---: | :---: | :---: |
+| Overview Dashboard | `dashboard:view` | Allowed | Allowed | Allowed |
+| User Provisioning & Roles | `admins:manage` | Allowed | **DENIED (403)** | **DENIED (403)** |
+| Audit Trail Inspection | `audit_logs:view` | Allowed | **DENIED (403)** | **DENIED (403)** |
+| Platform Settings | `settings:manage` | Allowed | **DENIED (403)** | **DENIED (403)** |
+| View Client Enquiries | `enquiries:view` | Allowed | Allowed | Allowed (Read-Only) |
+| Update Enquiry Status/Notes | `enquiries:update_status` | Allowed | Allowed | **DENIED (403)** |
+| Delete Client Enquiries | `enquiries:delete` | Allowed | **DENIED (403)** | **DENIED (403)** |
+| Services Catalog Management | `services:manage` | Allowed | Allowed | Allowed |
+| Pricing Tier Management | `pricing:manage` | Allowed | Allowed | **DENIED (403)** |
+| Portfolio Showcase Management | `portfolio:manage` | Allowed | Allowed | Allowed |
+| FAQ Knowledgebase Management | `faqs:manage` | Allowed | Allowed | Allowed |
+
+### C. Inactive Administrator & Session Invalidation
+- **Instant Invalidation:** Account deactivation (`isActive: false`) or deletion immediately invalidates active sessions. On subsequent requests, `validateAdminSession` verifies the PostgreSQL user record and rejects deactivated accounts with `USER_INACTIVE`.
+- **Session Revocation:** Triggering `revokeAdminSession(cookie)` removes the session from PostgreSQL, resulting in immediate `SESSION_NOT_FOUND` rejections on subsequent requests.
+- **Sliding-Window Idle Timeout (30 min):** Enforced via PostgreSQL `lastActiveAt`. Requests idle for > 30 minutes are rejected with `IDLE_TIMEOUT`.
+- **Absolute Session Lifetime (8 hr):** Absolute expiration enforced via `expiresAt`. Sessions older than 8 hours are rejected with `ABSOLUTE_TIMEOUT`.
+- **Credential Scrubbing in User Management:** `getAllAdmins` returns `SafeAdmin` objects strictly omitting `passwordHash` and `sessionToken` fields, preventing credential exposure to administrative interfaces.
+
+
 
 

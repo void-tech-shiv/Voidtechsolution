@@ -1,8 +1,8 @@
 # PROJECT_STATUS.md — VOIDTECH SOLUTION Status Dashboard
 
 > **Current Status as of:** 2026-11-12  
-> **Active Task:** Admin Console Route Completion & 404 Remediation (All 8 Affected Routes Implemented, Tested, & Verified; Zero 404s)  
-> **Milestone Status:** Milestones 7.1–7.5 Complete; 404 Remediation Complete; Strict Stop for Milestone 7.6.
+> **Active Task:** Authenticated Admin Route & Server-Side RBAC Acceptance Test (COMPLETE — 352 Vitest Tests Passing, 90 Playwright E2E Tests Passing, Zero Leaks, Strict 403 Enforcement)  
+> **Milestone Status:** Milestones 7.1–7.5 Complete; 404 Remediation Complete; Authenticated RBAC Acceptance Verified; Strict Stop for Milestone 7.6.
 
 ---
 
@@ -162,9 +162,50 @@
 
 ---
 
-## 5. Strict Stop Boundary Enforced
+## 5. Authenticated Admin Route & Server-Side RBAC Acceptance Verification
+
+### ✅ Completed & Empirically Verified
+- [x] **Isolated Local PostgreSQL Test Accounts:**
+  - Dedicated test administrators provisioned exclusively in local database (`voidtech_test_concurrency` on `localhost:5432`):
+    - `SUPER_ADMIN`: `master.super@voidtech.test`
+    - `ADMIN`: `ops.admin@voidtech.test`
+    - `EDITOR`: `content.editor@voidtech.test`
+  - High-entropy mock passwords hashed via Scrypt with random 16-byte salt (`salt:derivedKey`).
+  - Zero modifications to production Neon PostgreSQL records.
+- [x] **Full 11-Operation RBAC Matrix Acceptance Test (`tests/integration/admin-rbac-acceptance.integration.test.ts` — 35 Tests):**
+  - All 11 operations verified across all 3 roles (33 role checks):
+    - `dashboard:view`: SUPER_ADMIN (OK), ADMIN (OK), EDITOR (OK).
+    - `admins:manage`: SUPER_ADMIN (OK), ADMIN (403), EDITOR (403).
+    - `audit_logs:view`: SUPER_ADMIN (OK), ADMIN (403), EDITOR (403).
+    - `settings:manage`: SUPER_ADMIN (OK), ADMIN (403), EDITOR (403).
+    - `enquiries:view`: SUPER_ADMIN (OK), ADMIN (OK), EDITOR (OK - Read Only).
+    - `enquiries:update_status`: SUPER_ADMIN (OK), ADMIN (OK), EDITOR (403).
+    - `enquiries:delete`: SUPER_ADMIN (OK), ADMIN (403), EDITOR (403).
+    - `services:manage`: SUPER_ADMIN (OK), ADMIN (OK), EDITOR (OK).
+    - `pricing:manage`: SUPER_ADMIN (OK), ADMIN (OK), EDITOR (403).
+    - `portfolio:manage`: SUPER_ADMIN (OK), ADMIN (OK), EDITOR (OK).
+    - `faqs:manage`: SUPER_ADMIN (OK), ADMIN (OK), EDITOR (OK).
+  - Verified rejected mutations leave database completely untouched and generate zero audit logs.
+  - Verified security regressions: Session revocation, 30-min idle timeout, 8-hr absolute lifetime, inactive admin rejection, CSRF/origin rejection, sole SUPER_ADMIN protection, exactly-one-SUPER_ADMIN invariant, credential scrubbing in `getAllAdmins`, and audit trail immutability.
+- [x] **Server Component Page-Level Gate Tests (`tests/unit/admin-authenticated-pages.test.tsx` — 20 Tests):**
+  - Mounts all 9 administrative page components under mocked `SUPER_ADMIN`, `ADMIN`, and `EDITOR` sessions.
+  - Confirms zero data leakage on 403 Forbidden states; unapproved queries never execute.
+- [x] **Playwright Authenticated Browser E2E Tests (`tests/e2e/admin-authenticated.spec.ts` — 60 Tests):**
+  - Verified across 3 viewports (`mobile-375`, `mobile-320`, `desktop`): 60/60 tests passed.
+  - Verified shared login portal at `/admin/login`: Generic rejection of invalid credentials, successful redirect to `/admin` upon valid SUPER_ADMIN authentication.
+  - Verified direct navigation with signed cookies for SUPER_ADMIN (all 9 pages accessible), ADMIN (restricted from users, audit-logs, settings with `<AdminAccessDenied />`), and EDITOR (restricted from pricing, users, audit-logs, settings; enquiries in Read-Only mode).
+- [x] **Empirical Quality Gates:**
+  - `tsc --noEmit`: 0 TypeScript compiler errors.
+  - `next lint`: 0 ESLint warnings or errors.
+  - `vitest run`: 21 test suites passed, 352/352 tests passed (100%).
+  - `playwright test`: 90/90 tests passed (100% across all viewports).
+  - `next build`: Clean compilation of all 24 static and dynamic routes.
+
+---
+
+## 6. Strict Stop Boundary Enforced
 - **Zero Real Remote Migrations:** Local migration scripts staged. Remote PostgreSQL database untouched.
 - **Zero Real Production Admin Accounts Created:** No production administrative credentials generated or stored.
 - **Zero Real Emails:** Real SMTP mocked in automated verification test suites.
 - **Zero Vercel Deployments:** No deployments.
-- **Strict Stop Condition:** Corrective 404 remediation complete. STRICTLY DO NOT START MILESTONE 7.6 without owner instruction.
+- **Strict Stop Condition:** Authenticated admin route & server-side RBAC acceptance testing complete. STRICTLY DO NOT START MILESTONE 7.6 without owner instruction.

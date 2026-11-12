@@ -17,6 +17,10 @@ export default defineConfig({
     url: "http://localhost:3000",
     reuseExistingServer: true,
     timeout: 120 * 1000,
+    env: {
+      DATABASE_URL: "postgresql://postgres:root@localhost:5432/voidtech_test_concurrency",
+      DIRECT_URL: "postgresql://postgres:root@localhost:5432/voidtech_test_concurrency",
+    },
   },
   projects: [
     {

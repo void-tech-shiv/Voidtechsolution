@@ -263,4 +263,56 @@ npm run build
      - Confirms zero 404 Not Found HTTP status responses or Next.js 404 page content across all 8 routes.
      - Verifies responsive admin portal layout with zero horizontal viewport overflow on narrow mobile screens (320px and 375px).
 
+---
+
+## 12. Authenticated Admin Route & Server-Side RBAC Acceptance Test Suite
+
+- **Test Files:**
+  - `tests/integration/admin-rbac-acceptance.integration.test.ts` (35 tests — Isolated PostgreSQL Integration)
+  - `tests/unit/admin-authenticated-pages.test.tsx` (20 tests — Page Component & RBAC Isolation Unit)
+  - `tests/e2e/admin-authenticated.spec.ts` (60 Playwright E2E tests across `mobile-375`, `mobile-320`, `desktop`)
+- **Total Project Tests:** **352 passing Vitest unit & integration tests across 21 test suites (100% pass rate) + 90 passing Playwright E2E tests (30 route-remediation + 60 authenticated RBAC)**.
+- **Coverage Areas:**
+  1. **Isolated Test Account Provisioning & Password Security:**
+     - Runs against dedicated local PostgreSQL instance (`voidtech_test_concurrency`).
+     - Generates isolated test accounts for `SUPER_ADMIN`, `ADMIN`, and `EDITOR`. Zero production accounts created or modified.
+     - Enforces Scrypt password hashing with cryptographically random 16-byte salt (`salt:derivedKey`). Confirms passwords are never stored in plain text or logged.
+     - Proves dual-layer session verification: opaque 256-bit raw token, SHA-256 token hash stored in PostgreSQL, and HMAC-signed session cookie (`vts_session`).
+  2. **Authoritative 11-Operation Server-Side RBAC Matrix Verification (33 Checks):**
+     - Full evaluation of all 11 operations across all 3 roles (`SUPER_ADMIN`, `ADMIN`, `EDITOR`):
+       - `dashboard:view`: Allowed for SUPER_ADMIN, ADMIN, EDITOR.
+       - `admins:manage`: Allowed strictly for SUPER_ADMIN; rejected with HTTP 403 for ADMIN and EDITOR.
+       - `audit_logs:view`: Allowed strictly for SUPER_ADMIN; rejected with HTTP 403 for ADMIN and EDITOR.
+       - `settings:manage`: Allowed strictly for SUPER_ADMIN; rejected with HTTP 403 for ADMIN and EDITOR.
+       - `enquiries:view`: Allowed for SUPER_ADMIN, ADMIN, EDITOR.
+       - `enquiries:update_status`: Allowed for SUPER_ADMIN and ADMIN; rejected with HTTP 403 for EDITOR.
+       - `enquiries:delete`: Allowed strictly for SUPER_ADMIN; rejected with HTTP 403 for ADMIN and EDITOR.
+       - `services:manage`: Allowed for SUPER_ADMIN, ADMIN, EDITOR.
+       - `pricing:manage`: Allowed for SUPER_ADMIN and ADMIN; rejected with HTTP 403 for EDITOR.
+       - `portfolio:manage`: Allowed for SUPER_ADMIN, ADMIN, EDITOR.
+       - `faqs:manage`: Allowed for SUPER_ADMIN, ADMIN, EDITOR.
+  3. **Direct Server Action Invocations & Zero-Leakage Invariants:**
+     - Verifies rejected mutations leave database records completely untouched and produce zero audit logs.
+     - Proves authorized mutations persist changes and atomically produce structured audit trail records attributing the authenticated actor.
+  4. **Security Regressions & Boundary Defenses:**
+     - **Session Revocation:** Revoking a session token immediately invalidates authentication.
+     - **Idle Timeout (30 min):** Sessions idle for > 30 minutes are rejected with `IDLE_TIMEOUT`.
+     - **Absolute Lifetime (8 hr):** Sessions older than 8 hours are rejected with `ABSOLUTE_TIMEOUT`.
+     - **Inactive Administrator Guard:** Deactivated accounts (`isActive: false`) are rejected with `USER_INACTIVE`.
+     - **Origin & CSRF Defense:** Cross-origin Server Action invocations without matching origin are rejected.
+     - **Sole SUPER_ADMIN Defense:** Self-modification, demotion, deactivation, or deletion of the master account rejected across all paths (`SelfModificationError`, `SoleSuperAdminProtectionError`).
+     - **Exactly-One-SUPER_ADMIN Invariant:** Secondary SUPER_ADMIN creation rejected via repository and action guards (`ExactlyOneSuperAdminError`).
+     - **Audit Trail Immutability:** Audit repository contains zero update/delete exports, preventing tampering.
+     - **Credential Scrubbing:** User repository `getAllAdmins` strictly strips `passwordHash` and `sessionToken`.
+  5. **Component-Level Page Mounting Tests (`tests/unit/admin-authenticated-pages.test.tsx`):**
+     - Mounts all 9 page server components under mocked `SUPER_ADMIN`, `ADMIN`, and `EDITOR` sessions.
+     - Confirms SUPER_ADMIN receives unrestricted access to all 9 pages without `<AdminAccessDenied />`.
+     - Confirms ADMIN is restricted from `/admin/users`, `/admin/audit-logs`, `/admin/settings`, rendering `<AdminAccessDenied />` with HTTP 403 Forbidden state and zero data leakage.
+     - Confirms EDITOR is restricted from `/admin/pricing`, `/admin/users`, `/admin/audit-logs`, `/admin/settings`, and renders `/admin/enquiries` in Read-Only mode.
+  6. **Playwright Authenticated Browser E2E Tests (`tests/e2e/admin-authenticated.spec.ts`):**
+     - 60 test cases across 3 viewports (`mobile-375`, `mobile-320`, `desktop`).
+     - Verifies interactive login flow at `/admin/login`, generic rejection of invalid credentials (`data-testid="auth-error-banner"`), and redirect to `/admin` upon successful authentication.
+     - Verifies direct authenticated navigation with signed session cookies across all 9 routes and all 3 roles, proving responsive layout, correct role badge displays, and server-side access denials.
+
+
 
