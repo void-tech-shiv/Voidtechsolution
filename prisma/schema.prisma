@@ -43,42 +43,42 @@ enum ServiceCategory {
 }
 
 model Enquiry {
-  id               String              @id @default(cuid())
+  id               String          @id @default(cuid())
   name             String
   email            String
   phone            String?
   companyName      String?
-  serviceCategory  ServiceCategory     @default(WEB_DEVELOPMENT)
+  serviceCategory  ServiceCategory @default(WEB_DEVELOPMENT)
   budgetRange      String?
   timeline         String?
-  message          String              @db.Text
+  message          String          @db.Text
   selectedPackage  String?
   additionalConfig Json?
   referenceUrl     String?
   consentGiven     Boolean?
-  status           EnquiryStatus       @default(NEW)
-  internalNotes    String?             @db.Text // Legacy note string preserved for backwards compatibility
+  status           EnquiryStatus   @default(NEW)
+  internalNotes    String?         @db.Text // Legacy note string preserved for backwards compatibility
 
   // CRM Extensions (Phase 9)
-  assignedAdminId  String?
-  assignedAdmin    AdminUser?          @relation("AdminAssignedLeads", fields: [assignedAdminId], references: [id], onDelete: SetNull)
-  estimatedValueInr Int?               // Confirmed commercial project value in INR
-  source           String              @default("WEBSITE_CONTACT_FORM")
-  lastContactedAt  DateTime?
-  nextFollowUpAt   DateTime?
-  lostReason       String?             // Documented rationale when lead enters LOST status
+  assignedAdminId   String?
+  assignedAdmin     AdminUser? @relation("AdminAssignedLeads", fields: [assignedAdminId], references: [id], onDelete: SetNull)
+  estimatedValueInr Int? // Confirmed commercial project value in INR
+  source            String     @default("WEBSITE_CONTACT_FORM")
+  lastContactedAt   DateTime?
+  nextFollowUpAt    DateTime?
+  lostReason        String? // Documented rationale when lead enters LOST status
 
   // CRM Relational Collections
-  notes            LeadNote[]
-  followUps        LeadFollowUp[]
-  activities       LeadActivity[]
-  assignments      LeadAssignment[]
-  notifications    AdminNotification[]
+  notes         LeadNote[]
+  followUps     LeadFollowUp[]
+  activities    LeadActivity[]
+  assignments   LeadAssignment[]
+  notifications AdminNotification[]
 
-  ipHash           String?
-  userAgent        String?
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
+  ipHash    String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([status])
   @@index([status, createdAt(sort: Desc)])
@@ -107,8 +107,14 @@ model Service {
   isFeatured       Boolean         @default(false)
   isActive         Boolean         @default(true)
   orderIndex       Int             @default(0)
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+
+  // CMS Integration (Phase 10)
+  contentItemId String?      @unique
+  contentItem   ContentItem? @relation(fields: [contentItemId], references: [id], onDelete: Restrict)
+  publishedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([category])
   @@index([isActive, orderIndex])
@@ -129,15 +135,21 @@ model PortfolioProject {
   solution    String   @db.Text
   results     String   @db.Text
   techStack   String[]
-  metrics     Json?    // e.g. [{"label": "Simulated Latency", "value": "< 2ms"}, {"label": "Benchmark Uptime", "value": "99.99%"}]
+  metrics     Json? // e.g. [{"label": "Simulated Latency", "value": "< 2ms"}, {"label": "Benchmark Uptime", "value": "99.99%"}]
   heroImage   String?
   liveUrl     String?
   githubUrl   String?
   projectType String   @default("CONCEPT") // "CONCEPT" | "INTERNAL_PROTOTYPE" | "PRODUCTION"
   isFeatured  Boolean  @default(false)
   orderIndex  Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+
+  // CMS Integration (Phase 10)
+  contentItemId String?      @unique
+  contentItem   ContentItem? @relation(fields: [contentItemId], references: [id], onDelete: Restrict)
+  publishedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([isFeatured, orderIndex])
   @@index([projectType])
@@ -167,8 +179,15 @@ model AdminUser {
   leadFollowUps   LeadFollowUp[]      @relation("AssignedFollowUps")
   leadAssignments LeadAssignment[]    @relation("AdminAssignments")
   notifications   AdminNotification[] @relation("RecipientNotifications")
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+
+  // CMS Relations (Phase 10)
+  publishedContentItems ContentItem[]     @relation("ContentItemPublisher")
+  authoredRevisions     ContentRevision[] @relation("RevisionAuthor")
+  verifiedTestimonials  Testimonial[]     @relation("TestimonialVerifier")
+  uploadedMedia         MediaAsset[]      @relation("MediaUploader")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("admin_users")
 }
@@ -200,13 +219,19 @@ model PricingPackage {
   priceInr        Int
   currency        String          @default("INR")
   isStartingPrice Boolean         @default(true)
-  billingPeriod   String?         // "one-time" | "starting" | "monthly"
+  billingPeriod   String? // "one-time" | "starting" | "monthly"
   features        String[]
   popular         Boolean         @default(false)
   orderIndex      Int             @default(0)
   isActive        Boolean         @default(true)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+
+  // CMS Integration (Phase 10)
+  contentItemId String?      @unique
+  contentItem   ContentItem? @relation(fields: [contentItemId], references: [id], onDelete: Restrict)
+  publishedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([isActive, orderIndex])
   @@index([category])
@@ -217,14 +242,20 @@ model PricingPackage {
 // 6. FREQUENTLY ASKED QUESTIONS (FAQ)
 // ------------------------------------------------------------------------------
 model FAQ {
-  id         String   @id @default(cuid())
+  id         String  @id @default(cuid())
   question   String
-  answer     String   @db.Text
-  category   String   @default("GENERAL")
-  orderIndex Int      @default(0)
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  answer     String  @db.Text
+  category   String  @default("GENERAL")
+  orderIndex Int     @default(0)
+  isActive   Boolean @default(true)
+
+  // CMS Integration (Phase 10)
+  contentItemId String?      @unique
+  contentItem   ContentItem? @relation(fields: [contentItemId], references: [id], onDelete: Restrict)
+  publishedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([category])
   @@index([isActive, orderIndex])
@@ -249,8 +280,8 @@ model SiteSetting {
 // ------------------------------------------------------------------------------
 model AuditLog {
   id         String   @id @default(cuid())
-  action     String   // e.g. "USER_LOGIN", "ENQUIRY_STATUS_UPDATE", "SETTINGS_CHANGE", "PASSWORD_RESET"
-  entity     String   // e.g. "AdminUser", "Enquiry", "SiteSetting", "PricingPackage"
+  action     String // e.g. "USER_LOGIN", "ENQUIRY_STATUS_UPDATE", "SETTINGS_CHANGE", "PASSWORD_RESET"
+  entity     String // e.g. "AdminUser", "Enquiry", "SiteSetting", "PricingPackage"
   entityId   String?
   actorId    String?
   actorEmail String?
@@ -278,8 +309,8 @@ enum OtpPurpose {
 
 model OtpVerification {
   id                String     @id @default(cuid())
-  identifier        String     // e.g. Email or phone number
-  codeHash          String     // Cryptographic SHA-256 hash of OTP code + salt
+  identifier        String // e.g. Email or phone number
+  codeHash          String // Cryptographic SHA-256 hash of OTP code + salt
   purpose           OtpPurpose @default(LOGIN)
   expiresAt         DateTime
   attempts          Int        @default(0)
@@ -309,7 +340,7 @@ model EmailDelivery {
   id                String              @id @default(cuid())
   recipient         String
   subject           String
-  template          String              // e.g. "OTP_VERIFICATION", "PASSWORD_RESET", "ENQUIRY_CONFIRMATION"
+  template          String // e.g. "OTP_VERIFICATION", "PASSWORD_RESET", "ENQUIRY_CONFIRMATION"
   status            EmailDeliveryStatus @default(PENDING)
   providerMessageId String?
   failureCode       String?
@@ -373,11 +404,11 @@ model LeadActivity {
   id          String   @id @default(cuid())
   enquiryId   String
   enquiry     Enquiry  @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
-  type        String   // "STATUS_CHANGE" | "ASSIGNMENT" | "NOTE_ADDED" | "FOLLOWUP_CREATED" | "FOLLOWUP_COMPLETED"
+  type        String // "STATUS_CHANGE" | "ASSIGNMENT" | "NOTE_ADDED" | "FOLLOWUP_CREATED" | "FOLLOWUP_COMPLETED"
   description String
   actorId     String?
   actorName   String?
-  metadata    Json?    // e.g. { from: "NEW", to: "QUALIFIED" }
+  metadata    Json? // e.g. { from: "NEW", to: "QUALIFIED" }
   createdAt   DateTime @default(now())
 
   @@index([enquiryId, createdAt(sort: Desc)])
@@ -386,16 +417,16 @@ model LeadActivity {
 }
 
 model LeadAssignment {
-  id             String     @id @default(cuid())
+  id             String    @id @default(cuid())
   enquiryId      String
-  enquiry        Enquiry    @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  enquiry        Enquiry   @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
   adminId        String
-  admin          AdminUser  @relation("AdminAssignments", fields: [adminId], references: [id], onDelete: Cascade)
+  admin          AdminUser @relation("AdminAssignments", fields: [adminId], references: [id], onDelete: Cascade)
   assignedById   String?
   assignedByName String?
-  assignedAt     DateTime   @default(now())
+  assignedAt     DateTime  @default(now())
   unassignedAt   DateTime?
-  isActive       Boolean    @default(true)
+  isActive       Boolean   @default(true)
   notes          String?
 
   @@index([enquiryId, isActive])
@@ -404,19 +435,202 @@ model LeadAssignment {
 }
 
 model AdminNotification {
-  id          String     @id @default(cuid())
+  id          String    @id @default(cuid())
   recipientId String
-  recipient   AdminUser  @relation("RecipientNotifications", fields: [recipientId], references: [id], onDelete: Cascade)
+  recipient   AdminUser @relation("RecipientNotifications", fields: [recipientId], references: [id], onDelete: Cascade)
   enquiryId   String?
-  enquiry     Enquiry?   @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
-  type        String     // "NEW_LEAD" | "LEAD_ASSIGNED" | "STATUS_CHANGED" | "FOLLOWUP_DUE" | "LEAD_WON"
+  enquiry     Enquiry?  @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  type        String // "NEW_LEAD" | "LEAD_ASSIGNED" | "STATUS_CHANGED" | "FOLLOWUP_DUE" | "LEAD_WON"
   title       String
   message     String
-  isRead      Boolean    @default(false)
+  isRead      Boolean   @default(false)
   readAt      DateTime?
-  createdAt   DateTime   @default(now())
+  createdAt   DateTime  @default(now())
 
   @@index([recipientId, isRead, createdAt(sort: Desc)])
   @@index([enquiryId])
   @@map("admin_notifications")
+}
+
+// ------------------------------------------------------------------------------
+// 12. CMS HEADLESS CONTENT ENGINE & VERSIONING (Phase 10)
+// ------------------------------------------------------------------------------
+
+enum ContentType {
+  SERVICE
+  PRICING_PACKAGE
+  PORTFOLIO_PROJECT
+  FAQ
+  PAGE_SECTION
+  TESTIMONIAL
+}
+
+enum ContentPublicationStatus {
+  DRAFT
+  REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum RevisionLifecycleStatus {
+  WORKING_DRAFT
+  PENDING_REVIEW
+  APPROVED
+  PUBLISHED_SNAPSHOT
+  SUPERSEDED
+  REJECTED
+}
+
+enum TestimonialVerificationStatus {
+  UNVERIFIED
+  VERIFIED
+  REJECTED
+}
+
+enum ClientConsentStatus {
+  PENDING
+  GRANTED
+  REVOKED
+}
+
+enum StorageProviderType {
+  LOCAL
+  R2
+}
+
+model ContentItem {
+  id                         String                   @id @default(cuid())
+  slug                       String                   @unique
+  contentType                ContentType
+  version                    Int                      @default(1)
+  publicationStatus          ContentPublicationStatus @default(DRAFT)
+  currentPublishedRevisionId String?                  @unique
+  currentWorkingRevisionId   String?                  @unique
+  publishedAt                DateTime?
+  publishedById              String?
+  publisher                  AdminUser?               @relation("ContentItemPublisher", fields: [publishedById], references: [id], onDelete: SetNull)
+  createdAt                  DateTime                 @default(now())
+  updatedAt                  DateTime                 @updatedAt
+
+  // Dual Revision Pointers (Safeguard 1)
+  currentPublishedRevision ContentRevision? @relation("PublishedRevision", fields: [currentPublishedRevisionId], references: [id], onDelete: SetNull)
+  currentWorkingRevision   ContentRevision? @relation("WorkingRevision", fields: [currentWorkingRevisionId], references: [id], onDelete: SetNull)
+
+  // Append-Only Revision History
+  revisions ContentRevision[] @relation("ContentItemRevisions")
+
+  // Materialized 1-to-1 Domain Snapshots (Approach C)
+  service          Service?
+  pricingPackage   PricingPackage?
+  portfolioProject PortfolioProject?
+  faq              FAQ?
+  pageSection      PageSection?
+  testimonial      Testimonial?
+
+  @@index([contentType, publicationStatus])
+  @@index([slug])
+  @@map("content_items")
+}
+
+model ContentRevision {
+  id                  String                  @id @default(cuid())
+  contentItemId       String
+  contentItem         ContentItem             @relation("ContentItemRevisions", fields: [contentItemId], references: [id], onDelete: Cascade)
+  versionNumber       Int
+  revisionStatus      RevisionLifecycleStatus @default(WORKING_DRAFT)
+  isPublishedSnapshot Boolean                 @default(false)
+  title               String
+  snapshotData        Json
+  authorId            String?
+  author              AdminUser?              @relation("RevisionAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  authorName          String
+  changeSummary       String?
+  rejectionNote       String?
+  createdAt           DateTime                @default(now())
+
+  // Inverse Relations for ContentItem Dual Pointers
+  publishedInContentItem ContentItem? @relation("PublishedRevision")
+  workingInContentItem   ContentItem? @relation("WorkingRevision")
+
+  @@unique([contentItemId, versionNumber])
+  @@index([contentItemId, revisionStatus])
+  @@index([contentItemId, isPublishedSnapshot])
+  @@index([authorId])
+  @@map("content_revisions")
+}
+
+model PageSection {
+  id            String       @id @default(cuid())
+  contentItemId String?      @unique
+  contentItem   ContentItem? @relation(fields: [contentItemId], references: [id], onDelete: Restrict)
+  key           String       @unique
+  pageSlug      String
+  title         String
+  subtitle      String?
+  content       String       @db.Text
+  metadata      Json?
+  mediaUrl      String?
+  isActive      Boolean      @default(true)
+  orderIndex    Int          @default(0)
+  publishedAt   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([pageSlug, isActive, orderIndex])
+  @@map("page_sections")
+}
+
+model Testimonial {
+  id                      String                        @id @default(cuid())
+  contentItemId           String?                       @unique
+  contentItem             ContentItem?                  @relation(fields: [contentItemId], references: [id], onDelete: Restrict)
+  clientName              String
+  clientRole              String
+  clientCompany           String
+  content                 String                        @db.Text
+  rating                  Int                           @default(5)
+  avatarUrl               String?
+  projectSlug             String?
+  verificationStatus      TestimonialVerificationStatus @default(UNVERIFIED)
+  verifiedById            String?
+  verifiedBy              AdminUser?                    @relation("TestimonialVerifier", fields: [verifiedById], references: [id], onDelete: SetNull)
+  verifiedAt              DateTime?
+  clientConsentStatus     ClientConsentStatus           @default(PENDING)
+  clientConsentRecordedAt DateTime?
+  consentEvidenceUrl      String?                       @db.Text
+  orderIndex              Int                           @default(0)
+  isActive                Boolean                       @default(true)
+  publishedAt             DateTime?
+  createdAt               DateTime                      @default(now())
+  updatedAt               DateTime                      @updatedAt
+
+  @@index([verificationStatus, clientConsentStatus, isActive])
+  @@index([orderIndex])
+  @@map("testimonials")
+}
+
+model MediaAsset {
+  id             String              @id @default(cuid())
+  storageKey     String              @unique
+  provider       StorageProviderType @default(LOCAL)
+  filename       String
+  originalName   String
+  mimeType       String
+  sizeBytes      Int
+  width          Int?
+  height         Int?
+  sha256Hash     String
+  isSvg          Boolean             @default(false)
+  publicUrl      String
+  defaultAltText String
+  caption        String?
+  uploaderId     String?
+  uploader       AdminUser?          @relation("MediaUploader", fields: [uploaderId], references: [id], onDelete: SetNull)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([sha256Hash])
+  @@index([provider, storageKey])
+  @@index([uploaderId])
+  @@map("media_assets")
 }

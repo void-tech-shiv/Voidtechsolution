@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.3] — 2026-11-13
+### Phase 10.1: Task 10.1.1 — Prisma Schema Additions & Relations
+
+#### Added
+- **Prisma Schema Additions & Relations Implementation Report (`docs/phases/PHASE_10_1_1_SCHEMA_IMPLEMENTATION_REPORT.md`):**
+  - Completed Task 10.1.1 implementing the approved Approach C data architecture in `prisma/schema.prisma`.
+  - Added six new enums: `ContentType`, `ContentPublicationStatus`, `RevisionLifecycleStatus`, `TestimonialVerificationStatus`, `ClientConsentStatus`, and `StorageProviderType`.
+  - Added five new models: `ContentItem` (with dual pointers `currentPublishedRevisionId` and `currentWorkingRevisionId`), `ContentRevision` (append-only history with `@@unique([contentItemId, versionNumber])`), `PageSection` (editorial landing page narrative), `Testimonial` (with decoupled verification and consent state fields), and `MediaAsset` (digital asset registry with provider and SHA-256 coordinates).
+  - Integrated 1-to-1 canonical relations on existing domain models: `Service`, `PricingPackage`, `PortfolioProject`, and `FAQ` with `contentItemId String? @unique` (`onDelete: Restrict`) and `publishedAt DateTime?`.
+  - Added inverse audit relations to `AdminUser`: `publishedContentItems`, `authoredRevisions`, `verifiedTestimonials`, and `uploadedMedia`.
+  - Validated schema using `npx prisma format` (28ms) and `npx prisma validate` with 0 errors. Zero migrations generated or applied.
+
+---
+
 ## [0.10.2] — 2026-11-13
 ### Phase 10.0.2: Final CMS Implementation Safeguards
 

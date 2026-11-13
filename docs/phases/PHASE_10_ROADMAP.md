@@ -53,15 +53,15 @@ flowchart LR
 
 ---
 
-### Phase 10.1: CMS Database Schema & Content Repositories (PENDING OWNER AUTHORIZATION)
+### Phase 10.1: CMS Database Schema & Content Repositories (IN PROGRESS — TASK 10.1.1 COMPLETE)
 - **Objective:** Establish the persistent database, domain models, storage abstraction, and repository foundation for all CMS content models using Approach C and the Phase 10.0.2 safeguards.
-- **Execution Boundary:** This milestone begins ONLY after explicit owner authorization.
+- **Execution Boundary:** Task 10.1.1 is complete. Task 10.1.2 requires separate owner authorization.
 
 #### Detailed 12-Task Implementation Plan:
 
 | Task ID | Task Title & Scope | Dependencies & Prerequisites | Acceptance Criteria |
 | :--- | :--- | :--- | :--- |
-| **Task 10.1.1** | **Prisma Schema Additions & Relations**<br/>Define `ContentType`, `ContentPublicationStatus`, `RevisionLifecycleStatus`, `TestimonialVerificationStatus`, `ClientConsentStatus`, `StorageProviderType` enums. Add `ContentItem` (with dual pointers), `ContentRevision`, `Testimonial`, and `MediaAsset` models. Add relation links to `Service`, `PricingPackage`, `PortfolioProject`, `PageSection`, `FAQ`. | None (Schema Authoring) | `npx prisma validate` passes with 0 errors. All models conform exactly to `CMS_DATABASE_DESIGN.md`. |
+| **Task 10.1.1** | **Prisma Schema Additions & Relations**<br/>Define `ContentType`, `ContentPublicationStatus`, `RevisionLifecycleStatus`, `TestimonialVerificationStatus`, `ClientConsentStatus`, `StorageProviderType` enums. Add `ContentItem` (with dual pointers), `ContentRevision`, `Testimonial`, and `MediaAsset` models. Add relation links to `Service`, `PricingPackage`, `PortfolioProject`, `PageSection`, `FAQ`. | None (Schema Authoring) | ✅ **COMPLETE & VALIDATED**: Formatted & validated with `npx prisma validate` (0 errors). Zero migrations generated. |
 | **Task 10.1.2** | **PostgreSQL Migration Generation & Verification**<br/>Generate migration `20261114000000_admin_cms_foundation`. Include PostgreSQL trigger `verify_revision_ownership()`. Apply to development/test databases. Author reversible down-migration script. | Task 10.1.1 | Migration applies cleanly to PostgreSQL without data loss. Reversible script verified. |
 | **Task 10.1.3** | **Prisma Client Generation & Type Export**<br/>Execute `prisma generate` to produce updated client types. Export shared TypeScript models and DTO interfaces in `@/types/cms`. | Task 10.1.2 | `npm run typecheck` passes with 0 errors. All new models accessible via `@prisma/client`. |
 | **Task 10.1.4** | **Base Zod Validation Schemas**<br/>Implement Zod schemas in `@/lib/validations/cms.ts` for all content types: `serviceSchema`, `pricingPackageSchema`, `portfolioProjectSchema`, `testimonialSchema`, `pageSectionSchema`, `faqSchema`, `mediaAssetSchema`. | Task 10.1.3 | Comprehensive unit tests pass (Tier 1: 35+ assertions). Validates length, slug regex, positive pricing, and sanitized inputs. |
