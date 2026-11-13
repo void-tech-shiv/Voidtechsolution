@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.9] — 2026-11-13
+### Phase 10.1: Task 10.1.5 — ContentItem & ContentRevision Repository Implementation
+
+#### Added
+- **CMS Repository Error Taxonomy (`src/server/repositories/cms/cms-repository.errors.ts`):**
+  - Unified error hierarchy inheriting from `CmsRepositoryError`.
+  - Implemented `ContentItemNotFoundError`, `ContentRevisionNotFoundError`, `SlugAlreadyExistsError`, `ConcurrencyConflictError`, `RevisionOwnershipMismatchError`, `ImmutableRevisionError`, and `InvalidRevisionStateError`.
+- **ContentItem Repository (`src/server/repositories/cms/content-item.repo.ts`):**
+  - Implemented `createContentItem`: Creates canonical item in initial DRAFT status with version 1 and null pointers; maps `P2002` duplicate slugs to `SlugAlreadyExistsError`.
+  - Implemented `getContentItemById`, `getContentItemBySlug`, `getContentItemByIdWithPointers`, `getContentItemBySlugWithPointers`, `getContentItemByIdWithRevisions`.
+  - Implemented `listContentItems`: Deterministic filtering (contentType, publicationStatus, search), pagination, and allowlisted sorting.
+  - Implemented `updateContentItemMetadata`: Atomic OCC update (`version: expectedVersion`, `version: { increment: 1 }`), preventing lifecycle bypass and throwing `ConcurrencyConflictError` on version mismatch.
+  - Implemented `deleteContentItem`.
+- **ContentRevision Repository (`src/server/repositories/cms/content-revision.repo.ts`):**
+  - Implemented `createWorkingRevision`: Transactional creation enforcing parent item existence, monotonic version increments (`max + 1`), working draft status, working pointer auto-update, safe draft retention pruning, and `P2002` concurrency conflict mapping.
+  - Implemented `getRevisionById`: Enforces parent `contentItemId` ownership check and throws `RevisionOwnershipMismatchError` on cross-item access.
+  - Implemented `listRevisionsByContentItem`: Deterministic pagination and status/snapshot filtering.
+  - Implemented `updateWorkingRevision`: Proactively enforces immutability for published snapshots (`isPublishedSnapshot === true`), active published pointer revisions (`currentPublishedRevisionId`), and finalized states (`APPROVED`, `PUBLISHED_SNAPSHOT`, `SUPERSEDED`). Auto-resets `REJECTED` revisions to `WORKING_DRAFT` upon editing.
+  - Implemented `pruneWorkingDraftRevisions`: Safe draft pruning algorithm retaining the 20 most recent working drafts, permanently protecting published snapshots, active published pointers, and working pointers.
+- **Repository Exports & Unit Test Suite:**
+  - Re-exported CMS repositories in `src/server/repositories/cms/index.ts` and `src/server/repositories/index.ts`.
+  - Created 3 test files with 47 unit tests in `tests/unit/cms-repositories/`: 100% pass rate.
+  - Full Vitest suite passing with zero regressions: 625/625 tests passing across 41 test files.
+  - Clean production build (33/33 routes), typecheck (0 errors), lint (0 errors), whitespace check (`git diff --check` passed cleanly).
+  - Strict database safety: zero operations performed on production Neon (100% untouched).
+
+---
+
 ## [0.10.8] — 2026-11-13
 ### Phase 10.1: Task 10.1.4.1 — CMS Validation Security Closure Audit
 

@@ -1,33 +1,34 @@
 ---
-updated: 2026-11-13T21:58:00+05:30
+updated: 2026-11-13T22:15:00+05:30
 ---
 
 # Project State — VOIDTECH SOLUTION
 
 ## Current Position
 
-**Milestone:** 10.1 — CMS Database Schema & Content Repositories (Task 10.1.4.1 COMPLETE)
+**Milestone:** 10.1 — CMS Database Schema & Content Repositories (Task 10.1.5 COMPLETE)
 **Phase:** 10 — Admin CMS
-**Status:** active (Phase 10.1 In Progress: Task 10.1.4.1 — CMS Validation Security Closure Audit complete. Closed lifecycle bypass on generic ContentItem updates, made OCC expectedVersion mandatory, enforced testimonial verification invariant [VERIFIED => GRANTED], applied .strict() mode across all CMS object schemas to reject injected internal fields, added 23 new regression tests [110 total CMS validation tests, 578/578 full Vitest suite passing, 0 typecheck errors, 0 lint errors, 33/33 Next.js routes built cleanly]. Production Neon completely untouched and isolated)
+**Status:** active (Phase 10.1 In Progress: Task 10.1.5 — ContentItem & ContentRevision Repository Implementation complete. Implemented ContentItem and ContentRevision repositories with atomic OCC versioning, monotonic revision incrementing, draft pointer auto-updates, published snapshot immutability protection, and draft retention pruning [retains 20 working drafts while protecting published and pointer targets]; added 47 new unit tests in tests/unit/cms-repositories/; full Vitest suite passing 625/625 tests across 41 test files; 0 typecheck errors, 0 lint errors, 33/33 Next.js routes built cleanly. Production Neon completely untouched and isolated)
 **Visual Reference:** SmartStruct Cybernetic Layout + Official Purple/Violet Brand Identity  
 
 ## Last Action
 
-- Executed Task 10.1.4.1 — CMS Validation Security Closure Audit:
-  - Authored implementation report: `docs/phases/PHASE_10_1_4_1_SECURITY_CLOSURE_REPORT.md`.
-  - Audited and updated `src/validations/cms/content-item.schema.ts`: removed `publicationStatus` from `updateContentItemSchema` to prevent lifecycle bypass; made `expectedVersion` mandatory with 32-bit bound; constrained `createContentItemSchema` to only accept `DRAFT`; enforced `.strict()`.
-  - Audited and updated `src/validations/cms/testimonial.schema.ts`: enforced invariant that `VERIFIED` requires `GRANTED` consent; rejected `PENDING` and `REVOKED` verification; corrected enum error text to `UNVERIFIED, VERIFIED, REJECTED`; enforced `.strict()`.
-  - Audited and updated `src/validations/cms/content-revision.schema.ts`, `src/validations/cms/page-section.schema.ts`, `src/validations/cms/media-asset.schema.ts`, and `src/validations/cms/publication.schema.ts`: enforced `.strict()` across all schemas to reject client-injected internal/server-managed fields.
-  - Added 23 new security regression unit tests in `tests/unit/cms-validation/` (total 110 tests, 100% passing).
-  - Verified full test regression: 578/578 Vitest tests pass across 38 test files.
+- Executed Task 10.1.5 — ContentItem & ContentRevision Repository Implementation:
+  - Authored implementation report: `docs/phases/PHASE_10_1_5_CONTENT_REPOSITORIES_REPORT.md`.
+  - Created `src/server/repositories/cms/cms-repository.errors.ts` establishing unified error hierarchy: `CmsRepositoryError`, `ContentItemNotFoundError`, `ContentRevisionNotFoundError`, `SlugAlreadyExistsError`, `ConcurrencyConflictError`, `RevisionOwnershipMismatchError`, `ImmutableRevisionError`, and `InvalidRevisionStateError`.
+  - Created `src/server/repositories/cms/content-item.repo.ts`: initial DRAFT status and version 1, P2002 slug mapping, dual pointer queries, full revision history queries, paginated/filtered listing, atomic OCC update (`version: expectedVersion`), and deletion.
+  - Created `src/server/repositories/cms/content-revision.repo.ts`: transactional creation with monotonic versioning, working pointer update, published immutability protection, cross-item ownership validation, and safe draft retention pruning.
+  - Re-exported repositories in `src/server/repositories/cms/index.ts` and `src/server/repositories/index.ts`.
+  - Created 3 test files with 47 unit tests in `tests/unit/cms-repositories/`: 100% pass rate.
+  - Verified full test regression: 625/625 Vitest tests pass across 41 test files.
   - Verified compilation: `npm run typecheck` (0 errors), `npm run lint` (0 errors/warnings), `next build` (33/33 production routes).
   - Verified git whitespace: `git diff --check` passed cleanly.
   - Maintained strict database safety: production Neon was never accessed, contacted, migrated, or modified.
 
 ## Next Steps
 
-1. Present Task 10.1.4.1 Final Acceptance Report to Owner.
-2. Await Owner Authorization before beginning Task 10.1.5 (ContentItem & ContentRevision Repository).
+1. Present Task 10.1.5 Final Acceptance Report to Owner.
+2. Await Owner Authorization before beginning Task 10.1.6 (9-Step Atomic Publishing Transaction Engine).
 
 ## Active Decisions
 

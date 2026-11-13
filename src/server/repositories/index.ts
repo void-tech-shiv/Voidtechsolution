@@ -12,3 +12,6 @@ export * as LeadFollowUpsRepo from "./lead-followups.repo";
 export * as LeadActivitiesRepo from "./lead-activities.repo";
 export * as LeadAssignmentsRepo from "./lead-assignments.repo";
 export * as NotificationsRepo from "./notifications.repo";
+export * as CmsContentItemRepo from "./cms/content-item.repo";
+export * as CmsContentRevisionRepo from "./cms/content-revision.repo";
+export * as CmsRepoErrors from "./cms/cms-repository.errors";
