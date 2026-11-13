@@ -32,6 +32,16 @@ describe("CMS Validation — Publication Workflow Schemas", () => {
         })
       ).toThrow();
     });
+
+    it("STRICT MODE: Rejects attempts to pass unauthorized state fields", () => {
+      expect(() =>
+        submitForReviewSchema.parse({
+          contentItemId,
+          revisionId,
+          revisionStatus: "APPROVED",
+        })
+      ).toThrow(/unrecognized_keys/);
+    });
   });
 
   describe("approveRevisionSchema", () => {
@@ -44,6 +54,16 @@ describe("CMS Validation — Publication Workflow Schemas", () => {
       expect(res.approvalNotes).toBe(
         "LGTM. All SEO requirements and tags satisfied."
       );
+    });
+
+    it("STRICT MODE: Rejects attempts to inject internal reviewer ID", () => {
+      expect(() =>
+        approveRevisionSchema.parse({
+          contentItemId,
+          revisionId,
+          reviewerId: "usr_attacker",
+        })
+      ).toThrow(/unrecognized_keys/);
     });
   });
 
@@ -79,7 +99,7 @@ describe("CMS Validation — Publication Workflow Schemas", () => {
     });
   });
 
-  describe("publishRevisionSchema (OCC Enforcement)", () => {
+  describe("publishRevisionSchema (OCC Enforcement & Pointers Isolation)", () => {
     it("validates publication with mandatory expectedVersion for Optimistic Concurrency Control", () => {
       const res = publishRevisionSchema.parse({
         contentItemId,
@@ -109,6 +129,30 @@ describe("CMS Validation — Publication Workflow Schemas", () => {
           expectedVersion: 0,
         })
       ).toThrow("Version must be greater than 0");
+    });
+
+    it("rejects expectedVersion exceeding 32-bit integer limit", () => {
+      expect(() =>
+        publishRevisionSchema.parse({
+          contentItemId,
+          revisionId,
+          expectedVersion: 2147483648,
+        })
+      ).toThrow("Version exceeds maximum 32-bit integer boundary");
+    });
+
+    it("STRICT MODE: Rejects attempts to inject publishedById, publishedAt, or revision pointers", () => {
+      const injectionAttempt = {
+        contentItemId,
+        revisionId,
+        expectedVersion: 1,
+        publishedById: "usr_attacker",
+        publishedAt: new Date().toISOString(),
+        currentPublishedRevisionId: revisionId,
+      };
+      expect(() => publishRevisionSchema.parse(injectionAttempt)).toThrow(
+        /unrecognized_keys/
+      );
     });
   });
 
@@ -145,6 +189,16 @@ describe("CMS Validation — Publication Workflow Schemas", () => {
           contentItemId,
         })
       ).toThrow("expectedVersion is required for OCC verification");
+    });
+
+    it("STRICT MODE: Rejects injected archival metadata", () => {
+      expect(() =>
+        archiveContentSchema.parse({
+          contentItemId,
+          expectedVersion: 1,
+          archivedById: "usr_attacker",
+        })
+      ).toThrow(/unrecognized_keys/);
     });
   });
 });

@@ -18,7 +18,7 @@ import {
  * Used for public-facing client submission forms.
  * SECURITY: Administrative fields (verificationStatus, clientConsentStatus,
  * verifiedById, verifiedAt, isActive, contentItemId) are strictly omitted
- * and strict() mode is enforced to reject any attempted tampering.
+ * and strict() mode is enforced to reject any attempted privilege tampering.
  */
 export const publicTestimonialSubmissionSchema = z
   .object({
@@ -65,9 +65,14 @@ export type PublicTestimonialSubmissionInput = z.infer<
 
 /**
  * Admin Testimonial Moderation & Update Schema
- * 
+ *
  * Used by authenticated CMS administrators to moderate, verify, update,
  * and publish testimonials.
+ *
+ * SECURITY RULES:
+ * - strict() mode rejects unexpected or internal fields (e.g. verifiedById, verifiedAt).
+ * - A testimonial CANNOT be verified unless clientConsentStatus is explicitly GRANTED.
+ * - PENDING or REVOKED consent status strictly blocks verification.
  */
 export const adminUpdateTestimonialSchema = z
   .object({
@@ -113,7 +118,7 @@ export const adminUpdateTestimonialSchema = z
     verificationStatus: z
       .nativeEnum(TestimonialVerificationStatus, {
         errorMap: () => ({
-          message: "Invalid verificationStatus. Must be PENDING, VERIFIED, or REJECTED",
+          message: "Invalid verificationStatus. Must be UNVERIFIED, VERIFIED, or REJECTED",
         }),
       })
       .optional(),
@@ -126,20 +131,19 @@ export const adminUpdateTestimonialSchema = z
       .optional(),
     consentEvidenceUrl: optionalHttpUrlSchema.nullable().optional(),
   })
+  .strict()
   .refine(
     (data) => {
-      // Business rule: Cannot verify a testimonial if client consent is revoked
-      if (
-        data.verificationStatus === TestimonialVerificationStatus.VERIFIED &&
-        data.clientConsentStatus === ClientConsentStatus.REVOKED
-      ) {
-        return false;
+      // Business Invariant: A testimonial cannot be VERIFIED unless clientConsentStatus is explicitly GRANTED.
+      // PENDING and REVOKED consent strictly forbid verification.
+      if (data.verificationStatus === TestimonialVerificationStatus.VERIFIED) {
+        return data.clientConsentStatus === ClientConsentStatus.GRANTED;
       }
       return true;
     },
     {
       message:
-        "Cannot set verification status to VERIFIED when client consent status is REVOKED",
+        "Cannot set verification status to VERIFIED unless client consent status is explicitly GRANTED",
       path: ["clientConsentStatus"],
     }
   );

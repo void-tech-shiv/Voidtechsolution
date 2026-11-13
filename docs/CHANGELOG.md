@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.8] — 2026-11-13
+### Phase 10.1: Task 10.1.4.1 — CMS Validation Security Closure Audit
+
+#### Added
+- **CMS Validation Security Closure Audit Report (`docs/phases/PHASE_10_1_4_1_SECURITY_CLOSURE_REPORT.md`):**
+  - Audited CMS Zod validation schemas for lifecycle bypass, testimonial consent enforcement, unknown-key handling, and publication boundaries.
+  - Closed lifecycle bypass vulnerability in `updateContentItemSchema`: completely removed `publicationStatus` so generic updates cannot bypass the 9-step atomic publishing transaction, revision checks, or archival workflows.
+  - Made `expectedVersion` mandatory on generic updates and bounded to 32-bit integer limit (`2147483647`) to prevent integer overflow and concurrency lost updates.
+  - Constrained `createContentItemSchema` to only accept `DRAFT` status, blocking direct creation as `PUBLISHED` or `ARCHIVED`.
+  - Enforced testimonial verification invariant in `adminUpdateTestimonialSchema`: `VERIFIED` strictly implies `GRANTED` consent; both `PENDING` and `REVOKED` consent (or omitted consent) strictly reject verification. Corrected enum error messaging to `UNVERIFIED, VERIFIED, REJECTED`.
+  - Enforced `.strict()` mode across all CMS object schemas (`createContentItemSchema`, `updateContentItemSchema`, `createWorkingRevisionSchema`, `updateWorkingRevisionSchema`, `createPageSectionSchema`, `updatePageSectionSchema`, `createMediaMetadataSchema`, `updateMediaMetadataSchema`, `submitForReviewSchema`, `approveRevisionSchema`, `rejectRevisionSchema`, `publishRevisionSchema`, `archiveContentSchema`, `restoreContentSchema`) to reject client-injected internal or server-managed fields.
+  - Added 23 new security regression unit tests in `tests/unit/cms-validation/` (total CMS validation tests increased from 87 to 110, 100% passing).
+  - Verified full test suite (578/578 Vitest tests passing across 38 suites).
+  - Maintained zero database operations: production Neon was never accessed, contacted, migrated, or modified.
+
+---
+
 ## [0.10.7] — 2026-11-13
 ### Phase 10.1: Task 10.1.4 — Base Zod Validation Schemas
 

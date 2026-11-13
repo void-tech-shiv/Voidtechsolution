@@ -68,6 +68,20 @@ describe("CMS Validation — ContentRevision Schemas", () => {
         createWorkingRevisionSchema.parse(maliciousPayload)
       ).toThrow("Illegal object key: __proto__");
     });
+
+    it("STRICT MODE: Rejects attempts to inject server-managed fields on creation", () => {
+      const injectedPayload = {
+        contentItemId: "clh7xyz120000abc123456789",
+        title: "Injected Revision",
+        snapshotData: { key: "value" },
+        isPublishedSnapshot: true,
+        versionNumber: 10,
+        authorId: "usr_attacker",
+      };
+      expect(() =>
+        createWorkingRevisionSchema.parse(injectedPayload)
+      ).toThrow(/unrecognized_keys/);
+    });
   });
 
   describe("updateWorkingRevisionSchema", () => {
@@ -90,6 +104,22 @@ describe("CMS Validation — ContentRevision Schemas", () => {
           title: "New Title",
         })
       ).toThrow();
+    });
+
+    it("STRICT MODE: Rejects attempts to reassign contentItemId or mutate versionNumber", () => {
+      expect(() =>
+        updateWorkingRevisionSchema.parse({
+          id: "clh7rev120000abc123456789",
+          contentItemId: "clh7other12000abc12345678",
+        })
+      ).toThrow(/unrecognized_keys/);
+
+      expect(() =>
+        updateWorkingRevisionSchema.parse({
+          id: "clh7rev120000abc123456789",
+          versionNumber: 99,
+        })
+      ).toThrow(/unrecognized_keys/);
     });
   });
 

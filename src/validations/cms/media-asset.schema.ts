@@ -76,60 +76,65 @@ export const sha256HexSchema = z
  * Create Media Metadata Record Schema
  * 
  * Validates the metadata created when an asset is uploaded and stored.
+ * Security Rules:
+ * - strict() mode is enforced: uploadedById, id, timestamps cannot be client-injected.
+ * - Server injects uploader identity and database IDs.
  */
-export const createMediaMetadataSchema = z.object({
-  filename: safeFilenameSchema,
-  originalName: z
-    .string()
-    .trim()
-    .min(1, "Original name must be at least 1 character")
-    .max(255, "Original name cannot exceed 255 characters")
-    .optional(),
-  mimeType: z.enum(ALLOWED_MEDIA_MIME_TYPES, {
-    errorMap: () => ({
-      message:
-        "Unsupported MIME type. Only image/jpeg, image/png, and image/webp are allowed. SVG is prohibited.",
+export const createMediaMetadataSchema = z
+  .object({
+    filename: safeFilenameSchema,
+    originalName: z
+      .string()
+      .trim()
+      .min(1, "Original name must be at least 1 character")
+      .max(255, "Original name cannot exceed 255 characters")
+      .optional(),
+    mimeType: z.enum(ALLOWED_MEDIA_MIME_TYPES, {
+      errorMap: () => ({
+        message:
+          "Unsupported MIME type. Only image/jpeg, image/png, and image/webp are allowed. SVG is prohibited.",
+      }),
     }),
-  }),
-  sizeBytes: z
-    .number({ required_error: "File size in bytes is required" })
-    .int("File size must be an integer")
-    .positive("File size must be greater than 0")
-    .max(
-      MAX_MEDIA_FILE_SIZE_BYTES,
-      `File size cannot exceed 10MB (${MAX_MEDIA_FILE_SIZE_BYTES} bytes)`
-    ),
-  width: z
-    .number()
-    .int("Width must be an integer")
-    .positive("Width must be greater than 0")
-    .max(MAX_MEDIA_DIMENSION_PX, `Width cannot exceed ${MAX_MEDIA_DIMENSION_PX}px`)
-    .optional(),
-  height: z
-    .number()
-    .int("Height must be an integer")
-    .positive("Height must be greater than 0")
-    .max(MAX_MEDIA_DIMENSION_PX, `Height cannot exceed ${MAX_MEDIA_DIMENSION_PX}px`)
-    .optional(),
-  sha256Hash: sha256HexSchema.optional(),
-  defaultAltText: z
-    .string({ required_error: "Default alt text is required for accessibility" })
-    .trim()
-    .min(1, "Alt text must be at least 1 character")
-    .max(300, "Alt text cannot exceed 300 characters"),
-  caption: z
-    .string()
-    .trim()
-    .max(1000, "Caption cannot exceed 1000 characters")
-    .optional(),
-  provider: z
-    .nativeEnum(StorageProviderType, {
-      errorMap: () => ({ message: "Invalid storage provider type" }),
-    })
-    .default(StorageProviderType.LOCAL),
-  storageKey: safeStorageKeySchema,
-  publicUrl: httpUrlSchema,
-});
+    sizeBytes: z
+      .number({ required_error: "File size in bytes is required" })
+      .int("File size must be an integer")
+      .positive("File size must be greater than 0")
+      .max(
+        MAX_MEDIA_FILE_SIZE_BYTES,
+        `File size cannot exceed 10MB (${MAX_MEDIA_FILE_SIZE_BYTES} bytes)`
+      ),
+    width: z
+      .number()
+      .int("Width must be an integer")
+      .positive("Width must be greater than 0")
+      .max(MAX_MEDIA_DIMENSION_PX, `Width cannot exceed ${MAX_MEDIA_DIMENSION_PX}px`)
+      .optional(),
+    height: z
+      .number()
+      .int("Height must be an integer")
+      .positive("Height must be greater than 0")
+      .max(MAX_MEDIA_DIMENSION_PX, `Height cannot exceed ${MAX_MEDIA_DIMENSION_PX}px`)
+      .optional(),
+    sha256Hash: sha256HexSchema.optional(),
+    defaultAltText: z
+      .string({ required_error: "Default alt text is required for accessibility" })
+      .trim()
+      .min(1, "Alt text must be at least 1 character")
+      .max(300, "Alt text cannot exceed 300 characters"),
+    caption: z
+      .string()
+      .trim()
+      .max(1000, "Caption cannot exceed 1000 characters")
+      .optional(),
+    provider: z
+      .nativeEnum(StorageProviderType, {
+        errorMap: () => ({ message: "Invalid storage provider type" }),
+      })
+      .default(StorageProviderType.LOCAL),
+    storageKey: safeStorageKeySchema,
+    publicUrl: httpUrlSchema,
+  })
+  .strict();
 
 export type CreateMediaMetadataInput = z.infer<
   typeof createMediaMetadataSchema
@@ -139,23 +144,25 @@ export type CreateMediaMetadataInput = z.infer<
  * Update Media Metadata Schema
  * 
  * Allows updating descriptive metadata (alt text, caption). Storage key,
- * provider, hash, and physical file attributes cannot be mutated via this schema.
+ * provider, hash, physical file attributes, and ownership cannot be mutated here.
  */
-export const updateMediaMetadataSchema = z.object({
-  id: entityIdSchema,
-  defaultAltText: z
-    .string()
-    .trim()
-    .min(1, "Alt text must be at least 1 character")
-    .max(300, "Alt text cannot exceed 300 characters")
-    .optional(),
-  caption: z
-    .string()
-    .trim()
-    .max(1000, "Caption cannot exceed 1000 characters")
-    .nullable()
-    .optional(),
-});
+export const updateMediaMetadataSchema = z
+  .object({
+    id: entityIdSchema,
+    defaultAltText: z
+      .string()
+      .trim()
+      .min(1, "Alt text must be at least 1 character")
+      .max(300, "Alt text cannot exceed 300 characters")
+      .optional(),
+    caption: z
+      .string()
+      .trim()
+      .max(1000, "Caption cannot exceed 1000 characters")
+      .nullable()
+      .optional(),
+  })
+  .strict();
 
 export type UpdateMediaMetadataInput = z.infer<
   typeof updateMediaMetadataSchema

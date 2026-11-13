@@ -13,41 +13,59 @@ import {
 
 /**
  * Validates payload for creating a new canonical ContentItem.
- * Note: Pointers (currentPublishedRevisionId, currentWorkingRevisionId), publishedAt,
- * publishedById, and version are strictly server-managed and prohibited in client input.
+ * Security Rules:
+ * - New content items must always start in DRAFT status.
+ * - publicationStatus can only be explicitly DRAFT or omitted (defaults to DRAFT).
+ * - Direct creation as PUBLISHED or ARCHIVED is strictly rejected.
+ * - Internal pointers (currentPublishedRevisionId, currentWorkingRevisionId),
+ *   version, publishedAt, and publishedById are strictly forbidden.
  */
-export const createContentItemSchema = z.object({
-  contentType: z.nativeEnum(ContentType, {
-    errorMap: () => ({
-      message:
-        "Invalid contentType. Must be one of: SERVICE, PRICING_PACKAGE, PORTFOLIO_PROJECT, FAQ, PAGE_SECTION, TESTIMONIAL",
+export const createContentItemSchema = z
+  .object({
+    contentType: z.nativeEnum(ContentType, {
+      errorMap: () => ({
+        message:
+          "Invalid contentType. Must be one of: SERVICE, PRICING_PACKAGE, PORTFOLIO_PROJECT, FAQ, PAGE_SECTION, TESTIMONIAL",
+      }),
     }),
-  }),
-  slug: slugSchema,
-  publicationStatus: z
-    .nativeEnum(ContentPublicationStatus, {
-      errorMap: () => ({ message: "Invalid publicationStatus" }),
-    })
-    .default(ContentPublicationStatus.DRAFT),
-});
+    slug: slugSchema,
+    publicationStatus: z
+      .literal(ContentPublicationStatus.DRAFT, {
+        errorMap: () => ({
+          message:
+            "New content items must start in DRAFT status. Direct publication or archival on creation is forbidden.",
+        }),
+      })
+      .default(ContentPublicationStatus.DRAFT),
+  })
+  .strict();
 
 export type CreateContentItemInput = z.infer<typeof createContentItemSchema>;
 
 /**
  * Validates payload for updating ContentItem metadata.
- * OCC protection: expectedVersion is required when performing concurrent state transitions.
- * Pointers remain strictly server-managed.
+ * Security & OCC Rules:
+ * - Generic updates are strictly for content item metadata (e.g. slug).
+ * - Lifecycle status transitions (PUBLISHED, ARCHIVED) are strictly forbidden here;
+ *   publication and archival must exclusively occur through dedicated operation schemas
+ *   (publishRevisionSchema, archiveContentSchema, restoreContentSchema).
+ * - expectedVersion is mandatory for Optimistic Concurrency Control (OCC).
+ * - Pointers, version, and publication timestamps are strictly forbidden.
  */
-export const updateContentItemSchema = z.object({
-  id: entityIdSchema,
-  slug: slugSchema.optional(),
-  publicationStatus: z.nativeEnum(ContentPublicationStatus).optional(),
-  expectedVersion: z
-    .number()
-    .int("Version must be an integer")
-    .positive("Version must be greater than 0")
-    .optional(),
-});
+export const updateContentItemSchema = z
+  .object({
+    id: entityIdSchema,
+    slug: slugSchema.optional(),
+    expectedVersion: z
+      .number({
+        required_error:
+          "expectedVersion is required for Optimistic Concurrency Control (OCC)",
+      })
+      .int("Version must be an integer")
+      .positive("Version must be greater than 0")
+      .max(2147483647, "Version exceeds maximum 32-bit integer boundary"),
+  })
+  .strict();
 
 export type UpdateContentItemInput = z.infer<typeof updateContentItemSchema>;
 

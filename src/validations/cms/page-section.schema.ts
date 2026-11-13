@@ -29,91 +29,95 @@ export const sectionKeySchema = z
 /**
  * Validates payload for creating a new editorial PageSection
  */
-export const createPageSectionSchema = z.object({
-  key: sectionKeySchema,
-  pageSlug: z
-    .string()
-    .trim()
-    .min(1, "Page slug is required")
-    .max(100, "Page slug cannot exceed 100 characters"),
-  title: z
-    .string()
-    .trim()
-    .min(1, "Section title is required")
-    .max(200, "Section title cannot exceed 200 characters"),
-  subtitle: z
-    .string()
-    .trim()
-    .max(300, "Subtitle cannot exceed 300 characters")
-    .optional()
-    .nullable(),
-  content: z
-    .string()
-    .min(1, "Section content cannot be empty")
-    .max(
-      MAX_PAGE_SECTION_CONTENT_LENGTH,
-      `Section content cannot exceed ${MAX_PAGE_SECTION_CONTENT_LENGTH.toLocaleString()} characters`
-    ),
-  metadata: z
-    .record(safeJsonKeySchema, safeJsonSchema)
-    .optional()
-    .nullable(),
-  mediaUrl: optionalHttpUrlSchema,
-  orderIndex: z
-    .number()
-    .int("Order index must be an integer")
-    .min(0, "Order index cannot be negative")
-    .default(0),
-  isActive: z.boolean().default(true),
-  contentItemId: entityIdSchema.optional().nullable(),
-});
+export const createPageSectionSchema = z
+  .object({
+    key: sectionKeySchema,
+    pageSlug: z
+      .string()
+      .trim()
+      .min(1, "Page slug is required")
+      .max(100, "Page slug cannot exceed 100 characters"),
+    title: z
+      .string()
+      .trim()
+      .min(1, "Section title is required")
+      .max(200, "Section title cannot exceed 200 characters"),
+    subtitle: z
+      .string()
+      .trim()
+      .max(300, "Subtitle cannot exceed 300 characters")
+      .optional()
+      .nullable(),
+    content: z
+      .string()
+      .min(1, "Section content cannot be empty")
+      .max(
+        MAX_PAGE_SECTION_CONTENT_LENGTH,
+        `Section content cannot exceed ${MAX_PAGE_SECTION_CONTENT_LENGTH.toLocaleString()} characters`
+      ),
+    metadata: z
+      .record(safeJsonKeySchema, safeJsonSchema)
+      .optional()
+      .nullable(),
+    mediaUrl: optionalHttpUrlSchema,
+    orderIndex: z
+      .number()
+      .int("Order index must be an integer")
+      .min(0, "Order index cannot be negative")
+      .default(0),
+    isActive: z.boolean().default(true),
+    contentItemId: entityIdSchema.optional().nullable(),
+  })
+  .strict();
 
 export type CreatePageSectionInput = z.infer<typeof createPageSectionSchema>;
 
 /**
  * Validates payload for updating an existing PageSection
  */
-export const updatePageSectionSchema = z.object({
-  id: entityIdSchema,
-  key: sectionKeySchema.optional(),
-  pageSlug: z
-    .string()
-    .trim()
-    .min(1, "Page slug cannot be empty")
-    .max(100, "Page slug cannot exceed 100 characters")
-    .optional(),
-  title: z
-    .string()
-    .trim()
-    .min(1, "Section title cannot be empty")
-    .max(200, "Section title cannot exceed 200 characters")
-    .optional(),
-  subtitle: z
-    .string()
-    .trim()
-    .max(300, "Subtitle cannot exceed 300 characters")
-    .optional()
-    .nullable(),
-  content: z
-    .string()
-    .min(1, "Section content cannot be empty")
-    .max(
-      MAX_PAGE_SECTION_CONTENT_LENGTH,
-      `Section content cannot exceed ${MAX_PAGE_SECTION_CONTENT_LENGTH.toLocaleString()} characters`
-    )
-    .optional(),
-  metadata: z
-    .record(safeJsonKeySchema, safeJsonSchema)
-    .optional()
-    .nullable(),
-  mediaUrl: optionalHttpUrlSchema,
-  orderIndex: z
-    .number()
-    .int("Order index must be an integer")
-    .min(0, "Order index cannot be negative")
-    .optional(),
-  isActive: z.boolean().optional(),
-});
+export const updatePageSectionSchema = z
+  .object({
+    id: entityIdSchema,
+    key: sectionKeySchema.optional(),
+    pageSlug: z
+      .string()
+      .trim()
+      .min(1, "Page slug cannot be empty")
+      .max(100, "Page slug cannot exceed 100 characters")
+      .optional(),
+    title: z
+      .string()
+      .trim()
+      .min(1, "Section title cannot be empty")
+      .max(200, "Section title cannot exceed 200 characters")
+      .optional(),
+    subtitle: z
+      .string()
+      .trim()
+      .max(300, "Subtitle cannot exceed 300 characters")
+      .optional()
+      .nullable(),
+    content: z
+      .string()
+      .min(1, "Section content cannot be empty")
+      .max(
+        MAX_PAGE_SECTION_CONTENT_LENGTH,
+        `Section content cannot exceed ${MAX_PAGE_SECTION_CONTENT_LENGTH.toLocaleString()} characters`
+      )
+      .optional(),
+    metadata: z
+      .record(safeJsonKeySchema, safeJsonSchema)
+      .optional()
+      .nullable(),
+    mediaUrl: optionalHttpUrlSchema,
+    orderIndex: z
+      .number()
+      .int("Order index must be an integer")
+      .min(0, "Order index cannot be negative")
+      .optional(),
+    isActive: z.boolean().optional(),
+  })
+  .strict();
 
 export type UpdatePageSectionInput = z.infer<typeof updatePageSectionSchema>;
 

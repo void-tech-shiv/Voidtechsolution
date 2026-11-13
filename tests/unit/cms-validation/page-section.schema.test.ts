@@ -104,6 +104,19 @@ describe("CMS Validation — PageSection Schemas", () => {
         "Illegal object key: __proto__"
       );
     });
+
+    it("STRICT MODE: Rejects attempts to inject arbitrary or internal fields", () => {
+      const input = {
+        key: "cta-banner",
+        pageSlug: "home",
+        title: "Ready to Transform?",
+        content: "Contact us today.",
+        unknownAdminField: "malicious_value",
+      };
+      expect(() => createPageSectionSchema.parse(input)).toThrow(
+        /unrecognized_keys/
+      );
+    });
   });
 
   describe("updatePageSectionSchema", () => {
@@ -128,6 +141,15 @@ describe("CMS Validation — PageSection Schemas", () => {
           orderIndex: -1,
         })
       ).toThrow("Order index cannot be negative");
+    });
+
+    it("STRICT MODE: Rejects attempts to inject arbitrary fields on update", () => {
+      expect(() =>
+        updatePageSectionSchema.parse({
+          id: "clh7sec120000abc123456789",
+          injectedField: "injected",
+        })
+      ).toThrow(/unrecognized_keys/);
     });
   });
 

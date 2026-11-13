@@ -126,46 +126,123 @@ describe("CMS Validation — Testimonial Schemas", () => {
     });
   });
 
-  describe("adminUpdateTestimonialSchema", () => {
-    it("accepts valid admin moderation update", () => {
-      const input = {
-        id: "clh7tes120000abc123456789",
+  describe("adminUpdateTestimonialSchema — Verification & Consent Matrix", () => {
+    const baseId = "clh7tes120000abc123456789";
+
+    // 1. VERIFIED + GRANTED => Allowed
+    it("allows VERIFIED status when consent is GRANTED", () => {
+      const payload = {
+        id: baseId,
         verificationStatus: TestimonialVerificationStatus.VERIFIED,
         clientConsentStatus: ClientConsentStatus.GRANTED,
         consentEvidenceUrl: "https://evidence.example.com/signed-consent.pdf",
         isActive: true,
-        orderIndex: 1,
       };
-      const result = adminUpdateTestimonialSchema.parse(input);
-      expect(result.verificationStatus).toBe(
-        TestimonialVerificationStatus.VERIFIED
-      );
-      expect(result.clientConsentStatus).toBe(ClientConsentStatus.GRANTED);
-      expect(result.isActive).toBe(true);
+      const res = adminUpdateTestimonialSchema.parse(payload);
+      expect(res.verificationStatus).toBe(TestimonialVerificationStatus.VERIFIED);
+      expect(res.clientConsentStatus).toBe(ClientConsentStatus.GRANTED);
     });
 
-    it("CROSS-FIELD REFINEMENT: Rejects VERIFIED status when client consent is REVOKED", () => {
-      const illegalState = {
-        id: "clh7tes120000abc123456789",
+    // 2. VERIFIED + PENDING => Rejected
+    it("SECURITY INVARIANT: Rejects VERIFIED status when consent is PENDING", () => {
+      const payload = {
+        id: baseId,
+        verificationStatus: TestimonialVerificationStatus.VERIFIED,
+        clientConsentStatus: ClientConsentStatus.PENDING,
+      };
+      expect(() => adminUpdateTestimonialSchema.parse(payload)).toThrow(
+        "Cannot set verification status to VERIFIED unless client consent status is explicitly GRANTED"
+      );
+    });
+
+    // 3. VERIFIED + REVOKED => Rejected
+    it("SECURITY INVARIANT: Rejects VERIFIED status when consent is REVOKED", () => {
+      const payload = {
+        id: baseId,
         verificationStatus: TestimonialVerificationStatus.VERIFIED,
         clientConsentStatus: ClientConsentStatus.REVOKED,
       };
-      expect(() => adminUpdateTestimonialSchema.parse(illegalState)).toThrow(
-        "Cannot set verification status to VERIFIED when client consent status is REVOKED"
+      expect(() => adminUpdateTestimonialSchema.parse(payload)).toThrow(
+        "Cannot set verification status to VERIFIED unless client consent status is explicitly GRANTED"
       );
     });
 
-    it("allows REJECTED status even when client consent is REVOKED", () => {
-      const legalState = {
-        id: "clh7tes120000abc123456789",
-        verificationStatus: TestimonialVerificationStatus.REJECTED,
+    // 4. VERIFIED without clientConsentStatus supplied => Rejected
+    it("SECURITY INVARIANT: Rejects VERIFIED status when clientConsentStatus is omitted", () => {
+      const payload = {
+        id: baseId,
+        verificationStatus: TestimonialVerificationStatus.VERIFIED,
+      };
+      expect(() => adminUpdateTestimonialSchema.parse(payload)).toThrow(
+        "Cannot set verification status to VERIFIED unless client consent status is explicitly GRANTED"
+      );
+    });
+
+    // 5. UNVERIFIED + PENDING => Allowed
+    it("allows UNVERIFIED status when consent is PENDING", () => {
+      const payload = {
+        id: baseId,
+        verificationStatus: TestimonialVerificationStatus.UNVERIFIED,
+        clientConsentStatus: ClientConsentStatus.PENDING,
+      };
+      const res = adminUpdateTestimonialSchema.parse(payload);
+      expect(res.verificationStatus).toBe(TestimonialVerificationStatus.UNVERIFIED);
+      expect(res.clientConsentStatus).toBe(ClientConsentStatus.PENDING);
+    });
+
+    // 6. UNVERIFIED + GRANTED => Allowed
+    it("allows UNVERIFIED status when consent is GRANTED", () => {
+      const payload = {
+        id: baseId,
+        verificationStatus: TestimonialVerificationStatus.UNVERIFIED,
+        clientConsentStatus: ClientConsentStatus.GRANTED,
+      };
+      const res = adminUpdateTestimonialSchema.parse(payload);
+      expect(res.verificationStatus).toBe(TestimonialVerificationStatus.UNVERIFIED);
+      expect(res.clientConsentStatus).toBe(ClientConsentStatus.GRANTED);
+    });
+
+    // 7. UNVERIFIED + REVOKED => Allowed
+    it("allows UNVERIFIED status when consent is REVOKED", () => {
+      const payload = {
+        id: baseId,
+        verificationStatus: TestimonialVerificationStatus.UNVERIFIED,
         clientConsentStatus: ClientConsentStatus.REVOKED,
       };
-      const result = adminUpdateTestimonialSchema.parse(legalState);
-      expect(result.verificationStatus).toBe(
-        TestimonialVerificationStatus.REJECTED
+      const res = adminUpdateTestimonialSchema.parse(payload);
+      expect(res.verificationStatus).toBe(TestimonialVerificationStatus.UNVERIFIED);
+      expect(res.clientConsentStatus).toBe(ClientConsentStatus.REVOKED);
+    });
+
+    // 8. REJECTED + PENDING / GRANTED / REVOKED => Allowed
+    it("allows REJECTED status across all consent states", () => {
+      for (const consent of [
+        ClientConsentStatus.PENDING,
+        ClientConsentStatus.GRANTED,
+        ClientConsentStatus.REVOKED,
+      ]) {
+        const payload = {
+          id: baseId,
+          verificationStatus: TestimonialVerificationStatus.REJECTED,
+          clientConsentStatus: consent,
+        };
+        const res = adminUpdateTestimonialSchema.parse(payload);
+        expect(res.verificationStatus).toBe(TestimonialVerificationStatus.REJECTED);
+        expect(res.clientConsentStatus).toBe(consent);
+      }
+    });
+
+    // 9. STRICT MODE: Rejects attempts to inject internal audit fields
+    it("STRICT MODE: Rejects unexpected or internal fields on admin update", () => {
+      const injectionAttempt = {
+        id: baseId,
+        clientName: "Test Name",
+        verifiedById: "admin_user_123",
+        verifiedAt: new Date().toISOString(),
+      };
+      expect(() => adminUpdateTestimonialSchema.parse(injectionAttempt)).toThrow(
+        /unrecognized_keys/
       );
-      expect(result.clientConsentStatus).toBe(ClientConsentStatus.REVOKED);
     });
   });
 

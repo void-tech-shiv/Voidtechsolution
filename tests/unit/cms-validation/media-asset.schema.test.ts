@@ -165,6 +165,17 @@ describe("CMS Validation — MediaAsset Schemas", () => {
       );
     });
 
+    it("STRICT MODE: Rejects attempts to inject internal uploader ID or storage keys on update", () => {
+      const update = {
+        id: "clh7med120000abc123456789",
+        uploadedById: "usr_attacker",
+        storageKey: "injected/path.jpg",
+      };
+      expect(() => updateMediaMetadataSchema.parse(update)).toThrow(
+        /unrecognized_keys/
+      );
+    });
+
     it("validates query with provider and mimeType filters", () => {
       const query = {
         provider: StorageProviderType.LOCAL,
