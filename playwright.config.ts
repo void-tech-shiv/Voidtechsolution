@@ -13,7 +13,7 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: "npm run start",
+    command: "npm.cmd run start",
     url: "http://localhost:3000",
     reuseExistingServer: true,
     timeout: 120 * 1000,

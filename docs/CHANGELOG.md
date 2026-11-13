@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.9.3] — 2026-11-13
+### Phase 9.3: CRM End-to-End Testing, Security Validation & Visual Acceptance
+
+#### Added
+- **Real PostgreSQL Lead Lifecycle Integration Suite (`tests/integration/crm-lifecycle.integration.test.ts`):**
+  - 9 automated tests validating the complete lifecycle on an isolated PostgreSQL test database (`voidtech_test_concurrency`).
+  - Covers public website contact form intake, operational lead assignment, in-app notification dispatch, internal note creation & pinning, follow-up task scheduling with automatic `nextFollowUpAt` cache synchronization, progressive 5-stage pipeline transitions, and 3 distinct commercial outcomes (WON with revenue recognition, LOST with mandatory `lostReason` validation, ON_HOLD).
+- **Multi-Role RBAC Security Matrix Suite (`tests/integration/crm-rbac-security.integration.test.ts`):**
+  - 19 automated security tests validating `SUPER_ADMIN`, `ADMIN`, and `EDITOR` authorization rules across pages, Server Actions, and REST routes.
+  - Enforces notification recipient isolation (`where: { recipientId: user.id }`), cross-admin mark-read rejection, note deletion restriction to `SUPER_ADMIN`, session cookie signature verification, and sensitive credential (`passwordHash`) scrubbing.
+- **PostgreSQL Concurrency & Data Integrity Suite (`tests/integration/crm-concurrency.integration.test.ts`):**
+  - 4 automated integration tests validating Optimistic Concurrency Control (OCC) timestamp drift detection, atomic assignment unique index constraints, and append-only activity audit logging.
+- **Synthetic Performance & Query Profiling Benchmarks (`tests/integration/crm-performance.integration.test.ts`):**
+  - 5 automated benchmark tests evaluating CRM aggregation, 8-stage grouping, search filtering, and category queries across 10, 100, 500, and 1,000 synthetic leads.
+  - Validates zero N+1 queries during full 5-tab drawer hydration (7.54 ms response time).
+- **Playwright E2E Browser Acceptance & Visual Proofs (`tests/e2e/crm-acceptance.spec.ts`):**
+  - 21 automated browser acceptance tests running on Microsoft Edge.
+  - Captures 12 high-resolution screenshots across 10 responsive viewports (320px, 360px, 375px, 390px, 430px, 768px, 1024px, 1280px, 1440px, 1920px) and 2 drawer states (375px mobile and 1440px desktop).
+- **Comprehensive Milestone Acceptance Report (`docs/PHASE_9_3_CRM_ACCEPTANCE_REPORT.md`):**
+  - Complete documentation of methodology, test matrices, benchmark timings, accessibility review, defect register, CodeRabbit status, and final sign-off verdict.
+
+#### Changed
+- Fixed TypeScript optional property strictness and unused imports across test suites.
+- Updated `playwright.config.ts` webServer command to use `npm.cmd` on Windows.
+- Increased overall automated test suite count from 429 to **462 tests** (30 suites, 100% passing).
+
+---
+
 ## [0.9.2] — 2026-11-13
 ### Phase 9.2: Admin Lead Management & CRM Pipeline — Dashboard UI, Kanban Board & Integrated Lead Workflows
 

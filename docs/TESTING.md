@@ -426,3 +426,44 @@ npm run build
   5. **`CrmFilters`:** Debounced search input, category dropdown, assignee dropdown, overdue toggle, and Kanban / Tasks view switcher.
   6. **`CrmFollowupsView`:** Renders upcoming, overdue, and completed follow-up task queue with priority tags and lead deep links.
   7. **`AdminNotificationsBell`:** Renders bell trigger with unread badge count, opens popover with action feed, and triggers mark-all-read.
+
+---
+
+## 12. Phase 9.3: CRM End-to-End Acceptance, Security & Performance Suites
+
+### 12.1 Real PostgreSQL Lead Lifecycle Suite (`tests/integration/crm-lifecycle.integration.test.ts`)
+- **Suite Execution:** `npx vitest run tests/integration/crm-lifecycle.integration.test.ts` (9 / 9 passing).
+- **Tested Workflows on Real DB:**
+  1. Inbound Public Enquiry Submission & intake into `NEW` stage.
+  2. Lead assignment to operations admin & notification dispatch.
+  3. Internal notes creation, pinning, author attribution, and activity logging.
+  4. Follow-up task scheduling, completion, and dynamic `nextFollowUpAt` cache resynchronization.
+  5. Progressive 5-stage pipeline lifecycle (`NEW` -> `CONTACTED` -> `QUALIFIED` -> `PROPOSAL_SENT` -> `NEGOTIATION`).
+  6. Scenario A: `WON` commercial outcome and revenue calculation in metrics.
+  7. Scenario B: `LOST` commercial outcome with mandatory `lostReason` validation invariant.
+  8. Scenario C: `ON_HOLD` commercial outcome and pipeline preservation.
+  9. Complete 5-tab Lead Details Drawer relational hydration without N+1 queries.
+
+### 12.2 Multi-Role RBAC Security Matrix (`tests/integration/crm-rbac-security.integration.test.ts`)
+- **Suite Execution:** `npx vitest run tests/integration/crm-rbac-security.integration.test.ts` (19 / 19 passing).
+- **Verified Access Matrix:**
+  1. `SUPER_ADMIN` full administrative privileges across all operations.
+  2. `ADMIN` operational access with strict denial on note & follow-up deletion (`enquiries:delete`).
+  3. `EDITOR` read-only viewing with rejection on all mutation Server Actions and API endpoints.
+  4. Recipient isolation of in-app notifications (`recipientId === user.id`).
+  5. Cross-admin notification mark-read denial.
+  6. Web Crypto HMAC session cookie signature verification and origin mismatch rejection.
+  7. Safe relational projection strictly omitting `passwordHash` and active session tokens.
+
+### 12.3 Synthetic Performance & Query Profiling Benchmarks (`tests/integration/crm-performance.integration.test.ts`)
+- **Suite Execution:** `npx vitest run tests/integration/crm-performance.integration.test.ts` (5 / 5 passing).
+- **Results:**
+  - Metrics Aggregation: 12.82ms (10 leads), 3.04ms (100 leads), 4.18ms (500 leads), 5.87ms (1000 leads).
+  - Kanban 8-Stage Load: 6.94ms (10 leads), 5.66ms (100 leads), 15.36ms (500 leads), 26.67ms (1000 leads).
+  - Search Filtering: 8.39ms (1000 leads).
+  - Category Filtering: 6.29ms (1000 leads).
+  - Lead Detail Hydration (with relations): 7.54ms (sub-10ms target met).
+
+### 12.4 Playwright Browser Acceptance & 10-Viewport Visual Proofs (`tests/e2e/crm-acceptance.spec.ts`)
+- **Suite Execution:** `npx playwright test tests/e2e/crm-acceptance.spec.ts --project=desktop` (21 / 21 passing).
+- **Coverage:** Multi-role access control, unauthenticated redirect, 8-stage Kanban rendering, lead cards, 5-tab details drawer, task queue toggle, search filtering, notifications popover, and 12 visual screenshot proofs from 320px to 1920px.

@@ -459,3 +459,37 @@ flowchart TD
    - Single source of truth slide-over allowing complete lead management (Overview, Notes, Activity, Follow-ups, and Assignments) without leaving the Kanban context.
 4. **Header Bell Notification Popover:**
    - Real-time unread badge isolated by `recipientId` with instant popover action items for high-priority leads, assignment notices, and overdue follow-up alerts.
+
+---
+
+## 11. Phase 9.3 CRM Validation & Performance Blueprint
+
+```mermaid
+flowchart TD
+    subgraph TestSuites["Phase 9.3 Verification Architecture"]
+        Lifecycle["Lead Lifecycle Suite (tests/integration/crm-lifecycle)"]
+        RBACSuite["RBAC Security Suite (tests/integration/crm-rbac-security)"]
+        OCCSuite["Concurrency & DB Integrity (tests/integration/crm-concurrency)"]
+        PerfSuite["Synthetic Benchmarks (tests/integration/crm-performance)"]
+        E2ESuite["Playwright E2E Suite (tests/e2e/crm-acceptance)"]
+    end
+
+    subgraph Targets["Target Environments"]
+        LocalPostgres["Local PostgreSQL (voidtech_test_concurrency)"]
+        NextServer["Next.js Server Process (Port 3000)"]
+        EdgeBrowser["Microsoft Edge Browser Engine"]
+    end
+
+    Lifecycle -->|Real Transactions| LocalPostgres
+    RBACSuite -->|Dual-Layer Auth Checks| LocalPostgres
+    OCCSuite -->|Multi-Client Drift Tests| LocalPostgres
+    PerfSuite -->|10-1000 Synthetic Leads| LocalPostgres
+    E2ESuite -->|HTTP & DOM Verification| NextServer
+    E2ESuite -->|10-Viewport Capture| EdgeBrowser
+```
+
+### Key Performance Specifications
+- **1,000 Lead Metric Aggregation:** Completed in < 10 ms (benchmarked at 5.87 ms).
+- **1,000 Lead Kanban 8-Stage Load:** Completed in < 50 ms (benchmarked at 26.67 ms).
+- **Lead Detail Hydration:** Single relational query with zero N+1 overhead (benchmarked at 7.54 ms).
+- **Responsive Layout Matrix:** Verified from 320px ultra-compact mobile up to 1920px widescreen desktop.

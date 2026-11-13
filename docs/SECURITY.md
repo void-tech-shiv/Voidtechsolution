@@ -362,6 +362,24 @@ Every CRM mutation at `/admin/crm` verifies the caller's session and permissions
 - When a stage update conflict is detected (`CONFLICT_DETECTED`), the client-side state machine rolls back optimistic UI changes to prevent false visual confirmation.
 - The UI surfaces a distinct amber warning alert with a "Refresh Board" trigger to load the canonical state without page reloads.
 
+---
+
+## 12. Phase 9.3 Security Validation & Access Audit
+
+### A. Empirical RBAC Enforcement
+The CRM security matrix was independently validated through 19 integration tests (`tests/integration/crm-rbac-security.integration.test.ts`):
+- **SUPER_ADMIN:** Authorized for all operations including administrative deletions of notes and follow-ups.
+- **ADMIN:** Authorized for day-to-day CRM operations (moving stages, adding notes, scheduling tasks, assigning leads). Explicitly denied deletion rights for notes and follow-ups.
+- **EDITOR:** Granted read-only visibility for triage and review. Any mutation attempt via Server Action or API returns `Forbidden: Insufficient permissions (requires 'enquiries:update_status')`.
+
+### B. Notification Isolation Invariant
+- Notifications are strictly addressed and queried by `recipientId`.
+- An administrator cannot view or acknowledge another administrator's notifications, preventing internal leakage of sensitive assignment data or client notes.
+
+### C. Origin & Session Integrity
+- Mutations validate incoming HTTP headers against `host` and `origin` to defeat Cross-Site Request Forgery (CSRF).
+- Tampered session cookies or invalid HMAC signatures trigger immediate 401 rejections at Edge middleware and Server Action verification layers.
+
 
 
 
