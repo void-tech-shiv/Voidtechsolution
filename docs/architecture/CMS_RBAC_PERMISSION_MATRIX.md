@@ -1,31 +1,30 @@
 # CMS_RBAC_PERMISSION_MATRIX.md — Role-Based Access Control Matrix
 
 **Project:** VOIDTECH SOLUTION  
-**Milestone:** Phase 10.0 — CMS Discovery & Architecture  
-**Document Status:** PROPOSED AUTHORIZATION MATRIX  
+**Milestone:** Phase 10.0.1 — CMS Architecture Refinement & Design Freeze  
+**Document Status:** FROZEN AUTHORIZATION SPECIFICATION [DESIGN FREEZE]  
 **Author:** Google DeepMind Assistant  
-**Approved By:** Pending Owner Authorization  
+**Approved By:** Project Owner  
 
 ---
 
 ## 1. Architectural Principles of CMS Authorization
 
-In accordance with VOIDTECH security guidelines:
-1. **Server-Side Exclusivity:** Client-side role checks are treated strictly as cosmetic UX affordances (e.g. disabling buttons or hiding menu items). The true security perimeter is enforced exclusively inside Server Actions, Edge Middleware, and API route handlers via `requirePermission(user, key)`.
-2. **Least Privilege Principle:** Content authors (`EDITOR`) are empowered to draft and refine content without granting them the authority to alter public-facing commercial pricing, publish unvetted copy, or delete historical records.
-3. **Dual Approval for High-Risk Actions:** Publication of commercial pricing, live marketing claims, or testimonials requires `ADMIN` or `SUPER_ADMIN` review.
-4. **Master Account Inviolability:** The sole `SUPER_ADMIN` account cannot be deleted, demoted, or deactivated, preserving institutional continuity.
+In accordance with VOIDTECH security guidelines and owner approvals:
+1. **Server-Side Exclusivity:** Client-side role checks are treated strictly as cosmetic UX affordances. The true security boundary is enforced exclusively inside Server Actions and Route Handlers via `requirePermission(user, key)`.
+2. **Pricing Governance [OWNER APPROVED]:** Publishing, modifying live prices in INR, archiving, and restoring pricing tiers is restricted strictly to `SUPER_ADMIN` and `ADMIN`. `EDITOR` can only author draft pricing proposals.
+3. **Dual Approval for High-Risk Actions:** Publishing marketing claims or testimonials requires `ADMIN` or `SUPER_ADMIN` review.
+4. **Master Account Inviolability:** The sole `SUPER_ADMIN` account cannot be deleted, demoted, or deactivated.
 
 ---
 
 ## 2. Granular CMS Permission Keys
 
-Expanding upon the existing Phase 7/9 keys in `src/server/security/rbac.ts`, the proposed CMS permissions are structured by domain and action:
-
 ```typescript
 export type CmsPermissionKey =
   // Base Navigation & Inspection
-  | "content:view"              // View CMS dashboard and all draft/published items
+  | "content:view"              // View CMS dashboard and draft/published lists
+  | "content:restore"           // Restore historical ContentRevision snapshot
   
   // Services Management
   | "services:create"           // Create new draft service offerings
@@ -34,10 +33,11 @@ export type CmsPermissionKey =
   | "services:archive"          // Archive / unlist service offering
   | "services:delete"           // Permanently delete service (SuperAdmin only)
   
-  // Pricing Tiers (Strict Commercial Controls)
-  | "pricing:create"            // Create new pricing packages
-  | "pricing:edit"              // Edit existing packages and INR amounts
-  | "pricing:publish"           // Toggle package active status on public site
+  // Pricing Tiers (Strict Commercial Controls) [OWNER APPROVED]
+  | "pricing:edit_draft"        // Create and edit draft pricing packages
+  | "pricing:publish"           // Publish or alter live pricing tiers in INR
+  | "pricing:archive"           // Archive published pricing tier
+  | "pricing:restore"           // Restore historical pricing tier revision
   | "pricing:delete"            // Delete pricing package (SuperAdmin only)
   
   // Portfolio & Case Studies
@@ -57,14 +57,18 @@ export type CmsPermissionKey =
   | "sections:edit"             // Edit draft text for homepage and editorial sections
   | "sections:publish"          // Publish page section changes to live website
   
-  // Revision Restoration & Rollback
-  | "content:restore"           // Restore historical ContentRevision snapshot
+  // Testimonials & Verification [OWNER APPROVED]
+  | "testimonials:create"       // Draft new testimonial
+  | "testimonials:verify"       // Audit consent evidence and approve testimonial
+  | "testimonials:publish"      // Publish verified testimonial to live site
+  | "testimonials:delete"       // Delete testimonial (SuperAdmin only)
   
-  // SEO & Metadata
+  // SEO & Indexing Directives
   | "seo:manage"                // Update meta titles, descriptions, canonical URLs, robots
   
-  // Media Assets
-  | "media:upload"              // Upload images, SVGs, and documents
+  // Media Assets [OWNER APPROVED]
+  | "media:upload"              // Upload standard raster images (WebP, PNG, JPEG)
+  | "media:upload_svg"          // Upload SVG vector graphics (Restricted privilege)
   | "media:edit_meta"           // Update alt text and captions
   | "media:delete"              // Permanently delete media file from storage
   
@@ -76,72 +80,54 @@ export type CmsPermissionKey =
 
 ## 3. Comprehensive Role-Permission Matrix
 
-| CMS Operation / Permission Key | SUPER_ADMIN | ADMIN | EDITOR | Security Rationale |
+| CMS Operation / Permission Key | SUPER_ADMIN | ADMIN | EDITOR | Governance & Security Rationale |
 |---|:---:|:---:|:---:|---|
-| **`content:view`** | ✅ | ✅ | ✅ | All administrators require visibility into content lists and drafts |
+| **`content:view`** | ✅ | ✅ | ✅ | Universal editorial inspection |
 | **`services:create`** | ✅ | ✅ | ✅ | Editors can draft new service offerings |
 | **`services:edit`** | ✅ | ✅ | ✅ | Editors can refine text, deliverables, and icons |
-| **`services:publish`** | ✅ | ✅ | ❌ | Publishing requires operational review; Editor denied |
-| **`services:archive`** | ✅ | ✅ | ❌ | Archiving public services requires Admin sign-off |
-| **`services:delete`** | ✅ | ❌ | ❌ | Permanent deletion restricted to sole Super Admin |
-| **`pricing:create`** | ✅ | ✅ | ❌ | Pricing directly impacts revenue; Editor strictly denied |
-| **`pricing:edit`** | ✅ | ✅ | ❌ | Changing INR amounts requires commercial authority |
-| **`pricing:publish`** | ✅ | ✅ | ❌ | Activating/deactivating pricing tiers restricted to Admin |
-| **`pricing:delete`** | ✅ | ❌ | ❌ | Super Admin only |
-| **`portfolio:create`** | ✅ | ✅ | ✅ | Editors can draft case study prototypes |
+| **`services:publish`** | ✅ | ✅ | ❌ | **Editor Denied:** Operational review mandatory before publishing |
+| **`services:archive`** | ✅ | ✅ | ❌ | **Editor Denied:** Archiving impacts public availability |
+| **`services:delete`** | ✅ | ❌ | ❌ | **Super Admin Only:** Permanent deletion restricted to system owner |
+| **`pricing:edit_draft`** [OWNER APPROVED] | ✅ | ✅ | ✅ | Editors can draft pricing proposals for review |
+| **`pricing:publish`** [OWNER APPROVED] | ✅ | ✅ | ❌ | **Editor Strictly Denied:** Commercial revenue control |
+| **`pricing:archive`** [OWNER APPROVED] | ✅ | ✅ | ❌ | **Editor Strictly Denied:** Only Admin/SuperAdmin can retire tiers |
+| **`pricing:restore`** [OWNER APPROVED] | ✅ | ✅ | ❌ | **Editor Strictly Denied:** Restoring alters live public prices |
+| **`pricing:delete`** | ✅ | ❌ | ❌ | **Super Admin Only:** Master commercial governance |
+| **`portfolio:create`** | ✅ | ✅ | ✅ | Editors can draft architecture prototypes |
 | **`portfolio:edit`** | ✅ | ✅ | ✅ | Editors can update descriptions, metrics, and tags |
-| **`portfolio:publish`** | ✅ | ✅ | ❌ | Publishing requires verification of claims; Editor denied |
+| **`portfolio:publish`** | ✅ | ✅ | ❌ | **Editor Denied:** Anti-fabrication verification mandatory |
 | **`portfolio:archive`** | ✅ | ✅ | ❌ | Admin or Super Admin |
 | **`portfolio:delete`** | ✅ | ❌ | ❌ | Super Admin only |
-| **`faqs:create`** | ✅ | ✅ | ✅ | Editors can propose new FAQ questions and answers |
-| **`faqs:edit`** | ✅ | ✅ | ✅ | Editors can refine FAQ content |
-| **`faqs:reorder`** | ✅ | ✅ | ❌ | Reordering affects visual presentation |
-| **`faqs:delete`** | ✅ | ✅ | ❌ | Deleting knowledgebase answers requires Admin role |
-| **`sections:edit`** | ✅ | ✅ | ✅ | Editors can draft marketing copy and hero text |
-| **`sections:publish`** | ✅ | ✅ | ❌ | Publishing global homepage copy requires Admin role |
-| **`content:restore`** | ✅ | ✅ | ❌ | Reverting to historical version impacts live site; Editor denied |
-| **`seo:manage`** | ✅ | ✅ | ❌ | Canonical and robots directives impact search ranking; Editor denied |
-| **`media:upload`** | ✅ | ✅ | ✅ | All roles can upload media for drafting |
+| **`faqs:create`** | ✅ | ✅ | ✅ | Editors can propose new questions |
+| **`faqs:edit`** | ✅ | ✅ | ✅ | Editors can refine answers |
+| **`faqs:reorder`** | ✅ | ✅ | ❌ | Visual ordering controlled by management |
+| **`faqs:delete`** | ✅ | ✅ | ❌ | Admin or Super Admin |
+| **`sections:edit`** | ✅ | ✅ | ✅ | Editors can draft landing page copy |
+| **`sections:publish`** | ✅ | ✅ | ❌ | **Editor Denied:** Homepage publishing requires Admin approval |
+| **`testimonials:create`** | ✅ | ✅ | ✅ | Editors can draft testimonial submissions |
+| **`testimonials:verify`** [OWNER APPROVED]| ✅ | ✅ | ❌ | **Editor Denied:** Consent audit required by management |
+| **`testimonials:publish`** [OWNER APPROVED]| ✅ | ✅ | ❌ | **Editor Denied:** Multi-signature approval required |
+| **`testimonials:delete`** | ✅ | ❌ | ❌ | Super Admin only |
+| **`content:restore`** | ✅ | ✅ | ❌ | **Editor Denied:** Version rollbacks affect live site |
+| **`seo:manage`** | ✅ | ✅ | ❌ | **Editor Denied:** Canonical and indexing tags affect search ranking |
+| **`media:upload`** | ✅ | ✅ | ✅ | Standard raster image upload for drafting |
+| **`media:upload_svg`** [OWNER APPROVED] | ✅ | ✅ | ❌ | **Editor Denied:** SVGs carry XSS risk; management only |
 | **`media:edit_meta`**| ✅ | ✅ | ✅ | All roles can provide accessible alt text |
-| **`media:delete`** | ✅ | ❌ | ❌ | Deletion can cause broken image links; Super Admin only |
-| **`settings:manage`** | ✅ | ❌ | ❌ | Global site settings restricted to sole Super Admin |
+| **`media:delete`** | ✅ | ❌ | ❌ | **Super Admin Only:** Prevents broken images across site |
+| **`settings:manage`** | ✅ | ❌ | ❌ | **Super Admin Only:** Global site settings governance |
 
 ---
 
 ## 4. Role Responsibility Profiles
 
 ### 4.1 SUPER_ADMIN (System Owner & Master Governance)
-- **Profile:** Sole owner account (`SHIVANSHU SATYAJEET`).
-- **CMS Responsibilities:**
-  - Full unilateral authority across all CMS operations.
-  - Exclusive authority to delete published services, pricing tiers, portfolio projects, and media files.
-  - Exclusive authority to update global `site_settings`.
-  - Sole authority to manage administrative accounts (`admins:manage`, `admins:change_role`).
+- **Identity:** Sole owner account (`SHIVANSHU SATYAJEET`).
+- **CMS Authority:** Unilateral authority across all CMS operations. Sole account permitted to execute permanent deletions of services, pricing tiers, portfolio projects, and media files, and update global `site_settings`.
 
 ### 4.2 ADMIN (Operations & Editorial Manager)
-- **Profile:** Department leads, project managers, senior engineering staff.
-- **CMS Responsibilities:**
-  - Day-to-day content publishing, review, and live site management.
-  - Authority to publish drafts submitted by Editors.
-  - Authority to create and edit pricing packages in INR.
-  - Authority to archive discontinued offerings.
-  - Authority to roll back content to previous historical revisions (`content:restore`).
-  - Authority to manage SEO titles, descriptions, and canonical links.
-  - **Restrictions:** Cannot permanently delete entities or media files; cannot modify global `site_settings`.
+- **CMS Authority:** Authority to review, approve, and publish content across services, portfolio, FAQs, and page sections. Full authority over pricing publication in INR. Authority to execute version rollbacks and audit client testimonial consent.
+- **Restrictions:** Cannot permanently delete entities or media files; cannot modify global `site_settings`.
 
 ### 4.3 EDITOR (Content Creator & Copywriter)
-- **Profile:** Copywriters, technical writers, marketing coordinators.
-- **CMS Responsibilities:**
-  - Drafting new services, portfolio case studies, FAQs, and page section copy.
-  - Uploading media assets and assigning accessible alt text.
-  - Submitting completed drafts for review (`status: REVIEW`).
-  - Viewing the full catalog and inspecting historical revisions.
-  - **Restrictions:** Strictly denied from publishing live content, altering pricing tiers in INR, modifying SEO indexing controls, archiving live content, deleting assets, or performing version rollbacks.
-
----
-
-## 5. Security Invariant Enforcement Rules
-
-1. **Non-Escalation Check:** A user can never assign or elevate permissions beyond their own role.
-2. **Atomic Verification:** Server Actions verify role and permissions at the beginning of each transaction; cached client session state is never trusted.
-3. **Audit Trail Invariance:** Every permission denial logs an `UNAUTHORIZED_ACCESS_ATTEMPT` audit entry with actor ID, IP, user-agent, and attempted permission key.
+- **CMS Authority:** Drafting services, portfolio case studies, FAQs, and page sections. Uploading standard raster images (WebP/PNG/JPEG). Creating draft pricing proposals (`pricing:edit_draft`).
+- **Strict Restrictions [OWNER APPROVED]:** Cannot publish any live content. Cannot modify live pricing in INR. Cannot archive or delete content. Cannot upload raw SVGs. Cannot alter SEO indexing directives on published pages. Cannot restore historical revisions.

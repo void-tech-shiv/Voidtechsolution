@@ -1,21 +1,22 @@
 # CMS_DATABASE_DESIGN.md — Database Architecture & Entity Specifications
 
 **Project:** VOIDTECH SOLUTION  
-**Milestone:** Phase 10.0 — CMS Discovery & Architecture  
-**Document Status:** PROPOSED DATABASE DESIGN (DO NOT IMPLEMENT IN PHASE 10.0)  
+**Milestone:** Phase 10.0.1 — CMS Architecture Refinement & Design Freeze  
+**Document Status:** FROZEN DATABASE SPECIFICATION [DESIGN FREEZE]  
 **Author:** Google DeepMind Assistant  
-**Approved By:** Pending Owner Authorization  
+**Approved By:** Project Owner  
 
 ---
 
-## 1. Overview & Database Philosophy
+## 1. Architectural Database Charter
 
-The CMS database tier expands upon the foundational PostgreSQL schema established in Phase 3 and Phase 9.1. It is designed around four core principles:
-
-1. **Non-Breaking Evolution:** Preserve existing Phase 3 models (`Service`, `PricingPackage`, `PortfolioProject`, `FAQ`, `SiteSetting`) while enriching them with publication lifecycles, SEO metadata, and revision pointers.
-2. **Deterministic Optimistic Concurrency:** Incorporate integer `version` counters across all editable entities to provide atomic lost-update prevention.
-3. **Immutable Revision History:** Centralize editorial version snapshots in a normalized `content_revisions` table.
-4. **Zero Unverified Claims (Trust & Anti-Fabrication):** Enforce strict verification metadata on testimonials and clear separation of concept/benchmark prototypes.
+This document formalizes the persistent data layer for the VOIDTECH Administrative Content Management System. It establishes:
+1. **Materialized Published Tables + Relational Identity Model (Approach C [OWNER APPROVED]):** Real, database-enforced foreign key relations linking `ContentItem`, `ContentRevision`, and domain-specific models.
+2. **Strict Draft / Published Separation [OWNER APPROVED]:** Domain models (`Service`, `PricingPackage`, etc.) store **strictly currently published content**, while draft revisions reside in `ContentRevision`.
+3. **Atomic Publication Promotion [OWNER APPROVED]:** Publishing is executed inside a single PostgreSQL transaction (`prisma.$transaction`).
+4. **Draft Revision Retention [OWNER APPROVED]:** Up to 20 working draft revisions are retained; published milestones are permanently preserved.
+5. **Multi-Stage Testimonial Verification [OWNER APPROVED]:** Multi-signature verification and consent records decoupled from publication.
+6. **Provider-Abstracted Media Metadata [OWNER APPROVED]:** Media records track `provider` and `storageKey` with SHA-256 deduplication.
 
 ---
 
@@ -23,24 +24,55 @@ The CMS database tier expands upon the foundational PostgreSQL schema establishe
 
 ```mermaid
 erDiagram
-    AdminUser ||--o{ ContentRevision : "authors"
+    AdminUser ||--o{ ContentRevision : "authors / edits"
+    AdminUser ||--o{ ContentItem : "publishes"
+    AdminUser ||--o{ Testimonial : "verifies"
     AdminUser ||--o{ MediaAsset : "uploads"
-    AdminUser ||--o{ PageSection : "edits"
 
-    Service ||--o{ ContentRevision : "has revisions"
-    PricingPackage ||--o{ ContentRevision : "has revisions"
-    PortfolioProject ||--o{ ContentRevision : "has revisions"
-    PageSection ||--o{ ContentRevision : "has revisions"
+    ContentItem ||--o{ ContentRevision : "has revisions (1 to N)"
+    ContentItem |o--o| ContentRevision : "currently published revision (1 to 1)"
+    
+    ContentItem ||--o| Service : "materialized published service"
+    ContentItem ||--o| PricingPackage : "materialized published pricing"
+    ContentItem ||--o| PortfolioProject : "materialized published portfolio"
+    ContentItem ||--o| FAQ : "materialized published FAQ"
+    ContentItem ||--o| PageSection : "materialized published section"
+    ContentItem ||--o| Testimonial : "materialized published testimonial"
 
     MediaAsset ||--o{ PortfolioProject : "hero/gallery images"
-    MediaAsset ||--o{ Service : "custom icons/covers"
+    MediaAsset ||--o{ Service : "icons/banners"
     MediaAsset ||--o{ PageSection : "section media"
 
-    Testimonial ||--o{ ContentRevision : "revisions"
-    Testimonial }o--|| PortfolioProject : "optional project link"
+    ContentItem {
+        string id PK
+        string slug UK
+        enum contentType
+        enum publicationStatus
+        string currentPublishedRevisionId FK, UK
+        datetime publishedAt
+        string publishedById FK
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    ContentRevision {
+        string id PK
+        string contentItemId FK
+        int versionNumber
+        enum revisionStatus
+        boolean isPublishedSnapshot
+        string title
+        json snapshotData
+        string authorId FK
+        string authorName
+        string changeSummary
+        string rejectionNote
+        datetime createdAt
+    }
 
     Service {
         string id PK
+        string contentItemId FK, UK
         string slug UK
         string title
         string shortDesc
@@ -51,22 +83,19 @@ erDiagram
         string[] technologies
         int startingPriceInr
         string currency
-        enum status
-        int version
         string seoTitle
         string seoDescription
         string canonicalUrl
-        datetime publishedAt
-        string publishedById FK
         boolean isFeatured
         boolean isActive
         int orderIndex
-        datetime createdAt
+        datetime publishedAt
         datetime updatedAt
     }
 
     PricingPackage {
         string id PK
+        string contentItemId FK, UK
         string slug UK
         string name
         enum category
@@ -76,17 +105,15 @@ erDiagram
         string billingPeriod
         string[] features
         boolean popular
-        enum status
-        int version
         int orderIndex
         boolean isActive
         datetime publishedAt
-        datetime createdAt
         datetime updatedAt
     }
 
     PortfolioProject {
         string id PK
+        string contentItemId FK, UK
         string slug UK
         string title
         string clientName
@@ -102,36 +129,45 @@ erDiagram
         string liveUrl
         string githubUrl
         string projectType
-        enum status
-        int version
         string seoTitle
         string seoDescription
-        datetime publishedAt
-        string publishedById FK
         boolean isFeatured
         int orderIndex
-        datetime createdAt
+        boolean isActive
+        datetime publishedAt
+        datetime updatedAt
+    }
+
+    FAQ {
+        string id PK
+        string contentItemId FK, UK
+        string question
+        string answer
+        string category
+        int orderIndex
+        boolean isActive
+        datetime publishedAt
         datetime updatedAt
     }
 
     PageSection {
         string id PK
+        string contentItemId FK, UK
         string key UK
         string pageSlug
         string title
         string subtitle
         string content
         json metadata
-        enum status
-        int version
+        string mediaUrl
+        boolean isActive
         datetime publishedAt
-        string publishedById FK
-        datetime createdAt
         datetime updatedAt
     }
 
     Testimonial {
         string id PK
+        string contentItemId FK, UK
         string clientName
         string clientRole
         string clientCompany
@@ -140,38 +176,32 @@ erDiagram
         string avatarUrl
         string projectSlug
         boolean isVerified
-        string verificationRecord
-        string approvalStatus
-        enum status
+        string verifiedById FK
+        datetime verifiedAt
+        boolean clientConsentConfirmed
+        datetime consentConfirmedAt
+        string consentEvidenceUrl
+        enum approvalStatus
         int orderIndex
         boolean isActive
-        datetime createdAt
+        datetime publishedAt
         datetime updatedAt
-    }
-
-    ContentRevision {
-        string id PK
-        string entityType
-        string entityId
-        int versionNumber
-        json snapshotData
-        string authorId FK
-        string authorName
-        string changeSummary
-        datetime createdAt
     }
 
     MediaAsset {
         string id PK
+        string storageKey UK
+        enum provider
         string filename
         string originalName
         string mimeType
         int sizeBytes
         int width
         int height
-        string storagePath UK
+        string sha256Hash
+        boolean isSvg
         string publicUrl
-        string altText
+        string defaultAltText
         string caption
         string uploaderId FK
         datetime createdAt
@@ -183,260 +213,169 @@ erDiagram
 
 ## 3. Enumerations
 
-### 3.1 Content Status (`ContentStatus`)
-Represents the publication lifecycle state across all manageable entities:
 ```prisma
-enum ContentStatus {
-  DRAFT       // Initial authoring or work-in-progress
+enum ContentType {
+  SERVICE
+  PRICING_PACKAGE
+  PORTFOLIO_PROJECT
+  FAQ
+  PAGE_SECTION
+  TESTIMONIAL
+}
+
+enum ContentPublicationStatus {
+  DRAFT       // Working draft; unpublished
   REVIEW      // Submitted by Editor; awaiting Admin approval
-  PUBLISHED   // Live on public website; indexed by search engines
-  ARCHIVED    // Retired from public site; preserved in database
+  PUBLISHED   // Live on public website
+  ARCHIVED    // Retired from public site
+}
+
+enum RevisionLifecycleStatus {
+  WORKING_DRAFT       // Actively being authored
+  PENDING_REVIEW      // Submitted for review
+  APPROVED            // Approved by Admin; ready for promotion
+  PUBLISHED_SNAPSHOT  // Currently promoted public snapshot
+  SUPERSEDED          // Historical past version
+  REJECTED            // Returned to author with notes
+}
+
+enum TestimonialApprovalStatus {
+  PENDING_VERIFICATION   // Unaudited
+  VERIFIED               // Fully verified with documented client consent
+  REJECTED               // Unverified or invalid
+  REVOKED                // Client consent revoked post-publication
+}
+
+enum StorageProviderType {
+  LOCAL                  // Local filesystem (/public/uploads)
+  R2                     // Cloudflare R2 / S3-compatible cloud
 }
 ```
 
-### 3.2 Testimonial Approval Status (`ApprovalStatus`)
-Strict anti-fabrication governance gate:
-```prisma
-enum ApprovalStatus {
-  PENDING_VERIFICATION   // Unconfirmed submission
-  VERIFIED               // Audited and confirmed with client consent
-  REJECTED               // Unverified or rejected
-}
-```
-
 ---
 
-## 4. Entity Specifications
+## 4. Model Specifications
 
-### 4.1 Enhanced Model: `Service`
-Extends existing Phase 3 `Service` model with lifecycle, SEO, and optimistic locking:
+### 4.1 `ContentItem` (Canonical Content Identity)
+Serves as the central anchor for all manageable content, coordinating publication status, slugs, and currently published revisions:
 
 | Field Name | Type | Modifiers | Description |
 |---|---|---|---|
 | `id` | `String` | `@id @default(cuid())` | Primary key |
-| `slug` | `String` | `@unique` | URL slug (e.g. `website-development`) |
-| `title` | `String` | Required | Full service title |
-| `shortDesc` | `String` | Required | Condensed card summary (1–2 sentences) |
-| `fullDesc` | `String` | `@db.Text`, Required | Detailed capability description / Markdown |
-| `icon` | `String` | Default: `"Code"` | Lucide icon identifier or SVG path |
-| `category` | `ServiceCategory` | Required | Classification category enum |
-| `deliverables`| `String[]` | Array | Concrete deliverables list |
-| `technologies`| `String[]` | Array | Technology tags |
-| `startingPriceInr` | `Int?` | Optional | Baseline investment in INR |
-| `currency` | `String` | Default: `"INR"` | Currency ISO code |
-| `status` | `ContentStatus` | Default: `PUBLISHED` | Publication lifecycle stage |
-| `version` | `Int` | Default: `1` | Monotonic OCC version counter |
-| `seoTitle` | `String?` | Optional | Meta page title override |
-| `seoDescription` | `String?` | Optional | Meta description override |
-| `canonicalUrl` | `String?` | Optional | Canonical URL tag override |
-| `publishedAt` | `DateTime?` | Optional | Timestamp of initial or latest publish |
-| `publishedById` | `String?` | Optional | Foreign key to `AdminUser` who published |
-| `isFeatured` | `Boolean` | Default: `false` | Highlighted on homepage |
-| `isActive` | `Boolean` | Default: `true` | Visibility flag |
-| `orderIndex` | `Int` | Default: `0` | Display sorting priority |
-| `createdAt` | `DateTime` | Default: `now()` | Creation timestamp |
-| `updatedAt` | `DateTime` | `@updatedAt` | Last modification timestamp |
-
-**Indexes:**
-- `@@index([category])`
-- `@@index([status, isActive, orderIndex])`
-- `@@index([slug])`
-
----
-
-### 4.2 Enhanced Model: `PricingPackage`
-Extends existing Phase 3 `PricingPackage` model:
-
-| Field Name | Type | Modifiers | Description |
-|---|---|---|---|
-| `id` | `String` | `@id @default(cuid())` | Primary key |
-| `slug` | `String` | `@unique` | Unique tier slug (e.g. `basic-static`) |
-| `name` | `String` | Required | Tier display name |
-| `category` | `ServiceCategory` | Default: `WEB_DEVELOPMENT` | Associated service category |
-| `priceInr` | `Int` | Required | Price in Indian Rupees |
-| `currency` | `String` | Default: `"INR"` | ISO currency code |
-| `isStartingPrice` | `Boolean` | Default: `true` | Displays `+` suffix indicator |
-| `billingPeriod` | `String?` | Optional | Billing interval description |
-| `features` | `String[]` | Array | Deliverables checklist items |
-| `popular` | `Boolean` | Default: `false` | Featured badge highlight |
-| `status` | `ContentStatus` | Default: `PUBLISHED` | Publication lifecycle stage |
-| `version` | `Int` | Default: `1` | Monotonic OCC version counter |
-| `orderIndex` | `Int` | Default: `0` | Display sorting order |
-| `isActive` | `Boolean` | Default: `true` | Public visibility toggle |
-| `publishedAt` | `DateTime?` | Optional | Timestamp of publication |
-| `createdAt` | `DateTime` | Default: `now()` | Creation timestamp |
-| `updatedAt` | `DateTime` | `@updatedAt` | Last modification timestamp |
-
-**Indexes:**
-- `@@index([status, isActive, orderIndex])`
-- `@@index([category])`
-
----
-
-### 4.3 Enhanced Model: `PortfolioProject`
-Extends existing Phase 3 `PortfolioProject` model with gallery, lifecycle, and SEO:
-
-| Field Name | Type | Modifiers | Description |
-|---|---|---|---|
-| `id` | `String` | `@id @default(cuid())` | Primary key |
-| `slug` | `String` | `@unique` | URL slug (e.g. `algorithmic-liquidity-engine`) |
-| `title` | `String` | Required | Case study project title |
-| `clientName` | `String` | Required | Client name or "Concept Lab Prototype" |
-| `industry` | `String` | Required | Industry vertical (e.g. `FINTECH`) |
-| `summary` | `String` | Required | Executive summary text |
-| `challenge` | `String` | `@db.Text`, Required | Engineering challenge / problem statement |
-| `solution` | `String` | `@db.Text`, Required | Architectural solution implemented |
-| `results` | `String` | `@db.Text`, Required | Benchmark or production outcome metrics |
-| `techStack` | `String[]` | Array | Frameworks, tools, and languages used |
-| `metrics` | `Json?` | Optional | Array of structured metrics: `[{ label, value }]` |
-| `heroImage` | `String?` | Optional | Cover image public URL / media reference |
-| `galleryImages` | `String[]` | Array | Additional screenshot / architecture diagrams |
-| `liveUrl` | `String?` | Optional | Production live URL (if applicable) |
-| `githubUrl` | `String?` | Optional | Public or client repository URL |
-| `projectType` | `String` | Default: `"CONCEPT"` | `"CONCEPT" \| "INTERNAL_PROTOTYPE" \| "PRODUCTION"` |
-| `status` | `ContentStatus` | Default: `PUBLISHED` | Publication lifecycle stage |
-| `version` | `Int` | Default: `1` | Monotonic OCC version counter |
-| `seoTitle` | `String?` | Optional | Meta title override |
-| `seoDescription` | `String?` | Optional | Meta description override |
-| `isFeatured` | `Boolean` | Default: `false` | Highlighted on homepage & showcase |
-| `orderIndex` | `Int` | Default: `0` | Display sorting priority |
-| `publishedAt` | `DateTime?` | Optional | Publication timestamp |
+| `slug` | `String` | `@unique` | Canonical route slug |
+| `contentType` | `ContentType` | Required | Content type enum |
+| `status` | `ContentPublicationStatus` | Default: `DRAFT` | Publication state |
+| `currentPublishedRevisionId` | `String?` | `@unique` | Foreign key to currently active published `ContentRevision` |
+| `publishedAt` | `DateTime?` | Optional | Timestamp of current publication |
 | `publishedById` | `String?` | Optional | Foreign key to `AdminUser` publisher |
-| `createdAt` | `DateTime` | Default: `now()` | Creation timestamp |
+| `createdAt` | `DateTime` | Default: `now()` | Record creation timestamp |
 | `updatedAt` | `DateTime` | `@updatedAt` | Last modification timestamp |
 
-**Indexes:**
-- `@@index([status, isFeatured, orderIndex])`
-- `@@index([projectType])`
+**Relations & Constraints:**
+- `currentPublishedRevision`: Relation to `ContentRevision` on `currentPublishedRevisionId` (`onDelete: SetNull`).
+- `revisions`: Relation to `ContentRevision[]` (`onDelete: Cascade`).
+- One-to-one relations to domain models: `service`, `pricingPackage`, `portfolioProject`, `faq`, `pageSection`, `testimonial`.
+- `@@index([contentType, status])`
 - `@@index([slug])`
 
 ---
 
-### 4.4 New Model: `PageSection` (Editorial Block Engine)
-Stores narrative marketing copy across all public landing pages:
+### 4.2 `ContentRevision` (Revision History & Draft Working Storage)
+Stores all drafts, review proposals, and immutable published snapshots:
 
 | Field Name | Type | Modifiers | Description |
 |---|---|---|---|
 | `id` | `String` | `@id @default(cuid())` | Primary key |
-| `key` | `String` | `@unique` | Hierarchical identifier (e.g. `home.hero`, `about.values`) |
-| `pageSlug` | `String` | Required | Target route (e.g. `"home"`, `"about"`, `"contact"`) |
-| `title` | `String` | Required | Section headline |
-| `subtitle` | `String?` | Optional | Section supporting lead / eyebrow |
-| `content` | `String?` | `@db.Text` | Main editorial body in Markdown |
-| `metadata` | `Json?` | Optional | Structured configuration (CTAs, badge text, item arrays) |
-| `mediaUrl` | `String?` | Optional | Background or feature image URL |
-| `status` | `ContentStatus` | Default: `PUBLISHED` | Publication lifecycle stage |
-| `version` | `Int` | Default: `1` | Monotonic OCC version counter |
-| `publishedAt` | `DateTime?` | Optional | Publication timestamp |
-| `publishedById` | `String?` | Optional | Publisher admin ID |
-| `createdAt` | `DateTime` | Default: `now()` | Creation timestamp |
-| `updatedAt` | `DateTime` | `@updatedAt` | Last modification timestamp |
+| `contentItemId` | `String` | Required | Foreign key to `ContentItem` |
+| `versionNumber` | `Int` | Required | Monotonic sequential version counter (1, 2, 3...) |
+| `revisionStatus` | `RevisionLifecycleStatus` | Default: `WORKING_DRAFT` | Workflow status of this revision |
+| `isPublishedSnapshot` | `Boolean` | Default: `false` | Permanent immunity flag from draft pruning |
+| `title` | `String` | Required | Human-readable title for CMS lists |
+| `snapshotData` | `Json` | Required | Complete, validated JSON payload of the entity |
+| `authorId` | `String?` | Optional | Foreign key to `AdminUser` author |
+| `authorName` | `String` | Required | Cached admin name for zero-join audit display |
+| `changeSummary` | `String?` | Optional | Author's editorial change summary |
+| `rejectionNote` | `String?` | Optional | Reviewer's feedback when rejecting a revision |
+| `createdAt` | `DateTime` | Default: `now()` | Timestamp of revision snapshot |
 
-**Indexes:**
-- `@@index([pageSlug, status])`
-- `@@index([key])`
-
----
-
-### 4.5 New Model: `Testimonial` (Verified Trust Engine)
-Strict anti-fabrication controls for client endorsements:
-
-| Field Name | Type | Modifiers | Description |
-|---|---|---|---|
-| `id` | `String` | `@id @default(cuid())` | Primary key |
-| `clientName` | `String` | Required | Author name |
-| `clientRole` | `String` | Required | Job title / position |
-| `clientCompany` | `String` | Required | Company / brand name |
-| `content` | `String` | `@db.Text`, Required | Testimonial quote text |
-| `rating` | `Int` | Default: `5` | Star rating (1 to 5) |
-| `avatarUrl` | `String?` | Optional | Client headshot or avatar image URL |
-| `projectSlug` | `String?` | Optional | Linked `PortfolioProject.slug` |
-| `isVerified` | `Boolean` | Default: `false` | Verification status flag |
-| `verificationRecord`| `String` | `@db.Text`, Required | Reference to signed consent, email proof, or contract |
-| `approvalStatus` | `ApprovalStatus`| Default: `PENDING_VERIFICATION` | Audit gate status |
-| `status` | `ContentStatus` | Default: `DRAFT` | Lifecycle state (Cannot be PUBLISHED unless VERIFIED) |
-| `orderIndex` | `Int` | Default: `0` | Display sorting priority |
-| `isActive` | `Boolean` | Default: `true` | Public display toggle |
-| `createdAt` | `DateTime` | Default: `now()` | Creation timestamp |
-| `updatedAt` | `DateTime` | `@updatedAt` | Last modification timestamp |
-
-**Indexes:**
-- `@@index([status, isVerified, approvalStatus])`
-- `@@index([orderIndex])`
-
----
-
-### 4.6 New Model: `ContentRevision` (Historical Snapshots)
-Immutable revision tracking for all editable content:
-
-| Field Name | Type | Modifiers | Description |
-|---|---|---|---|
-| `id` | `String` | `@id @default(cuid())` | Primary key |
-| `entityType` | `String` | Required | `"SERVICE" \| "PRICING" \| "PORTFOLIO" \| "FAQ" \| "SECTION"` |
-| `entityId` | `String` | Required | ID of target entity |
-| `versionNumber`| `Int` | Required | Sequential version (1, 2, 3...) |
-| `snapshotData` | `Json` | Required | Complete JSON dump of entity state at revision |
-| `authorId` | `String?` | Optional | Foreign key to `AdminUser` |
-| `authorName` | `String` | Required | Cached admin name for fast display |
-| `changeSummary`| `String?` | Optional | Editorial note describing the change |
-| `createdAt` | `DateTime` | Default: `now()` | Timestamp of snapshot creation |
-
-**Indexes:**
-- `@@index([entityType, entityId, versionNumber(sort: Desc)])`
+**Relations & Constraints:**
+- `contentItem`: Relation to `ContentItem` (`fields: [contentItemId], references: [id], onDelete: Cascade`).
+- `@@unique([contentItemId, versionNumber])`
+- `@@index([contentItemId, revisionStatus])`
+- `@@index([contentItemId, isPublishedSnapshot])`
 - `@@index([authorId])`
-- `@@index([createdAt])`
 
 ---
 
-### 4.7 New Model: `MediaAsset` (Digital Asset Registry)
-Tracks uploaded assets with metadata and safety checks:
+### 4.3 `Testimonial` (Verified Client Endorsements) [OWNER APPROVED]
+Strictly enforces the multi-signature verification workflow:
 
 | Field Name | Type | Modifiers | Description |
 |---|---|---|---|
 | `id` | `String` | `@id @default(cuid())` | Primary key |
-| `filename` | `String` | Required | Sanitized unique storage filename (hash.ext) |
-| `originalName` | `String` | Required | Original filename provided by user |
-| `mimeType` | `String` | Required | Verified MIME type (`image/webp`, `image/svg+xml`, etc.) |
-| `sizeBytes` | `Int` | Required | File size in bytes (max: 5,242,880) |
-| `width` | `Int?` | Optional | Image pixel width |
-| `height` | `Int?` | Optional | Image pixel height |
-| `storagePath` | `String` | `@unique` | Storage bucket key or relative path |
-| `publicUrl` | `String` | Required | Public CDN or static URL |
-| `altText` | `String` | Required | Mandatory accessibility alternative text |
-| `caption` | `String?` | Optional | Optional editorial caption |
-| `uploaderId` | `String?` | Optional | Foreign key to `AdminUser` uploader |
+| `contentItemId` | `String` | `@unique` | Foreign key to `ContentItem` |
+| `clientName` | `String` | Required | Full client name |
+| `clientRole` | `String` | Required | Job title / position |
+| `clientCompany` | `String` | Required | Organization name |
+| `content` | `String` | `@db.Text`, Required | Approved quote text |
+| `rating` | `Int` | Default: `5` | Star rating (1 to 5) |
+| `avatarUrl` | `String?` | Optional | Verified avatar image URL |
+| `projectSlug` | `String?` | Optional | Linked `PortfolioProject.slug` |
+| `isVerified` | `Boolean` | Default: `false` | Verification gate flag |
+| `verifiedById` | `String?` | Optional | Foreign key to `AdminUser` verifier |
+| `verifiedAt` | `DateTime?` | Optional | Verification timestamp |
+| `clientConsentConfirmed` | `Boolean` | Default: `false` | Mandatory client consent confirmation |
+| `consentConfirmedAt` | `DateTime?` | Optional | Consent timestamp |
+| `consentEvidenceUrl` | `String` | `@db.Text`, Required | Reference to signed consent form or email audit |
+| `approvalStatus` | `TestimonialApprovalStatus` | Default: `PENDING_VERIFICATION` | Audit status |
+| `orderIndex` | `Int` | Default: `0` | Display order |
+| `isActive` | `Boolean` | Default: `true` | Public display toggle |
+| `publishedAt` | `DateTime?` | Optional | Publication timestamp |
+| `updatedAt` | `DateTime` | `@updatedAt` | Last modification timestamp |
+
+**Indexes & Rules:**
+- `@@index([isVerified, clientConsentConfirmed, approvalStatus, isActive])`
+- **Integrity Rule:** Database triggers or Server Actions prevent `isActive = true` unless `isVerified === true` and `clientConsentConfirmed === true` and `approvalStatus === "VERIFIED"`.
+
+---
+
+### 4.4 `MediaAsset` (Digital Asset Registry) [OWNER APPROVED]
+Decoupled storage coordinates with cryptographic deduplication:
+
+| Field Name | Type | Modifiers | Description |
+|---|---|---|---|
+| `id` | `String` | `@id @default(cuid())` | Primary key |
+| `storageKey` | `String` | `@unique` | Canonical path (e.g. `uploads/2026/11/hash.webp`) |
+| `provider` | `StorageProviderType` | Default: `LOCAL` | Storage backend identifier |
+| `filename` | `String` | Required | Unique storage filename |
+| `originalName` | `String` | Required | Client original filename |
+| `mimeType` | `String` | Required | Verified MIME type (`image/webp`, `image/avif`, etc.) |
+| `sizeBytes` | `Int` | Required | File size in bytes (max 5 MB) |
+| `width` | `Int?` | Optional | Pixel width |
+| `height` | `Int?` | Optional | Pixel height |
+| `sha256Hash` | `String` | Required | Content digest for deduplication |
+| `isSvg` | `Boolean` | Default: `false` | Restricted format flag |
+| `publicUrl` | `String` | Required | Cached public URL |
+| `defaultAltText` | `String` | Required | Mandatory fallback accessibility text |
+| `caption` | `String?` | Optional | Editorial caption |
+| `uploaderId` | `String?` | Optional | Foreign key to `AdminUser` |
 | `createdAt` | `DateTime` | Default: `now()` | Upload timestamp |
-| `updatedAt` | `DateTime` | `@updatedAt` | Last metadata edit timestamp |
+| `updatedAt` | `DateTime` | `@updatedAt` | Metadata update timestamp |
 
 **Indexes:**
-- `@@index([mimeType])`
+- `@@index([sha256Hash])`
+- `@@index([provider, storageKey])`
 - `@@index([uploaderId])`
-- `@@index([createdAt])`
 
 ---
 
-## 5. Audit Logging Action Mapping
+## 5. Impact Analysis on Existing Models
 
-CMS events map directly into the existing `AuditLog` engine (`src/server/security/audit.ts`):
-
-| CMS Mutation | Audit Action Key | Entity | Recorded Details |
-|---|---|---|---|
-| Create Item | `CMS_ITEM_CREATED` | Service / Portfolio / FAQ / Section | `{ entityType, id, title, slug }` |
-| Save Draft | `CMS_DRAFT_SAVED` | Service / Portfolio / FAQ / Section | `{ id, version, changeSummary }` |
-| Submit for Review | `CMS_SUBMITTED_FOR_REVIEW`| Service / Portfolio / FAQ / Section | `{ id, version, submittedBy }` |
-| Publish Item | `CMS_ITEM_PUBLISHED` | Service / Portfolio / FAQ / Section | `{ id, version, publishedAt, slug }` |
-| Archive Item | `CMS_ITEM_ARCHIVED` | Service / Portfolio / FAQ / Section | `{ id, archivedAt }` |
-| Restore Revision | `CMS_VERSION_RESTORED`| Service / Portfolio / FAQ / Section | `{ id, restoredFromVersion, newVersion }` |
-| Delete Item | `CMS_ITEM_DELETED` | Service / Portfolio / FAQ / Section | `{ id, entityType, title }` |
-| Upload Media | `CMS_MEDIA_UPLOADED` | MediaAsset | `{ id, filename, sizeBytes, mimeType }` |
-| Delete Media | `CMS_MEDIA_DELETED` | MediaAsset | `{ id, filename, storagePath }` |
-| Update Settings | `SETTINGS_UPDATED` | SiteSetting | `{ key, value }` |
-
----
-
-## 6. Migration & Rollback Strategy
-
-When implementing this schema in Phase 10.1:
-1. **Additive Migration:** All new fields on existing tables will be optional (`?`) or carry safe defaults (`default: PUBLISHED`, `default: 1`), ensuring zero breaking changes to existing production data.
-2. **Backfill Step:** A post-migration script will set `version = 1`, `status = "PUBLISHED"`, and initialize `PageSection` records from the static content currently in `src/config/site.ts`.
-3. **Rollback Script:** A tested, reversible down-migration script will be authored and verified prior to applying changes.
+1. **`Service`**: Enriched with `contentItemId: String? @unique` foreign key. Existing 18 service records are backfilled with matching `ContentItem` records. Existing columns remain untouched for zero public regression.
+2. **`PricingPackage`**: Enriched with `contentItemId: String? @unique` foreign key. Existing 10 packages remain fully functional.
+3. **`PortfolioProject`**: Enriched with `contentItemId: String? @unique` foreign key. Concept lab prototype disclaimers remain enforced.
+4. **`FAQ`**: Enriched with `contentItemId: String? @unique` foreign key.
+5. **`SiteSetting`**: Remains unversioned, direct key-value administrative configuration managed exclusively by `SUPER_ADMIN`.
+6. **`Enquiry` & Phase 9 CRM**: **100% UNTOUCHED.** All CRM models (`LeadNote`, `LeadFollowUp`, `LeadActivity`, `LeadAssignment`, `AdminNotification`) maintain their existing relations with zero interference.
+7. **`AdminUser`**: Adds inverse relations: `authoredRevisions: ContentRevision[]`, `publishedContentItems: ContentItem[]`, `verifiedTestimonials: Testimonial[]`, `uploadedMedia: MediaAsset[]`.
+8. **`AuditLog`**: Existing immutable WORM audit log records all CMS actions without foreign-key constraints (ensuring audit preservation even if content items are deleted).

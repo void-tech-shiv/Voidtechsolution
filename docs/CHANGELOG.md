@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.1] — 2026-11-13
+### Phase 10.0.1: CMS Architecture Refinement & Design Freeze
+
+#### Added
+- **CMS Architecture Refinement & Design Freeze Charter (`docs/phases/PHASE_10_0_1_ARCHITECTURE_REFINEMENT_REPORT.md`):**
+  - Incorporated seven owner-approved architectural decisions into the CMS architectural blueprint.
+  - Comparative analysis of Approaches A, B, and C for ContentItem + ContentRevision evaluation, formally locking in **Approach C** (Materialized Snapshots + Canonical ContentItem Identity + Relational ContentRevision History).
+  - Deterministic 8-scenario lifecycle state machine covering Draft Creation, Draft Edit, Promotion on Publish, Live Mutation via New Draft, Historical Rollback, Archival, Testimonial Verification & Revocation, and Storage Provider Sync.
+  - Comprehensive 12-task implementation breakdown for Phase 10.1 with dependencies, prerequisites, and empirical acceptance criteria.
+- **Security Verification Test Matrix (SEC-01 through SEC-15):**
+  - Formally specified 15 automated security test scenarios in `docs/architecture/CMS_SECURITY_REVIEW.md` and `docs/architecture/CMS_TESTING_STRATEGY.md` covering stored XSS, SVG DOMPurify sanitization, magic-byte checks, draft isolation, pricing publish privilege checks, OCC version locking, and offline fallback resilience.
+
+#### Changed
+- **`docs/architecture/CMS_ARCHITECTURE.md`:**
+  - Updated with draft/published content separation guarantees, Approach C data pipeline, Next.js Draft Mode preview with `X-Robots-Tag: noindex, nofollow`, provider-abstracted media system, GFM Markdown pipeline, and offline static fallback architecture.
+- **`docs/architecture/CMS_DATABASE_DESIGN.md`:**
+  - Updated Entity-Relationship Diagram and Prisma schema specifications to implement Approach C with `ContentItem`, `ContentRevision`, `Testimonial`, `MediaAsset`, and domain relation models.
+- **`docs/architecture/CMS_API_DESIGN.md`:**
+  - Updated Server Action contracts with atomic publishing transactions, testimonial verification actions, pricing draft vs. publish separation, and standardized response envelopes.
+- **`docs/architecture/CMS_RBAC_PERMISSION_MATRIX.md`:**
+  - Added `pricing:edit_draft` permission for `EDITOR` role; strictly restricted `pricing:publish` to `SUPER_ADMIN` and `ADMIN`. Added `testimonials:verify` and `media:upload_svg` permission keys.
+- **`docs/architecture/CMS_SECURITY_REVIEW.md`:**
+  - Added exhaustive 15-scenario threat matrix detailing attacks, impacts, mitigations, and verification tests.
+- **`docs/architecture/CMS_TESTING_STRATEGY.md`:**
+  - Expanded 5-tier testing strategy to incorporate the 7 owner decisions and map all 15 security verification tests.
+- **`docs/phases/PHASE_10_ROADMAP.md`:**
+  - Updated Phase 10 roadmap to reflect Phase 10.0.1 complete and design freeze authorized. Detailed the 12-task implementation plan for Phase 10.1.
+
+---
+
 ## [0.10.0] — 2026-11-13
 ### Phase 10.0: Admin CMS Discovery & Architecture
 

@@ -1,33 +1,32 @@
 ---
-updated: 2026-11-13T16:50:00+05:30
+updated: 2026-11-13T17:08:00+05:30
 ---
 
 # Project State — VOIDTECH SOLUTION
 
 ## Current Position
 
-**Milestone:** 10.0 — CMS Discovery & Architecture (COMPLETE & VERIFIED)  
+**Milestone:** 10.0.1 — CMS Architecture Refinement & Design Freeze (COMPLETE & FROZEN)  
 **Phase:** 10 — Admin CMS  
-**Status:** active (Phase 10.0 Complete: Read-only codebase audit, hybrid content model, ERD & schema design, API contracts, RBAC matrix, security review, testing blueprint, and execution roadmap complete)  
+**Status:** active (Phase 10.0.1 Complete: 7 owner-approved architectural decisions incorporated, Approach C locked in, 8-scenario deterministic lifecycle matrix defined, GFM pipeline specified, 15-scenario security verification matrix created, 12-task Phase 10.1 implementation plan authored. Strictly documentation-only; 0 application code changes, 0 database writes)  
 **Visual Reference:** SmartStruct Cybernetic Layout + Official Purple/Violet Brand Identity  
 
 ## Last Action
 
-- Executed Phase 10.0 CMS Discovery & Architecture Mission:
-  - Conducted read-only audit of existing data models, repositories, public routes, admin pages, and test infrastructure.
-  - Formulated Hybrid Content Strategy: normalized domain entities for structured catalogs + `PageSection` blocks for landing page copy.
-  - Defined 4-stage content lifecycle: `DRAFT` -> `REVIEW` -> `PUBLISHED` -> `ARCHIVED`.
-  - Authored comprehensive architecture blueprint with Next.js Draft Mode preview engine and on-demand cache revalidation.
-  - Specified enriched database schema (`CMS_DATABASE_DESIGN.md`) with `PageSection`, `ContentRevision`, `Testimonial`, and `MediaAsset`.
-  - Defined full typed Server Action and API contracts (`CMS_API_DESIGN.md`) with atomic OCC version counters.
-  - Mapped granular RBAC matrix across `SUPER_ADMIN`, `ADMIN`, and `EDITOR` (`CMS_RBAC_PERMISSION_MATRIX.md`).
-  - Authored security threat review covering Stored XSS, file upload pipelines, CSRF, and anti-fabrication controls.
-  - Established 5-tier testing blueprint and phased implementation roadmap (10.0 through 10.4).
+- Executed Phase 10.0.1 CMS Architecture Refinement & Design Freeze:
+  - Authored comprehensive charter: `docs/phases/PHASE_10_0_1_ARCHITECTURE_REFINEMENT_REPORT.md`.
+  - Refined `docs/architecture/CMS_ARCHITECTURE.md`: Incorporated all 7 owner decisions, Approach A/B/C evaluation matrix, deterministic lifecycle state machine, GFM Markdown pipeline, and offline fallback guarantees.
+  - Refined `docs/architecture/CMS_DATABASE_DESIGN.md`: Approach C ERD, full Prisma models for `ContentItem`, `ContentRevision`, `Testimonial`, `MediaAsset`, and domain relation links.
+  - Refined `docs/architecture/CMS_API_DESIGN.md`: Typed Server Action contracts, atomic publishing transactions, testimonial verification, and media upload pipeline.
+  - Refined `docs/architecture/CMS_RBAC_PERMISSION_MATRIX.md`: 3-role matrix with `pricing:publish` restricted to `SUPER_ADMIN`/`ADMIN` and `pricing:edit_draft` for `EDITOR`.
+  - Refined `docs/architecture/CMS_SECURITY_REVIEW.md`: Exhaustive 15-scenario threat matrix (SEC-01 through SEC-15) with attack vectors, impact, mitigations, and test cases.
+  - Refined `docs/architecture/CMS_TESTING_STRATEGY.md`: 5-tier testing blueprint with 15 security verification tests.
+  - Refined `docs/phases/PHASE_10_ROADMAP.md`: Detailed 12-task Phase 10.1 implementation plan with strict prerequisites.
   - Maintained strict execution boundary: 0 application code changes, 0 database writes, 0 migration executions.
 
 ## Next Steps
 
-1. Present Phase 10.0 Discovery Report & open decisions to Owner.
+1. Present Phase 10.0.1 Final Acceptance Report to Owner.
 2. Await Owner Authorization before beginning Phase 10.1 (Database Schema & Content Repositories).
 
 ## Active Decisions
@@ -61,3 +60,10 @@ updated: 2026-11-13T16:50:00+05:30
 | CMS Concurrency Engine | Monotonic integer `version` OCC counter + immutable `ContentRevision` snapshots | 2026-11-13 | Database, Server Actions |
 | Media Storage Strategy | Pluggable `StorageService`: local `/public/uploads` dev + Cloudflare R2 production | 2026-11-13 | Media Management, Storage |
 | Trust & Anti-Fabrication | Mandatory `isVerified` record on testimonials; concept lab disclaimers enforced | 2026-11-13 | Database, Content Governance |
+| CMS Draft Isolation (Decision 1) | Public queries read materialized published records only; unpromoted drafts isolated in Draft Mode | 2026-11-13 | CMS Architecture, Repos |
+| CMS Architecture Evaluation (Decision 2) | Approach C selected: Materialized Snapshots + Canonical ContentItem + Relational Revisions | 2026-11-13 | CMS Database Design, Repos |
+| CMS Revision Retention (Decision 3) | Retain up to 20 working draft revisions; published snapshots permanently exempt; rollbacks append v=max+1 | 2026-11-13 | Database, Revision Engine |
+| Testimonial Verification & Consent (Decision 4) | Dual gate: Decoupled verification & consent; requires consent=true AND status=VERIFIED to publish | 2026-11-13 | Database, Testimonials Repo, RBAC |
+| Provider-Abstracted Storage (Decision 5) | `StorageProvider` interface; local filesystem dev; Cloudflare R2 production; restricted SVG uploads | 2026-11-13 | Storage, Media Service, Security |
+| Markdown Sanitization (Decision 6) | AST-based GFM pipeline: `unified` + `remark-gfm` + `rehype-sanitize`; strips scripts, handlers, iframes | 2026-11-13 | Markdown Utilities, Security |
+| Pricing Publication RBAC (Decision 7) | `pricing:publish` restricted to `SUPER_ADMIN` and `ADMIN`; `EDITOR` limited to `pricing:edit_draft` | 2026-11-13 | RBAC, Server Actions, UI |
