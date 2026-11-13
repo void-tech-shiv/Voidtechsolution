@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.6] — 2026-11-13
+### Phase 10.1: Task 10.1.3 — Prisma Client Generation & Type Export
+
+#### Added
+- **Prisma Client Generation & Type Export Report (`docs/phases/PHASE_10_1_3_PRISMA_CLIENT_GENERATION_REPORT.md`):**
+  - Compiled and generated `@prisma/client` (v6.19.3) from the validated CMS schema without connecting to Neon.
+  - Authored central type-export hub at `src/types/cms.ts` and re-exported it via `src/types/index.ts`.
+  - Re-exported all 6 CMS enums as runtime values and types: `ContentType`, `ContentPublicationStatus`, `RevisionLifecycleStatus`, `TestimonialVerificationStatus`, `ClientConsentStatus`, and `StorageProviderType`.
+  - Type-exported all 5 CMS models: `ContentItem`, `ContentRevision`, `PageSection`, `Testimonial`, and `MediaAsset`.
+  - Exported composite DTO interfaces (`ContentItemWithRevisions`, `ContentItemWithPointers`, `ContentRevisionWithAuthor`, `TestimonialWithVerifier`, `MediaAssetWithUploader`, `CmsOperationResult`).
+  - Created unit test suite `tests/unit/cms-types.test.ts` (6 tests passing).
+  - Resolved strict TypeScript model contracts across domain repositories (`faq.repo.ts`, `portfolio.repo.ts`, `pricing.repo.ts`, `services.repo.ts`) and test mocks.
+  - Verified 100% test pass rate across all 31 Vitest suites (468 tests), clean typecheck (0 errors), clean ESLint (0 errors), and clean Next.js build (33/33 production routes).
+  - Maintained strict database safety: production Neon was never accessed, contacted, migrated, or modified.
+
+---
+
 ## [0.10.5] — 2026-11-13
 ### Phase 10.1: Task 10.1.2.1 — PostgreSQL Migration Integrity Closure Audit
 

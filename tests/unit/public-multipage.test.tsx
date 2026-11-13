@@ -142,6 +142,8 @@ describe("Public Website Multi-Page Architecture", () => {
   describe("Services Catalog CTAs & Contact Pre-filling", () => {
     const mockServices: Service[] = servicesRegistry.slice(0, 3).map((s, idx) => ({
       id: s.id,
+      contentItemId: null,
+      publishedAt: null,
       slug: s.slug,
       title: s.title,
       shortDesc: s.shortDescription,

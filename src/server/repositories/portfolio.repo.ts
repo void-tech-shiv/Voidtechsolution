@@ -9,6 +9,8 @@ import type { PortfolioProject, Prisma } from "@prisma/client";
 const fallbackProjects: PortfolioProject[] = [
   {
     id: "proj-01",
+    contentItemId: null,
+    publishedAt: null,
     slug: "algorithmic-liquidity-engine",
     title: "Algorithmic Liquidity & Execution Engine",
     clientName: "VoidTech Concept Lab (Architecture Prototype)",
@@ -34,6 +36,8 @@ const fallbackProjects: PortfolioProject[] = [
   },
   {
     id: "proj-02",
+    contentItemId: null,
+    publishedAt: null,
     slug: "autonomous-ai-ops-agent",
     title: "Autonomous Cloud Ops Agent",
     clientName: "VoidTech Concept Lab (Research Prototype)",
@@ -59,6 +63,8 @@ const fallbackProjects: PortfolioProject[] = [
   },
   {
     id: "proj-03",
+    contentItemId: null,
+    publishedAt: null,
     slug: "distributed-telemetry-data-mesh",
     title: "Distributed Telemetry & Data Mesh Gateway",
     clientName: "VoidTech Concept Lab (Data Systems Prototype)",
@@ -84,6 +90,8 @@ const fallbackProjects: PortfolioProject[] = [
   },
   {
     id: "proj-04",
+    contentItemId: null,
+    publishedAt: null,
     slug: "decentralized-identity-vault",
     title: "Decentralized Identity & Zero-Trust Auth Vault",
     clientName: "VoidTech Concept Lab (Security Prototype)",
@@ -109,6 +117,8 @@ const fallbackProjects: PortfolioProject[] = [
   },
   {
     id: "proj-05",
+    contentItemId: null,
+    publishedAt: null,
     slug: "edge-iot-fleet-monitor",
     title: "Edge IoT Fleet Telemetry & Remote Control",
     clientName: "VoidTech Concept Lab (IoT Prototype)",

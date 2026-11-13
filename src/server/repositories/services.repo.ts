@@ -8,6 +8,8 @@ import type { Service, Prisma, ServiceCategory } from "@prisma/client";
 function mapStaticToServiceModel(def: (typeof servicesRegistry)[number], index: number): Service {
   return {
     id: def.id,
+    contentItemId: null,
+    publishedAt: null,
     slug: def.slug,
     title: def.title,
     shortDesc: def.shortDescription,

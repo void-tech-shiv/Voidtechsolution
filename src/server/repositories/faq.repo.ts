@@ -7,6 +7,8 @@ import type { FAQ, Prisma } from "@prisma/client";
 const fallbackFaqs: FAQ[] = [
   {
     id: "faq-01",
+    contentItemId: null,
+    publishedAt: null,
     question: "What is the typical development turnaround time for a project?",
     answer: "Turnaround depends on the tier: static landing pages deploy in 3-5 business days; standard business websites take 7-10 days; while complex custom web applications, SaaS, and AI automations typically span 2-6 weeks with agile milestone delivery.",
     category: "GENERAL",
@@ -17,6 +19,8 @@ const fallbackFaqs: FAQ[] = [
   },
   {
     id: "faq-02",
+    contentItemId: null,
+    publishedAt: null,
     question: "Do you build custom solutions or use off-the-shelf templates?",
     answer: "Every VoidTech Solution digital asset is engineered bespoke using modern frameworks like Next.js, React, Tailwind CSS, and Node.js. We never use bloated, slow third-party templates.",
     category: "TECHNICAL",
@@ -27,6 +31,8 @@ const fallbackFaqs: FAQ[] = [
   },
   {
     id: "faq-03",
+    contentItemId: null,
+    publishedAt: null,
     question: "Are your prices really starting at ₹999 for static sites?",
     answer: "Yes. Our Basic Static package starts at ₹999 for lightweight, ultra-fast landing pages. For enterprise systems, custom applications, and autonomous AI agents, pricing scales predictably based on specifications and complexity.",
     category: "PRICING",
@@ -37,6 +43,8 @@ const fallbackFaqs: FAQ[] = [
   },
   {
     id: "faq-04",
+    contentItemId: null,
+    publishedAt: null,
     question: "How do you handle Indian and international payment gateways?",
     answer: "We engineer frictionless payment checkouts supporting UPI intent flows, QR code generation, Net Banking, credit/debit cards, and global currencies via Razorpay, Cashfree, and Stripe.",
     category: "PAYMENTS",
@@ -47,6 +55,8 @@ const fallbackFaqs: FAQ[] = [
   },
   {
     id: "faq-05",
+    contentItemId: null,
+    publishedAt: null,
     question: "What warranty or post-deployment support do you provide?",
     answer: "All deliverables include a limited 30-day bug-fix warranty following final handover, covering defects in functionality explicitly within agreed project scope. New features, scope changes, client-side modifications, third-party service failures, and external infrastructure issues are excluded. Ongoing maintenance agreements are available upon request.",
     category: "SUPPORT",

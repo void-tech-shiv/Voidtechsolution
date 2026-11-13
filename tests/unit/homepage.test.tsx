@@ -116,6 +116,8 @@ describe("Phase 4: Homepage & Marketing Experience", () => {
   describe("ServicesFilter Component", () => {
     const mockServices: Service[] = servicesRegistry.map((s, idx) => ({
       id: s.id,
+      contentItemId: null,
+      publishedAt: null,
       slug: s.slug,
       title: s.title,
       shortDesc: s.shortDescription,
@@ -180,6 +182,8 @@ describe("Phase 4: Homepage & Marketing Experience", () => {
     const mockFaqs: FAQ[] = [
       {
         id: "faq-01",
+        contentItemId: null,
+        publishedAt: null,
         question: "What is the typical development turnaround time?",
         answer: "Landing pages deploy in 3-5 days; complex web applications take 2-6 weeks.",
         category: "GENERAL",
@@ -190,6 +194,8 @@ describe("Phase 4: Homepage & Marketing Experience", () => {
       },
       {
         id: "faq-02",
+        contentItemId: null,
+        publishedAt: null,
         question: "Do you build custom solutions or use templates?",
         answer: "Every asset is engineered bespoke using modern frameworks like Next.js and Tailwind.",
         category: "TECHNICAL",

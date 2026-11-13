@@ -92,3 +92,6 @@ export interface AuthUser {
   role: UserRole;
 }
 
+// Re-export CMS domain types and enums from central hub
+export * from "./cms";
+
