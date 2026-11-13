@@ -1,22 +1,24 @@
-# CMS_DATABASE_DESIGN.md — Database Architecture & Entity Specifications
+# CMS_DATABASE_DESIGN.md — Database Schema & Data Models
 
 **Project:** VOIDTECH SOLUTION  
-**Milestone:** Phase 10.0.1 — CMS Architecture Refinement & Design Freeze  
-**Document Status:** FROZEN DATABASE SPECIFICATION [DESIGN FREEZE]  
+**Milestone:** Phase 10.0.2 — Final CMS Implementation Safeguards  
+**Document Status:** FROZEN SCHEMA SPECIFICATION & SAFEGUARDS [DESIGN FREEZE]  
 **Author:** Google DeepMind Assistant  
-**Approved By:** Project Owner  
+**Approved By:** SHIVANSHU SATYAJEET (Project Owner) — Safeguards Authorized  
 
 ---
 
-## 1. Architectural Database Charter
+## 1. Schema Design Philosophy: Approach C (Materialized Hybrid)
 
-This document formalizes the persistent data layer for the VOIDTECH Administrative Content Management System. It establishes:
-1. **Materialized Published Tables + Relational Identity Model (Approach C [OWNER APPROVED]):** Real, database-enforced foreign key relations linking `ContentItem`, `ContentRevision`, and domain-specific models.
-2. **Strict Draft / Published Separation [OWNER APPROVED]:** Domain models (`Service`, `PricingPackage`, etc.) store **strictly currently published content**, while draft revisions reside in `ContentRevision`.
-3. **Atomic Publication Promotion [OWNER APPROVED]:** Publishing is executed inside a single PostgreSQL transaction (`prisma.$transaction`).
-4. **Draft Revision Retention [OWNER APPROVED]:** Up to 20 working draft revisions are retained; published milestones are permanently preserved.
-5. **Multi-Stage Testimonial Verification [OWNER APPROVED]:** Multi-signature verification and consent records decoupled from publication.
-6. **Provider-Abstracted Media Metadata [OWNER APPROVED]:** Media records track `provider` and `storageKey` with SHA-256 deduplication.
+The CMS data tier implements **Approach C: Materialized Published Snapshots + Canonical Identity + Relational Revision History**:
+
+1. **Dual Pointers for Draft/Published Separation:** `ContentItem` maintains two distinct revision pointers:
+   - `currentPublishedRevisionId`: Points to the active published snapshot rendered to public visitors.
+   - `currentWorkingRevisionId`: Points to the active working draft undergoing editing or review.
+2. **Canonical Entity Identity:** `ContentItem` owns the canonical slug, publication state (`DRAFT`, `REVIEW`, `PUBLISHED`, `ARCHIVED`), and monotonic OCC integer `version` counter.
+3. **Normalized Append-Only Revisions:** `ContentRevision` stores working copies, review proposals, and immutable historical milestones with author attribution and monotonically increasing `versionNumber`.
+4. **Materialized Domain Tables:** `Service`, `PricingPackage`, `PortfolioProject`, `PageSection`, `FAQ`, and `Testimonial` store **strictly the currently active published snapshot** with fully indexed relational columns for sub-millisecond public query execution.
+5. **WORM Audit Trail:** Every publishing, draft submission, revision rollback, and consent revocation event writes an immutable entry to `audit_logs`.
 
 ---
 
@@ -24,31 +26,29 @@ This document formalizes the persistent data layer for the VOIDTECH Administrati
 
 ```mermaid
 erDiagram
-    AdminUser ||--o{ ContentRevision : "authors / edits"
+    AdminUser ||--o{ ContentRevision : "authors"
     AdminUser ||--o{ ContentItem : "publishes"
     AdminUser ||--o{ Testimonial : "verifies"
     AdminUser ||--o{ MediaAsset : "uploads"
 
-    ContentItem ||--o{ ContentRevision : "has revisions (1 to N)"
-    ContentItem |o--o| ContentRevision : "currently published revision (1 to 1)"
-    
-    ContentItem ||--o| Service : "materialized published service"
-    ContentItem ||--o| PricingPackage : "materialized published pricing"
-    ContentItem ||--o| PortfolioProject : "materialized published portfolio"
-    ContentItem ||--o| FAQ : "materialized published FAQ"
-    ContentItem ||--o| PageSection : "materialized published section"
-    ContentItem ||--o| Testimonial : "materialized published testimonial"
-
-    MediaAsset ||--o{ PortfolioProject : "hero/gallery images"
-    MediaAsset ||--o{ Service : "icons/banners"
-    MediaAsset ||--o{ PageSection : "section media"
+    ContentItem ||--o{ ContentRevision : "revisions (Cascade)"
+    ContentItem ||--o| ContentRevision : "currentPublishedRevision"
+    ContentItem ||--o| ContentRevision : "currentWorkingRevision"
+    ContentItem ||--o| Service : "materialized published"
+    ContentItem ||--o| PricingPackage : "materialized published"
+    ContentItem ||--o| PortfolioProject : "materialized published"
+    ContentItem ||--o| FAQ : "materialized published"
+    ContentItem ||--o| PageSection : "materialized published"
+    ContentItem ||--o| Testimonial : "materialized published"
 
     ContentItem {
         string id PK
-        string slug UK
         enum contentType
+        string canonicalSlug UK
+        int version "OCC Counter"
         enum publicationStatus
         string currentPublishedRevisionId FK, UK
+        string currentWorkingRevisionId FK, UK
         datetime publishedAt
         string publishedById FK
         datetime createdAt
@@ -175,13 +175,12 @@ erDiagram
         int rating
         string avatarUrl
         string projectSlug
-        boolean isVerified
+        enum verificationStatus
         string verifiedById FK
         datetime verifiedAt
-        boolean clientConsentConfirmed
-        datetime consentConfirmedAt
+        enum clientConsentStatus
+        datetime clientConsentRecordedAt
         string consentEvidenceUrl
-        enum approvalStatus
         int orderIndex
         boolean isActive
         datetime publishedAt
@@ -239,33 +238,82 @@ enum RevisionLifecycleStatus {
   REJECTED            // Returned to author with notes
 }
 
-enum TestimonialApprovalStatus {
-  PENDING_VERIFICATION   // Unaudited
-  VERIFIED               // Fully verified with documented client consent
-  REJECTED               // Unverified or invalid
-  REVOKED                // Client consent revoked post-publication
+enum TestimonialVerificationStatus {
+  UNVERIFIED          // Default upon drafting; factual claims unreviewed
+  VERIFIED            // Formally audited by Administrator; claims confirmed accurate
+  REJECTED            // Factual claims inaccurate or unverified
+}
+
+enum ClientConsentStatus {
+  PENDING             // Written consent not yet received
+  GRANTED             // Formal client consent verified and recorded
+  REVOKED             // Client requested removal; consent withdrawn
 }
 
 enum StorageProviderType {
-  LOCAL                  // Local filesystem (/public/uploads)
-  R2                     // Cloudflare R2 / S3-compatible cloud
+  LOCAL               // Local filesystem (/public/uploads) - Development Only
+  R2                  // Cloudflare R2 / S3-compatible cloud - Deferred Future Target
 }
 ```
 
 ---
 
-## 4. Model Specifications
+## 4. Model Specifications & Referential Integrity
 
-### 4.1 `ContentItem` (Canonical Content Identity)
-Serves as the central anchor for all manageable content, coordinating publication status, slugs, and currently published revisions:
+### 4.1 Database-Enforced vs. Application-Enforced Guarantees
+We explicitly delineate what is enforced natively by PostgreSQL/Prisma vs. what is enforced in transactional application logic:
+
+| Constraint | Enforcement Mechanism | Technical Verification & Guarantees |
+|---|:---:|---|
+| **Revision Parent Link** | **Database-Enforced (FK)** | `ContentRevision.contentItemId -> ContentItem.id` with `ON DELETE CASCADE`. No orphaned revisions can exist. |
+| **Monotonic Revision Numbers** | **Database-Enforced (Unique Index)** | `@@unique([contentItemId, versionNumber])` on `ContentRevision`. Two revisions of the same item can never share the same version number. |
+| **Domain Canonical Identity** | **Database-Enforced (1-to-1 FK)** | `Service.contentItemId -> ContentItem.id` with `@unique` and `ON DELETE RESTRICT`. A domain record cannot exist without a canonical `ContentItem`, and duplicate domain records are impossible. |
+| **Valid Pointer Targets** | **Database-Enforced (FK)** | `ContentItem.currentPublishedRevisionId` and `currentWorkingRevisionId` have FKs to `ContentRevision.id` with `ON DELETE SET NULL`. Pointers can never reference non-existent revision IDs. |
+| **Cross-Item Pointer Ownership** | **Application-Enforced in Transaction** *(Evaluated below)* | Verifying that `revision.contentItemId === item.id` when assigning `currentPublishedRevisionId` or `currentWorkingRevisionId`. |
+
+### 4.2 Composite Foreign Key & Circular Dependency Evaluation
+We evaluated defining a composite foreign key on `ContentItem`:
+`FOREIGN KEY (currentPublishedRevisionId, id) REFERENCES ContentRevision(id, contentItemId)`.
+- **Finding:** Circular composite foreign keys in Prisma schemas cause cyclic relation dependency errors during migration generation.
+- **Resolution:** Prisma models use standard `@relation` with `onDelete: SetNull`. Step 4 of the atomic publishing transaction strictly verifies cross-record ownership, backed by a PostgreSQL trigger in the migration DDL:
+```sql
+CREATE OR REPLACE FUNCTION verify_revision_ownership() RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW."currentPublishedRevisionId" IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM content_revisions
+      WHERE id = NEW."currentPublishedRevisionId" AND "contentItemId" = NEW.id
+    ) THEN
+      RAISE EXCEPTION 'currentPublishedRevisionId must belong to ContentItem %', NEW.id;
+    END IF;
+  END IF;
+  IF NEW."currentWorkingRevisionId" IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM content_revisions
+      WHERE id = NEW."currentWorkingRevisionId" AND "contentItemId" = NEW.id
+    ) THEN
+      RAISE EXCEPTION 'currentWorkingRevisionId must belong to ContentItem %', NEW.id;
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+---
+
+### 4.3 `ContentItem` (Canonical Content Identity)
+Serves as the central anchor for all manageable content, coordinating publication status, slugs, dual pointers, and OCC concurrency:
 
 | Field Name | Type | Modifiers | Description |
 |---|---|---|---|
 | `id` | `String` | `@id @default(cuid())` | Primary key |
 | `slug` | `String` | `@unique` | Canonical route slug |
 | `contentType` | `ContentType` | Required | Content type enum |
-| `status` | `ContentPublicationStatus` | Default: `DRAFT` | Publication state |
+| `version` | `Int` | Default: `1` | Monotonic Optimistic Concurrency Control counter |
+| `publicationStatus` | `ContentPublicationStatus` | Default: `DRAFT` | Overall publication state |
 | `currentPublishedRevisionId` | `String?` | `@unique` | Foreign key to currently active published `ContentRevision` |
+| `currentWorkingRevisionId` | `String?` | `@unique` | Foreign key to active working `ContentRevision` under edit |
 | `publishedAt` | `DateTime?` | Optional | Timestamp of current publication |
 | `publishedById` | `String?` | Optional | Foreign key to `AdminUser` publisher |
 | `createdAt` | `DateTime` | Default: `now()` | Record creation timestamp |
@@ -273,14 +321,15 @@ Serves as the central anchor for all manageable content, coordinating publicatio
 
 **Relations & Constraints:**
 - `currentPublishedRevision`: Relation to `ContentRevision` on `currentPublishedRevisionId` (`onDelete: SetNull`).
+- `currentWorkingRevision`: Relation to `ContentRevision` on `currentWorkingRevisionId` (`onDelete: SetNull`).
 - `revisions`: Relation to `ContentRevision[]` (`onDelete: Cascade`).
 - One-to-one relations to domain models: `service`, `pricingPackage`, `portfolioProject`, `faq`, `pageSection`, `testimonial`.
-- `@@index([contentType, status])`
+- `@@index([contentType, publicationStatus])`
 - `@@index([slug])`
 
 ---
 
-### 4.2 `ContentRevision` (Revision History & Draft Working Storage)
+### 4.4 `ContentRevision` (Revision History & Draft Working Storage)
 Stores all drafts, review proposals, and immutable published snapshots:
 
 | Field Name | Type | Modifiers | Description |
@@ -307,8 +356,8 @@ Stores all drafts, review proposals, and immutable published snapshots:
 
 ---
 
-### 4.3 `Testimonial` (Verified Client Endorsements) [OWNER APPROVED]
-Strictly enforces the multi-signature verification workflow:
+### 4.5 `Testimonial` (Verified Client Endorsements)
+Enforces the dual verification and legal consent workflow:
 
 | Field Name | Type | Modifiers | Description |
 |---|---|---|---|
@@ -321,40 +370,40 @@ Strictly enforces the multi-signature verification workflow:
 | `rating` | `Int` | Default: `5` | Star rating (1 to 5) |
 | `avatarUrl` | `String?` | Optional | Verified avatar image URL |
 | `projectSlug` | `String?` | Optional | Linked `PortfolioProject.slug` |
-| `isVerified` | `Boolean` | Default: `false` | Verification gate flag |
+| `verificationStatus` | `TestimonialVerificationStatus` | Default: `UNVERIFIED` | Authoritative verification state |
 | `verifiedById` | `String?` | Optional | Foreign key to `AdminUser` verifier |
 | `verifiedAt` | `DateTime?` | Optional | Verification timestamp |
-| `clientConsentConfirmed` | `Boolean` | Default: `false` | Mandatory client consent confirmation |
-| `consentConfirmedAt` | `DateTime?` | Optional | Consent timestamp |
-| `consentEvidenceUrl` | `String` | `@db.Text`, Required | Reference to signed consent form or email audit |
-| `approvalStatus` | `TestimonialApprovalStatus` | Default: `PENDING_VERIFICATION` | Audit status |
+| `clientConsentStatus` | `ClientConsentStatus` | Default: `PENDING` | Authoritative legal consent state |
+| `clientConsentRecordedAt` | `DateTime?` | Optional | Consent timestamp |
+| `consentEvidenceUrl` | `String?` | `@db.Text`, Optional | Reference to signed consent form or email audit |
 | `orderIndex` | `Int` | Default: `0` | Display order |
 | `isActive` | `Boolean` | Default: `true` | Public display toggle |
 | `publishedAt` | `DateTime?` | Optional | Publication timestamp |
 | `updatedAt` | `DateTime` | `@updatedAt` | Last modification timestamp |
 
 **Indexes & Rules:**
-- `@@index([isVerified, clientConsentConfirmed, approvalStatus, isActive])`
-- **Integrity Rule:** Database triggers or Server Actions prevent `isActive = true` unless `isVerified === true` and `clientConsentConfirmed === true` and `approvalStatus === "VERIFIED"`.
+- `@@index([verificationStatus, clientConsentStatus, isActive])`
+- **Integrity Rule:** Public queries strictly require:
+  `WHERE verificationStatus = 'VERIFIED' AND clientConsentStatus = 'GRANTED' AND isActive = true`.
 
 ---
 
-### 4.4 `MediaAsset` (Digital Asset Registry) [OWNER APPROVED]
+### 4.6 `MediaAsset` (Digital Asset Registry)
 Decoupled storage coordinates with cryptographic deduplication:
 
 | Field Name | Type | Modifiers | Description |
 |---|---|---|---|
 | `id` | `String` | `@id @default(cuid())` | Primary key |
 | `storageKey` | `String` | `@unique` | Canonical path (e.g. `uploads/2026/11/hash.webp`) |
-| `provider` | `StorageProviderType` | Default: `LOCAL` | Storage backend identifier |
+| `provider` | `StorageProviderType` | Default: `LOCAL` | Storage backend identifier (Local for dev) |
 | `filename` | `String` | Required | Unique storage filename |
 | `originalName` | `String` | Required | Client original filename |
-| `mimeType` | `String` | Required | Verified MIME type (`image/webp`, `image/avif`, etc.) |
+| `mimeType` | `String` | Required | Verified MIME type (`image/webp`, `image/jpeg`, `image/png`) |
 | `sizeBytes` | `Int` | Required | File size in bytes (max 5 MB) |
 | `width` | `Int?` | Optional | Pixel width |
 | `height` | `Int?` | Optional | Pixel height |
 | `sha256Hash` | `String` | Required | Content digest for deduplication |
-| `isSvg` | `Boolean` | Default: `false` | Restricted format flag |
+| `isSvg` | `Boolean` | Default: `false` | Restricted format flag (disabled by default) |
 | `publicUrl` | `String` | Required | Cached public URL |
 | `defaultAltText` | `String` | Required | Mandatory fallback accessibility text |
 | `caption` | `String?` | Optional | Editorial caption |
@@ -362,20 +411,22 @@ Decoupled storage coordinates with cryptographic deduplication:
 | `createdAt` | `DateTime` | Default: `now()` | Upload timestamp |
 | `updatedAt` | `DateTime` | `@updatedAt` | Metadata update timestamp |
 
-**Indexes:**
+**Indexes & Invariants:**
 - `@@index([sha256Hash])`
 - `@@index([provider, storageKey])`
 - `@@index([uploaderId])`
+- **Initial Security Invariants:** SVG uploads disabled by default; local filesystem storage dev-only; zero ephemeral serverless storage; Cloudflare R2 deferred.
 
 ---
 
 ## 5. Impact Analysis on Existing Models
 
-1. **`Service`**: Enriched with `contentItemId: String? @unique` foreign key. Existing 18 service records are backfilled with matching `ContentItem` records. Existing columns remain untouched for zero public regression.
-2. **`PricingPackage`**: Enriched with `contentItemId: String? @unique` foreign key. Existing 10 packages remain fully functional.
+1. **`Service`**: Enriched with `contentItemId: String? @unique` foreign key. Existing 18 service records backfilled.
+2. **`PricingPackage`**: Enriched with `contentItemId: String? @unique` foreign key. Existing 10 packages remain functional.
 3. **`PortfolioProject`**: Enriched with `contentItemId: String? @unique` foreign key. Concept lab prototype disclaimers remain enforced.
 4. **`FAQ`**: Enriched with `contentItemId: String? @unique` foreign key.
-5. **`SiteSetting`**: Remains unversioned, direct key-value administrative configuration managed exclusively by `SUPER_ADMIN`.
-6. **`Enquiry` & Phase 9 CRM**: **100% UNTOUCHED.** All CRM models (`LeadNote`, `LeadFollowUp`, `LeadActivity`, `LeadAssignment`, `AdminNotification`) maintain their existing relations with zero interference.
-7. **`AdminUser`**: Adds inverse relations: `authoredRevisions: ContentRevision[]`, `publishedContentItems: ContentItem[]`, `verifiedTestimonials: Testimonial[]`, `uploadedMedia: MediaAsset[]`.
-8. **`AuditLog`**: Existing immutable WORM audit log records all CMS actions without foreign-key constraints (ensuring audit preservation even if content items are deleted).
+5. **`PageSection`**: Newly added model for editorial landing page narratives.
+6. **`SiteSetting`**: Remains unversioned, direct key-value administrative configuration managed exclusively by `SUPER_ADMIN`.
+7. **`Enquiry` & Phase 9 CRM**: **100% UNTOUCHED.** All CRM models (`LeadNote`, `LeadFollowUp`, `LeadActivity`, `LeadAssignment`, `AdminNotification`) maintain their existing relations with zero interference.
+8. **`AdminUser`**: Adds inverse relations: `authoredRevisions: ContentRevision[]`, `publishedContentItems: ContentItem[]`, `verifiedTestimonials: Testimonial[]`, `uploadedMedia: MediaAsset[]`.
+9. **`AuditLog`**: Existing immutable WORM audit log records all CMS actions without foreign-key constraints (ensuring audit preservation even if content items are deleted).

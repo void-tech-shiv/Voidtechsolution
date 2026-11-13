@@ -1,10 +1,10 @@
 # CMS_API_DESIGN.md — Server Action & Route Contracts
 
 **Project:** VOIDTECH SOLUTION  
-**Milestone:** Phase 10.0.1 — CMS Architecture Refinement & Design Freeze  
-**Document Status:** FROZEN API SPECIFICATIONS [DESIGN FREEZE]  
+**Milestone:** Phase 10.0.2 — Final CMS Implementation Safeguards  
+**Document Status:** FROZEN API SPECIFICATIONS & SAFEGUARDS [DESIGN FREEZE]  
 **Author:** Google DeepMind Assistant  
-**Approved By:** Project Owner  
+**Approved By:** SHIVANSHU SATYAJEET (Project Owner) — Safeguards Authorized  
 
 ---
 
@@ -18,7 +18,7 @@ All CMS mutations in VOIDTECH SOLUTION are implemented as typed **Next.js Server
 3. **Server-Side RBAC Enforcement:** Evaluates `requirePermission(currentAdmin.user, permissionKey)` server-side.
 4. **Zod Input Validation:** Strict schema validation with sanitized string transformations.
 5. **Atomic Transaction & OCC Concurrency:** Atomic version checks (`WHERE id = ... AND version = expectedVersion`).
-6. **Immutable Audit Logging:** Dispatches `recordAuditEvent(...)` within the transaction or post-commit.
+6. **Immutable Audit Logging:** Dispatches `recordAuditEvent(...)` within the transaction.
 7. **On-Demand Cache Purging:** Invokes `revalidateTag(...)` upon successful publishing.
 
 ---
@@ -27,8 +27,21 @@ All CMS mutations in VOIDTECH SOLUTION are implemented as typed **Next.js Server
 
 ```typescript
 export type ActionResult<T = unknown> =
-  | { success: true; data: T; message?: string }
-  | { success: false; error: string; code?: string; details?: Record<string, string[]> };
+  | {
+      success: true;
+      data: T;
+      message?: string;
+      source?: "DATABASE" | "STATIC_REGISTRY";
+      isFallback?: boolean;
+    }
+  | {
+      success: false;
+      error: string;
+      code?: string;
+      details?: Record<string, string[]>;
+      source?: "DATABASE" | "STATIC_REGISTRY";
+      isFallback?: boolean;
+    };
 ```
 
 | Error Code | HTTP Equiv | Description |
@@ -60,10 +73,11 @@ export type ActionResult<T = unknown> =
   });
   ```
 - **Transaction Behavior:**
-  1. Checks `ContentRevision` for `contentItemId` where `versionNumber = expectedVersion`.
-  2. If version matches, creates new `ContentRevision` with `versionNumber = expectedVersion + 1` and `revisionStatus: "WORKING_DRAFT"`.
-  3. Executes draft pruning: if working drafts exceed 20, deletes oldest non-published draft.
-  4. Records `CMS_DRAFT_SAVED` audit event.
+  1. Checks `ContentItem` where `id = contentItemId AND version = expectedVersion`.
+  2. If version matches, creates new `ContentRevision` with `versionNumber = expectedVersion + 1`, `revisionStatus: "WORKING_DRAFT"`, and updates `ContentItem.currentWorkingRevisionId = newRevision.id`.
+  3. Live published content (`currentPublishedRevisionId`) remains completely untouched.
+  4. Executes draft pruning: if working drafts exceed 20, deletes oldest non-published draft.
+  5. Records `CMS_DRAFT_SAVED` audit event.
 - **Output:** `ActionResult<{ revisionId: string; newVersion: number }>`
 
 #### `submitForReviewAction`
@@ -78,49 +92,59 @@ export type ActionResult<T = unknown> =
 - **Behavior:** Updates `ContentRevision.revisionStatus = "REJECTED"`, stores `rejectionNote`, notifies author.
 - **Output:** `ActionResult<{ revisionId: string; status: "REJECTED" }>`
 
-#### `publishRevisionAction` [OWNER APPROVED - ATOMIC PROMOTION]
-- **Permission:** `content:publish` (`SUPER_ADMIN`, `ADMIN`; `EDITOR` DENIED)
-- **Input Schema:** `{ revisionId: z.string().cuid() }`
-- **Transaction Behavior (Single PostgreSQL Transaction):**
-  1. Validates that revision exists, belongs to active `ContentItem`, and is in `APPROVED` or `WORKING_DRAFT` (if author is Admin).
-  2. Upserts materialized domain record (`Service`, `PricingPackage`, etc.) using `snapshotData`.
-  3. Updates `ContentItem`:
-     - `status = "PUBLISHED"`
-     - `currentPublishedRevisionId = revisionId`
+#### `publishRevisionAction` [SAFEGUARD 3 — 9-STEP ATOMIC PUBLISHING PROTOCOL]
+- **Permission:** `content:publish` (`SUPER_ADMIN`, `ADMIN`; `EDITOR` STRICTLY DENIED)
+- **Input Schema:**
+  ```typescript
+  const PublishRevisionSchema = z.object({
+    contentItemId: z.string().cuid(),
+    revisionId: z.string().cuid(),
+    expectedVersion: z.number().int().positive(),
+  });
+  ```
+- **Transaction Protocol (`prisma.$transaction`):**
+  1. **Authenticate Administrator:** Verify active session token, decode admin identity, verify `isActive = true`.
+  2. **Check Server-Side Permission:** Verify caller has required role/permission for the specific domain (`services:publish`, `pricing:publish`, etc.).
+  3. **Validate Expected Content Version:** OCC check: `ContentItem.version === expectedVersion`. If mismatched, abort with `409 Conflict`.
+  4. **Validate Working Revision Ownership:** Fetch `workingRevision` using `revisionId`. Assert `workingRevision !== null`, `workingRevision.contentItemId === contentItem.id`, and `workingRevision.revisionStatus` is eligible (`WORKING_DRAFT`, `PENDING_REVIEW`, or `APPROVED`).
+  5. **Validate Content-Specific Constraints:** Deserialize `workingRevision.snapshotData` and validate against domain Zod schema (deliverables, positive pricing, required SEO).
+  6. **Update Materialized Domain Record:** Upsert the materialized table (`Service`, `PricingPackage`, etc.) with validated snapshot fields, setting `isActive = true`, `updatedAt = now()`.
+  7. **Update Published Revision Pointer & Item State:** Update `ContentItem`:
+     - `currentPublishedRevisionId = workingRevision.id`
+     - `publicationStatus = PUBLISHED`
+     - `version = version + 1`
      - `publishedAt = now()`
-     - `publishedById = currentAdmin.id`
-  4. Updates `ContentRevision`:
-     - `revisionStatus = "PUBLISHED_SNAPSHOT"`
-     - `isPublishedSnapshot = true`
-  5. Inserts `audit_logs` record `CMS_ITEM_PUBLISHED`.
-  6. On commit: invokes `revalidateTag(cacheTag)` and `revalidatePath(path)`.
-- **Failure Guarantee:** If any step fails, transaction rolls back; public domain table remains untouched.
-- **Output:** `ActionResult<{ contentItemId: string; publishedRevisionId: string }>`
+     - `publishedById = admin.id`
+     - Update `ContentRevision`: `revisionStatus = PUBLISHED_SNAPSHOT`, `isPublishedSnapshot = true`.
+  8. **Record Publishing Audit Event:** Create immutable `AuditLog` entry (`action: "CONTENT_PUBLISHED"`).
+  9. **Commit the Transaction:** Complete transaction. Failure at any step rolls back all writes.
+- **Post-Commit:** Invokes `revalidateTag(cacheTag)` and `revalidatePath(path)`.
+- **Output:** `ActionResult<{ contentItemId: string; publishedRevisionId: string; version: number }>`
 
 #### `archiveContentItemAction`
 - **Permission:** `content:archive` (`SUPER_ADMIN`, `ADMIN`; `EDITOR` DENIED)
 - **Input Schema:** `{ contentItemId: z.string().cuid() }`
 - **Transaction Behavior:**
-  1. Sets `ContentItem.status = "ARCHIVED"`.
+  1. Sets `ContentItem.publicationStatus = "ARCHIVED"`.
   2. Deactivates domain record (`isActive = false`).
   3. Clears cache tags.
   4. Records `CMS_ITEM_ARCHIVED`.
 - **Output:** `ActionResult<{ contentItemId: string; status: "ARCHIVED" }>`
 
-#### `restoreRevisionAction` [OWNER APPROVED - NEW REVISION CREATION]
+#### `restoreRevisionAction` [SAFEGUARD 1 — APPEND-ONLY RESTORATION]
 - **Permission:** `content:restore` (`SUPER_ADMIN`, `ADMIN`; `EDITOR` DENIED)
 - **Input Schema:** `{ revisionId: z.string().cuid() }`
 - **Behavior:**
   1. Reads target historical `ContentRevision`.
   2. Determines `maxVersion = max(versionNumber)` for this `contentItemId`.
-  3. Creates a **NEW** `ContentRevision` with `versionNumber = maxVersion + 1`, `revisionStatus = "WORKING_DRAFT"`, copying `snapshotData`.
-  4. Historical revisions are **never mutated**.
+  3. Creates a **NEW** `ContentRevision` with `versionNumber = maxVersion + 1`, `revisionStatus = "WORKING_DRAFT"`, copying `snapshotData`. Sets `ContentItem.currentWorkingRevisionId = newRevision.id`.
+  4. Historical revisions are **never mutated or overwritten**.
   5. Records `CMS_VERSION_RESTORED`.
 - **Output:** `ActionResult<{ newRevisionId: string; newVersion: number }>`
 
 ---
 
-### 3.2 Pricing Management Actions (`src/server/actions/cms/pricing.actions.ts`)
+## 4. Pricing Management Actions (`src/server/actions/cms/pricing.actions.ts`)
 
 #### `savePricingDraftAction`
 - **Permission:** `pricing:edit_draft` (`SUPER_ADMIN`, `ADMIN`, `EDITOR`)
@@ -143,64 +167,73 @@ export type ActionResult<T = unknown> =
   ```
 - **Output:** `ActionResult<{ revisionId: string; version: number }>`
 
-#### `publishPricingAction` [OWNER APPROVED - PRICING RBAC RESTRICTION]
+#### `publishPricingAction` [SAFEGUARD 3 & DECISION 7 — PRICING RBAC RESTRICTION]
 - **Permission:** `pricing:publish` (`SUPER_ADMIN`, `ADMIN` ONLY; `EDITOR` STRICTLY DENIED)
-- **Input Schema:** `{ revisionId: z.string().cuid() }`
-- **Behavior:** Promotes pricing revision atomically to `PricingPackage` table, invalidates `pricing-tiers` cache tag.
+- **Input Schema:** `{ contentItemId: z.string().cuid(), revisionId: z.string().cuid(), expectedVersion: z.number() }`
+- **Behavior:** Executes 9-step atomic transaction. Promotes pricing revision atomically to `PricingPackage` table, invalidates `pricing-tiers` cache tag.
 - **Output:** `ActionResult<{ packageId: string; priceInr: number }>`
 
 ---
 
-### 3.3 Testimonial Verification & Publishing Actions (`src/server/actions/cms/testimonials.actions.ts`)
+## 5. Testimonial Verification & Publishing Actions (`src/server/actions/cms/testimonials.actions.ts`)
 
-#### `verifyTestimonialAction` [OWNER APPROVED]
+#### `verifyTestimonialAction` [SAFEGUARD 4 — SINGLE AUTHORITATIVE VERIFICATION]
 - **Permission:** `testimonials:verify` (`SUPER_ADMIN`, `ADMIN` ONLY)
 - **Input Schema:**
   ```typescript
   const VerifyTestimonialSchema = z.object({
     contentItemId: z.string().cuid(),
-    consentEvidenceUrl: z.string().url("Must reference verifiable consent documentation"),
-    verificationRecordNotes: z.string().min(10),
+    verificationRecordNotes: z.string().min(10, "Verification notes required"),
   });
   ```
 - **Behavior:** Updates `Testimonial`:
-  - `isVerified = true`
+  - `verificationStatus = "VERIFIED"`
   - `verifiedById = currentAdmin.id`
   - `verifiedAt = now()`
-  - `clientConsentConfirmed = true`
-  - `consentConfirmedAt = now()`
-  - `consentEvidenceUrl = input.consentEvidenceUrl`
-  - `approvalStatus = "VERIFIED"`
 - **Output:** `ActionResult<Testimonial>`
 
-#### `revokeTestimonialConsentAction` [OWNER APPROVED]
+#### `recordClientConsentAction` [SAFEGUARD 4 — LEGAL CONSENT CONFIRMATION]
+- **Permission:** `testimonials:verify` (`SUPER_ADMIN`, `ADMIN` ONLY)
+- **Input Schema:**
+  ```typescript
+  const RecordConsentSchema = z.object({
+    contentItemId: z.string().cuid(),
+    consentEvidenceUrl: z.string().url("Must reference verifiable consent documentation"),
+  });
+  ```
+- **Behavior:** Updates `Testimonial`:
+  - `clientConsentStatus = "GRANTED"`
+  - `clientConsentRecordedAt = now()`
+  - `consentEvidenceUrl = input.consentEvidenceUrl`
+- **Output:** `ActionResult<Testimonial>`
+
+#### `revokeTestimonialConsentAction` [SAFEGUARD 4 — INSTANT UNLISTING]
 - **Permission:** `testimonials:verify` (`SUPER_ADMIN`, `ADMIN`)
 - **Input Schema:** `{ contentItemId: z.string().cuid(), reason: z.string().min(5) }`
-- **Behavior:** Atomically sets `approvalStatus = "REVOKED"`, `isActive = false`, instantly unlisting the quote.
-- **Output:** `ActionResult<{ status: "REVOKED" }>`
+- **Behavior:** In an atomic transaction, sets `clientConsentStatus = "REVOKED"`, `status = "ARCHIVED"`, `isActive = false`, immediately unlisting the quote across all public queries at the SQL level.
+- **Output:** `ActionResult<{ status: "REVOKED"; isActive: false }>`
 
 ---
 
-### 3.4 Media Management Actions (`src/server/actions/cms/media.actions.ts`)
+## 6. Media Management Actions (`src/server/actions/cms/media.actions.ts`)
 
-#### `uploadMediaAction` [OWNER APPROVED]
+#### `uploadMediaAction` [SAFEGUARD 5 — HARDENED MEDIA DEFAULTS]
 - **Permission:** `media:upload` (`SUPER_ADMIN`, `ADMIN`, `EDITOR`)
 - **Input:** `FormData` with fields:
-  - `file`: `File` (Max 5 MB)
+  - `file`: `File` (Max 5.0 MB)
   - `defaultAltText`: `string` (Min 5 chars, mandatory)
   - `caption`: `string` (Optional)
-- **Processing Pipeline:**
-  1. Sniffs file buffer magic bytes:
+- **Security Pipeline:**
+  1. Rejects SVG uploads by default (`SVG uploads are disabled by default in initial implementation`).
+  2. Sniffs file buffer magic bytes:
      - JPEG (`FF D8 FF`)
      - PNG (`89 50 4E 47`)
      - WebP (`52 49 46 46 ... 57 45 42 50`)
-     - AVIF (`ftypavif`)
-     - SVG (`<?xml` or `<svg`) — Requires `media:upload_svg` permission!
-  2. Re-encodes raster formats to WebP/AVIF via Sharp, stripping metadata.
-  3. Sanitizes SVGs with DOMPurify.
-  4. Computes SHA-256 hash digest. Checks for existing asset to deduplicate.
-  5. Invokes `StorageService.upload(buffer, storageKey, mimeType)`.
-  6. Creates `MediaAsset` record storing `provider`, `storageKey`, `sha256Hash`.
+  3. Re-encodes raster formats to optimized WebP via Sharp, stripping all EXIF and metadata.
+  4. Generates cryptographically safe storage key: `uploads/${year}/${month}/${crypto.randomUUID()}.webp`.
+  5. Validates key against path traversal (`..` and slashes stripped).
+  6. Restricts storage backend to local development filesystem. Forbids ephemeral serverless storage.
+  7. Creates `MediaAsset` record storing `provider`, `storageKey`, `sha256Hash`.
 - **Output:** `ActionResult<MediaAsset>`
 
 #### `deleteMediaAction`
@@ -211,9 +244,9 @@ export type ActionResult<T = unknown> =
 
 ---
 
-## 4. Next.js Draft Mode API Routes
+## 7. Next.js Draft Mode API Routes
 
-### 4.1 Preview Activation: `GET /api/draft/preview`
+### 7.1 Preview Activation: `GET /api/draft/preview`
 - **Query Parameters:**
   - `secret`: Must match server `DRAFT_PREVIEW_SECRET`.
   - `contentType`: `SERVICE | PRICING_PACKAGE | PORTFOLIO_PROJECT | PAGE_SECTION`
@@ -222,11 +255,12 @@ export type ActionResult<T = unknown> =
   1. Constant-time timing-safe secret check: `crypto.timingSafeEqual(...)`.
   2. Validates session cookie to ensure caller is an authenticated administrator.
   3. Sets `__prerender_bypass` cookie via Next.js `draftMode().enable()`.
-  4. Validates target redirect path is relative (prevents open redirects).
-  5. Redirects to target page.
-  6. Injected HTTP Header: `X-Robots-Tag: noindex, nofollow`.
+  4. Resolves `currentWorkingRevisionId` from `ContentItem`.
+  5. Validates target redirect path is relative (prevents open redirects).
+  6. Redirects to target page.
+  7. Injected HTTP Header: `X-Robots-Tag: noindex, nofollow`.
 
-### 4.2 Preview Exit: `GET /api/draft/exit`
+### 7.2 Preview Exit: `GET /api/draft/exit`
 - Disables draft mode via `draftMode().disable()`.
 - Clears bypass cookie.
 - Redirects to public canonical route.
