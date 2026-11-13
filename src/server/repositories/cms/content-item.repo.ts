@@ -3,7 +3,7 @@
  * 
  * Provides strongly-typed, transactional data access for ContentItem records.
  * Enforces optimistic concurrency control (OCC), prevents lifecycle status bypassing,
- * and maintains pointer and audit integrity.
+ * maintains pointer and audit integrity, and enforces deletion safety rules.
  */
 
 import { prisma } from "@/lib/prisma";
@@ -17,6 +17,7 @@ import {
   ContentItemNotFoundError,
   SlugAlreadyExistsError,
   ConcurrencyConflictError,
+  ContentItemDeletionBlockedError,
 } from "./cms-repository.errors";
 
 export interface CreateContentItemInput {
@@ -345,8 +346,15 @@ export async function updateContentItemMetadata(
 }
 
 /**
- * Deletes a ContentItem by ID.
- * Throws ContentItemNotFoundError if the item does not exist.
+ * Deletes a ContentItem by ID after verifying all integrity and safety safeguards:
+ * 1. Checks existence (throws ContentItemNotFoundError if not found).
+ * 2. Rejects deletion if publicationStatus is PUBLISHED or currentPublishedRevisionId is set.
+ * 3. Rejects deletion if historical revisions exist (preserving immutable revision history).
+ * 4. Rejects deletion if linked to active domain entities (Service, PricingPackage, PortfolioProject, FAQ, PageSection, Testimonial).
+ * 5. Maps any database foreign-key constraint violation (P2003) to ContentItemDeletionBlockedError.
+ *
+ * @throws {ContentItemNotFoundError} if the ContentItem does not exist
+ * @throws {ContentItemDeletionBlockedError} if deletion violates safety invariants or referential integrity
  */
 export async function deleteContentItem(
   id: string,
@@ -356,14 +364,77 @@ export async function deleteContentItem(
 
   const existing = await db.contentItem.findUnique({
     where: { id },
-    select: { id: true },
+    select: {
+      id: true,
+      publicationStatus: true,
+      currentPublishedRevisionId: true,
+      _count: {
+        select: {
+          revisions: true,
+        },
+      },
+      service: { select: { id: true } },
+      pricingPackage: { select: { id: true } },
+      portfolioProject: { select: { id: true } },
+      faq: { select: { id: true } },
+      pageSection: { select: { id: true } },
+      testimonial: { select: { id: true } },
+    },
   });
 
   if (!existing) {
     throw new ContentItemNotFoundError(id);
   }
 
-  await db.contentItem.delete({
-    where: { id },
-  });
+  // 1. Guard against deleting actively published content
+  if (
+    existing.publicationStatus === "PUBLISHED" ||
+    existing.currentPublishedRevisionId !== null
+  ) {
+    throw new ContentItemDeletionBlockedError(
+      id,
+      "Content item is currently published and cannot be deleted. Unpublish or archive it first."
+    );
+  }
+
+  // 2. Guard against deleting items with revision history (immutable audit trail)
+  if (existing._count.revisions > 0) {
+    throw new ContentItemDeletionBlockedError(
+      id,
+      `Content item has ${existing._count.revisions} historical revision(s). Content revision history is immutable and cannot be deleted.`
+    );
+  }
+
+  // 3. Guard against deleting items linked to materialized domain entities
+  if (
+    existing.service ||
+    existing.pricingPackage ||
+    existing.portfolioProject ||
+    existing.faq ||
+    existing.pageSection ||
+    existing.testimonial
+  ) {
+    throw new ContentItemDeletionBlockedError(
+      id,
+      "Content item is linked to active domain entities. Remove domain entity associations before deletion."
+    );
+  }
+
+  try {
+    await db.contentItem.delete({
+      where: { id },
+    });
+  } catch (error) {
+    if (
+      error instanceof Object &&
+      "code" in error &&
+      error.code === "P2003"
+    ) {
+      throw new ContentItemDeletionBlockedError(
+        id,
+        "Database foreign key restriction prevented deletion: related records exist."
+      );
+    }
+    throw error;
+  }
 }

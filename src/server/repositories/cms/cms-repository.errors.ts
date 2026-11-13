@@ -139,3 +139,21 @@ export class InvalidRevisionStateError extends CmsRepositoryError {
     this.currentStatus = currentStatus;
   }
 }
+
+/**
+ * Thrown when deletion of a ContentItem is blocked by safety safeguards
+ * (e.g. item is published, has immutable revision history, or is linked to domain records).
+ */
+export class ContentItemDeletionBlockedError extends CmsRepositoryError {
+  readonly identifier: string;
+  readonly reason: string;
+
+  constructor(identifier: string, reason: string, message?: string) {
+    super(
+      message ?? `Deletion of content item "${identifier}" is blocked: ${reason}`,
+      "CONTENT_ITEM_DELETION_BLOCKED"
+    );
+    this.identifier = identifier;
+    this.reason = reason;
+  }
+}

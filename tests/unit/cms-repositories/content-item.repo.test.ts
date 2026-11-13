@@ -15,6 +15,7 @@ import {
   ContentItemNotFoundError,
   SlugAlreadyExistsError,
   ConcurrencyConflictError,
+  ContentItemDeletionBlockedError,
 } from "@/server/repositories/cms/cms-repository.errors";
 import { Prisma } from "@prisma/client";
 
@@ -358,24 +359,134 @@ describe("ContentItem Repository", () => {
     });
   });
 
-  describe("deleteContentItem", () => {
-    it("deletes existing content item by ID", async () => {
+  describe("deleteContentItem (RI-03 Integrity Safeguards)", () => {
+    it("deletes a clean draft content item with no revisions or domain links", async () => {
       vi.spyOn(prisma.contentItem, "findUnique").mockResolvedValueOnce({
-        id: "item-test-1",
+        id: "item-clean",
+        publicationStatus: "DRAFT",
+        currentPublishedRevisionId: null,
+        _count: { revisions: 0 },
+        service: null,
+        pricingPackage: null,
+        portfolioProject: null,
+        faq: null,
+        pageSection: null,
+        testimonial: null,
       } as any);
       const deleteSpy = vi
         .spyOn(prisma.contentItem, "delete")
         .mockResolvedValueOnce(sampleContentItem);
 
-      await deleteContentItem("item-test-1");
-      expect(deleteSpy).toHaveBeenCalledWith({ where: { id: "item-test-1" } });
+      await deleteContentItem("item-clean");
+      expect(deleteSpy).toHaveBeenCalledWith({ where: { id: "item-clean" } });
     });
 
-    it("throws ContentItemNotFoundError if ID not found", async () => {
+    it("throws ContentItemNotFoundError if item does not exist", async () => {
       vi.spyOn(prisma.contentItem, "findUnique").mockResolvedValueOnce(null);
 
       await expect(deleteContentItem("non-existent")).rejects.toThrow(
         ContentItemNotFoundError
+      );
+    });
+
+    it("blocks deletion if content item is currently in PUBLISHED status", async () => {
+      vi.spyOn(prisma.contentItem, "findUnique").mockResolvedValueOnce({
+        id: "item-pub",
+        publicationStatus: "PUBLISHED",
+        currentPublishedRevisionId: "rev-pub",
+        _count: { revisions: 0 },
+        service: null,
+        pricingPackage: null,
+        portfolioProject: null,
+        faq: null,
+        pageSection: null,
+        testimonial: null,
+      } as any);
+
+      await expect(deleteContentItem("item-pub")).rejects.toThrow(
+        ContentItemDeletionBlockedError
+      );
+    });
+
+    it("blocks deletion if content item has currentPublishedRevisionId pointer set", async () => {
+      vi.spyOn(prisma.contentItem, "findUnique").mockResolvedValueOnce({
+        id: "item-pointer",
+        publicationStatus: "DRAFT",
+        currentPublishedRevisionId: "rev-pub-123",
+        _count: { revisions: 0 },
+        service: null,
+        pricingPackage: null,
+        portfolioProject: null,
+        faq: null,
+        pageSection: null,
+        testimonial: null,
+      } as any);
+
+      await expect(deleteContentItem("item-pointer")).rejects.toThrow(
+        ContentItemDeletionBlockedError
+      );
+    });
+
+    it("blocks deletion if content item has historical revisions (immutable revision history)", async () => {
+      vi.spyOn(prisma.contentItem, "findUnique").mockResolvedValueOnce({
+        id: "item-history",
+        publicationStatus: "DRAFT",
+        currentPublishedRevisionId: null,
+        _count: { revisions: 3 },
+        service: null,
+        pricingPackage: null,
+        portfolioProject: null,
+        faq: null,
+        pageSection: null,
+        testimonial: null,
+      } as any);
+
+      await expect(deleteContentItem("item-history")).rejects.toThrow(
+        ContentItemDeletionBlockedError
+      );
+    });
+
+    it("blocks deletion if content item is linked to active domain entities (e.g. Service)", async () => {
+      vi.spyOn(prisma.contentItem, "findUnique").mockResolvedValueOnce({
+        id: "item-service",
+        publicationStatus: "DRAFT",
+        currentPublishedRevisionId: null,
+        _count: { revisions: 0 },
+        service: { id: "srv-1" },
+        pricingPackage: null,
+        portfolioProject: null,
+        faq: null,
+        pageSection: null,
+        testimonial: null,
+      } as any);
+
+      await expect(deleteContentItem("item-service")).rejects.toThrow(
+        ContentItemDeletionBlockedError
+      );
+    });
+
+    it("maps unexpected database foreign key violation (P2003) to ContentItemDeletionBlockedError", async () => {
+      vi.spyOn(prisma.contentItem, "findUnique").mockResolvedValueOnce({
+        id: "item-fk",
+        publicationStatus: "DRAFT",
+        currentPublishedRevisionId: null,
+        _count: { revisions: 0 },
+        service: null,
+        pricingPackage: null,
+        portfolioProject: null,
+        faq: null,
+        pageSection: null,
+        testimonial: null,
+      } as any);
+
+      const p2003Error = new Prisma.PrismaClientKnownRequestError(
+        "Foreign key constraint failed on the field: `contentItemId`",
+        { code: "P2003", clientVersion: "5.x" }
+      );
+      vi.spyOn(prisma.contentItem, "delete").mockRejectedValueOnce(p2003Error);
+
+      await expect(deleteContentItem("item-fk")).rejects.toThrow(
+        ContentItemDeletionBlockedError
       );
     });
   });

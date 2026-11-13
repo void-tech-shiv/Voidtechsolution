@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.10] — 2026-11-13
+### Phase 10.1: Task 10.1.5.1 — Repository Integrity Closure Audit
+
+#### Added
+- **Repository Integrity Closure Audit Report (`docs/phases/PHASE_10_1_5_1_REPOSITORY_INTEGRITY_CLOSURE_REPORT.md`):**
+  - Completed comprehensive audit of `ContentItem` and `ContentRevision` data-access repositories, closing findings RI-01 through RI-06.
+  - Implemented `ContentItemDeletionBlockedError` in `src/server/repositories/cms/cms-repository.errors.ts`.
+  - Enforced deletion safety invariants in `deleteContentItem`: blocks deletion when item is in `PUBLISHED` status, has active published pointer, has historical revisions (`_count.revisions > 0`), or is linked to active domain entities (`Service`, `PricingPackage`, etc.), and cleanly maps `P2003` foreign key errors.
+  - Implemented parent row-level locking (`SELECT id FROM content_items WHERE id = $1 FOR UPDATE`) in `createWorkingRevision` to serialize version allocations per ContentItem.
+  - Added bounded retry strategy (max 3 attempts with exponential backoff & jitter) in `createWorkingRevision` for transient unique version collisions (`P2002`) and serialization failures (`P2034` / `40001`).
+  - Implemented dedicated parent-scoped revision lookup `getRevisionByParentAndId(contentItemId, revisionId)` performing direct compound database query.
+  - Protected `updateWorkingRevision` against publication races via row-level locking (`SELECT id FROM content_revisions WHERE id = $1 FOR UPDATE`) and compound conditional update (`updateMany` checking `isPublishedSnapshot: false`, `publishedInContentItem: null`, and `revisionStatus in EDITABLE_STATUSES`).
+  - Added optional `expectedRevisionStatus` predicate check to `UpdateWorkingRevisionInput` for OCC status validation.
+  - Guaranteed transaction isolation for `pruneWorkingDraftRevisions` with parent row locking and database-level 1-to-1 pointer exclusion (`publishedInContentItem: null, workingInContentItem: null`).
+  - Created 4 dedicated real PostgreSQL integration test suites in `tests/integration/cms-repositories/` (8/8 tests passing against isolated `voidtech_test_concurrency` on `localhost:5432`).
+  - Expanded unit test suites in `tests/unit/cms-repositories/` to 56 tests (100% passing).
+  - Verified full test regression: 642/642 tests passing across 45 suites (100% pass rate).
+  - Clean production build (33/33 routes), typecheck (0 errors), lint (0 errors), whitespace check (`git diff --check` passed cleanly).
+  - Verified 100% database safety: zero database operations performed on production Neon.
+
+---
+
 ## [0.10.9] — 2026-11-13
 ### Phase 10.1: Task 10.1.5 — ContentItem & ContentRevision Repository Implementation
 

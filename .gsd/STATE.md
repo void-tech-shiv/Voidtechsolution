@@ -1,33 +1,33 @@
 ---
-updated: 2026-11-13T22:15:00+05:30
+updated: 2026-11-13T22:40:00+05:30
 ---
 
 # Project State — VOIDTECH SOLUTION
 
 ## Current Position
 
-**Milestone:** 10.1 — CMS Database Schema & Content Repositories (Task 10.1.5 COMPLETE)
+**Milestone:** 10.1 — CMS Database Schema & Content Repositories (Task 10.1.5.1 COMPLETE)
 **Phase:** 10 — Admin CMS
-**Status:** active (Phase 10.1 In Progress: Task 10.1.5 — ContentItem & ContentRevision Repository Implementation complete. Implemented ContentItem and ContentRevision repositories with atomic OCC versioning, monotonic revision incrementing, draft pointer auto-updates, published snapshot immutability protection, and draft retention pruning [retains 20 working drafts while protecting published and pointer targets]; added 47 new unit tests in tests/unit/cms-repositories/; full Vitest suite passing 625/625 tests across 41 test files; 0 typecheck errors, 0 lint errors, 33/33 Next.js routes built cleanly. Production Neon completely untouched and isolated)
+**Status:** active (Phase 10.1 In Progress: Task 10.1.5.1 — Repository Integrity Closure Audit complete. Audited and closed findings RI-01 through RI-06: implemented parent row-level locking and bounded retry for version allocation; protected working revisions against publication race via row locking and atomic conditional updateMany; secured deleteContentItem with ContentItemDeletionBlockedError; added parent-scoped database-level queries [getRevisionByParentAndId]; secured draft pruning under transaction isolation with pointer target exclusions; verified 56 mocked unit tests and 8 real PostgreSQL integration tests; full Vitest suite passing 642/642 tests across 45 test files; 0 typecheck errors, 0 lint errors, 33/33 Next.js routes built cleanly. Production Neon completely untouched and isolated)
 **Visual Reference:** SmartStruct Cybernetic Layout + Official Purple/Violet Brand Identity  
 
 ## Last Action
 
-- Executed Task 10.1.5 — ContentItem & ContentRevision Repository Implementation:
-  - Authored implementation report: `docs/phases/PHASE_10_1_5_CONTENT_REPOSITORIES_REPORT.md`.
-  - Created `src/server/repositories/cms/cms-repository.errors.ts` establishing unified error hierarchy: `CmsRepositoryError`, `ContentItemNotFoundError`, `ContentRevisionNotFoundError`, `SlugAlreadyExistsError`, `ConcurrencyConflictError`, `RevisionOwnershipMismatchError`, `ImmutableRevisionError`, and `InvalidRevisionStateError`.
-  - Created `src/server/repositories/cms/content-item.repo.ts`: initial DRAFT status and version 1, P2002 slug mapping, dual pointer queries, full revision history queries, paginated/filtered listing, atomic OCC update (`version: expectedVersion`), and deletion.
-  - Created `src/server/repositories/cms/content-revision.repo.ts`: transactional creation with monotonic versioning, working pointer update, published immutability protection, cross-item ownership validation, and safe draft retention pruning.
-  - Re-exported repositories in `src/server/repositories/cms/index.ts` and `src/server/repositories/index.ts`.
-  - Created 3 test files with 47 unit tests in `tests/unit/cms-repositories/`: 100% pass rate.
-  - Verified full test regression: 625/625 Vitest tests pass across 41 test files.
+- Executed Task 10.1.5.1 — Repository Integrity Closure Audit:
+  - Authored audit closure report: `docs/phases/PHASE_10_1_5_1_REPOSITORY_INTEGRITY_CLOSURE_REPORT.md`.
+  - Added `ContentItemDeletionBlockedError` in `src/server/repositories/cms/cms-repository.errors.ts`.
+  - Updated `src/server/repositories/cms/content-item.repo.ts`: enforced pre-flight checks blocking deletion if item is published, has active published pointer, has historical revisions, or has active domain links; mapped `P2003` to `ContentItemDeletionBlockedError`.
+  - Updated `src/server/repositories/cms/content-revision.repo.ts`: added row-level locking (`SELECT ... FOR UPDATE`), bounded retry (max 3) for unique version collisions, dedicated `getRevisionByParentAndId` compound query, atomic conditional update in `updateWorkingRevision`, and transaction-safe pruning.
+  - Added 4 real PostgreSQL integration test suites in `tests/integration/cms-repositories/` (8 tests passing on `voidtech_test_concurrency` on `localhost:5432`).
+  - Expanded unit test suites in `tests/unit/cms-repositories/` to 56 tests (100% passing).
+  - Verified full test regression: 642/642 Vitest tests pass across 45 test files.
   - Verified compilation: `npm run typecheck` (0 errors), `npm run lint` (0 errors/warnings), `next build` (33/33 production routes).
   - Verified git whitespace: `git diff --check` passed cleanly.
   - Maintained strict database safety: production Neon was never accessed, contacted, migrated, or modified.
 
 ## Next Steps
 
-1. Present Task 10.1.5 Final Acceptance Report to Owner.
+1. Present Task 10.1.5.1 Final Acceptance Report to Owner.
 2. Await Owner Authorization before beginning Task 10.1.6 (9-Step Atomic Publishing Transaction Engine).
 
 ## Active Decisions

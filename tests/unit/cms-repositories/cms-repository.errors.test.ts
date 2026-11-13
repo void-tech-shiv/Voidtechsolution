@@ -8,6 +8,7 @@ import {
   RevisionOwnershipMismatchError,
   ImmutableRevisionError,
   InvalidRevisionStateError,
+  ContentItemDeletionBlockedError,
 } from "@/server/repositories/cms/cms-repository.errors";
 
 describe("CMS Repository Errors Taxonomy", () => {
@@ -26,7 +27,7 @@ describe("CMS Repository Errors Taxonomy", () => {
     expect(error.name).toBe("ContentItemNotFoundError");
     expect(error.code).toBe("CONTENT_ITEM_NOT_FOUND");
     expect(error.identifier).toBe("item-123");
-    expect(error.message).toContain('item-123');
+    expect(error.message).toContain("item-123");
 
     const customError = new ContentItemNotFoundError("item-123", "Custom item not found");
     expect(customError.message).toBe("Custom item not found");
@@ -38,7 +39,7 @@ describe("CMS Repository Errors Taxonomy", () => {
     expect(error.name).toBe("ContentRevisionNotFoundError");
     expect(error.code).toBe("CONTENT_REVISION_NOT_FOUND");
     expect(error.identifier).toBe("rev-456");
-    expect(error.message).toContain('rev-456');
+    expect(error.message).toContain("rev-456");
   });
 
   it("SlugAlreadyExistsError carries slug and specific code", () => {
@@ -89,5 +90,18 @@ describe("CMS Repository Errors Taxonomy", () => {
     expect(error.revisionId).toBe("rev-app-1");
     expect(error.currentStatus).toBe("APPROVED");
     expect(error.message).toContain("APPROVED");
+  });
+
+  it("ContentItemDeletionBlockedError records identifier and reason", () => {
+    const error = new ContentItemDeletionBlockedError(
+      "item-pub-1",
+      "Item is currently published"
+    );
+    expect(error).toBeInstanceOf(CmsRepositoryError);
+    expect(error.name).toBe("ContentItemDeletionBlockedError");
+    expect(error.code).toBe("CONTENT_ITEM_DELETION_BLOCKED");
+    expect(error.identifier).toBe("item-pub-1");
+    expect(error.reason).toBe("Item is currently published");
+    expect(error.message).toContain("Item is currently published");
   });
 });
