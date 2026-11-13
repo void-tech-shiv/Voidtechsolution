@@ -1,37 +1,38 @@
 ---
-updated: 2026-11-13T19:24:00+05:30
+updated: 2026-11-13T20:21:00+05:30
 ---
 
 # Project State — VOIDTECH SOLUTION
 
 ## Current Position
 
-**Milestone:** 10.1 — CMS Database Schema & Content Repositories (Task 10.1.3 COMPLETE)
+**Milestone:** 10.1 — CMS Database Schema & Content Repositories (Task 10.1.4 COMPLETE)
 **Phase:** 10 — Admin CMS
-**Status:** active (Phase 10.1 In Progress: Task 10.1.3 Complete. Generated Prisma Client v6.19.3 with all 5 CMS models and 6 enums. Authored `@/types/cms` central export hub and composite DTO interfaces. Hydrated domain repositories and test mocks for TypeScript strict nullability. 468/468 Vitest tests passing across 31 suites; 0 typecheck errors; 0 lint errors; 33/33 Next.js routes built cleanly. Production Neon completely isolated and untouched)
+**Status:** active (Phase 10.1 In Progress: Task 10.1.4 Complete. Implemented reusable Zod runtime validation layer in `src/validations/cms/` and `src/lib/validations/cms.ts` covering common primitives, ContentItem OCC updates, ContentRevision working drafts, PageSection 50k bounds, Testimonial public/admin separation, MediaAsset traversal defenses and SVG exclusion, and publication workflows. 87 new unit tests pass in `tests/unit/cms-validation/`. Full Vitest suite passing 555/555 tests across 38 files; 0 typecheck errors; 0 lint errors; 33/33 Next.js routes built cleanly. Production Neon completely isolated and untouched)
 **Visual Reference:** SmartStruct Cybernetic Layout + Official Purple/Violet Brand Identity  
 
 ## Last Action
 
-- Executed Task 10.1.3 — Prisma Client Generation & Type Export:
-  - Authored implementation report: `docs/phases/PHASE_10_1_3_PRISMA_CLIENT_GENERATION_REPORT.md`.
-  - Validated `prisma/schema.prisma` using isolated local placeholder URL (0 errors, 27ms format).
-  - Generated Prisma Client v6.19.3 into `node_modules/@prisma/client` (234ms).
-  - Verified generated exports:
-    - 6 Enums: `ContentType`, `ContentPublicationStatus`, `RevisionLifecycleStatus`, `TestimonialVerificationStatus`, `ClientConsentStatus`, `StorageProviderType`.
-    - 5 Models: `ContentItem`, `ContentRevision`, `PageSection`, `Testimonial`, `MediaAsset`.
-    - 4 Augmented Domain Models: `Service`, `PricingPackage`, `PortfolioProject`, `FAQ` (with nullable `contentItemId` and `publishedAt`).
-  - Authored `src/types/cms.ts` and integrated it into `src/types/index.ts`.
-  - Added unit test suite `tests/unit/cms-types.test.ts` (6 tests passing).
-  - Updated fallback mock fixtures in `faq.repo.ts`, `portfolio.repo.ts`, `pricing.repo.ts`, `services.repo.ts`, and test files.
-  - Verified full test suite: 468/468 Vitest tests pass across 31 test files.
+- Executed Task 10.1.4 — Base Zod Validation Schemas:
+  - Authored implementation report: `docs/phases/PHASE_10_1_4_ZOD_VALIDATION_REPORT.md`.
+  - Implemented `src/validations/cms/common.schema.ts`: `slugSchema`, `entityIdSchema`, `httpUrlSchema`, `optionalHttpUrlSchema`, `paginationSchema`, `sortOrderSchema`, `searchQuerySchema`, `dateRangeSchema`, `safeJsonKeySchema`, and prototype-pollution-resistant `safeJsonSchema` (bounded depth 6, array 500, keys 200).
+  - Implemented `src/validations/cms/content-item.schema.ts`: `createContentItemSchema`, `updateContentItemSchema` (OCC `expectedVersion`), and `contentItemQuerySchema`.
+  - Implemented `src/validations/cms/content-revision.schema.ts`: `createWorkingRevisionSchema`, `updateWorkingRevisionSchema`, and `revisionQuerySchema`.
+  - Implemented `src/validations/cms/page-section.schema.ts`: `sectionKeySchema`, `createPageSectionSchema` (50,000 char markdown bound), `updatePageSectionSchema`, and `pageSectionQuerySchema`.
+  - Implemented `src/validations/cms/testimonial.schema.ts`: `publicTestimonialSubmissionSchema` (`.strict()` mode, mandatory client consent, strictly omitting admin fields) and `adminUpdateTestimonialSchema` (cross-field refinement: VERIFIED requires non-REVOKED consent) and `testimonialQuerySchema`.
+  - Implemented `src/validations/cms/media-asset.schema.ts`: Allowed raster MIME types (`image/jpeg`, `image/png`, `image/webp`), strictly rejected SVG to eliminate stored XSS, safe storage keys and filenames preventing traversal (`..`), 10MB limit, 8192px bounds, SHA-256 64-hex digest, and `mediaAssetQuerySchema`.
+  - Implemented `src/validations/cms/publication.schema.ts`: `submitForReviewSchema`, `approveRevisionSchema`, `rejectRevisionSchema` (mandatory >=5 chars reason), `publishRevisionSchema` (mandatory OCC `expectedVersion`), `archiveContentSchema`, and `restoreContentSchema`.
+  - Authored central export hubs at `src/validations/cms/index.ts` and `src/lib/validations/cms.ts`.
+  - Authored 7 dedicated unit test suites in `tests/unit/cms-validation/` (87 tests, 100% passing).
+  - Verified full test regression: 555/555 Vitest tests pass across 38 test files.
   - Verified compilation: `npm run typecheck` (0 errors), `npm run lint` (0 errors/warnings), `next build` (33/33 production routes).
+  - Verified git whitespace: `git diff --check` passed cleanly.
   - Maintained strict database safety: production Neon was never accessed, contacted, migrated, or modified.
 
 ## Next Steps
 
-1. Present Task 10.1.3 Final Acceptance Report to Owner.
-2. Await Owner Authorization before beginning Task 10.1.4 (Base Zod Validation Schemas).
+1. Present Task 10.1.4 Final Acceptance Report to Owner.
+2. Await Owner Authorization before beginning Task 10.1.5 (ContentItem & ContentRevision Repository).
 
 ## Active Decisions
 

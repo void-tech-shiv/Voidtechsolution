@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.7] — 2026-11-13
+### Phase 10.1: Task 10.1.4 — Base Zod Validation Schemas
+
+#### Added
+- **Base Zod Validation Schemas (`src/validations/cms/` & `src/lib/validations/cms.ts`):**
+  - Designed and implemented reusable Zod validation schemas for all CMS entities, publication workflows, and query filters.
+  - `src/validations/cms/common.schema.ts`: Common primitives (`slugSchema`, `entityIdSchema`, `httpUrlSchema`, `optionalHttpUrlSchema`, `paginationSchema`, `sortOrderSchema`, `searchQuerySchema`, `dateRangeSchema`, `safeJsonKeySchema`, and prototype-pollution-resistant `safeJsonSchema`).
+  - `src/validations/cms/content-item.schema.ts`: `createContentItemSchema`, `updateContentItemSchema` (with OCC `expectedVersion`), and `contentItemQuerySchema`.
+  - `src/validations/cms/content-revision.schema.ts`: `createWorkingRevisionSchema`, `updateWorkingRevisionSchema`, and `revisionQuerySchema`.
+  - `src/validations/cms/page-section.schema.ts`: `sectionKeySchema`, `createPageSectionSchema` (50,000 char markdown bound), `updatePageSectionSchema`, and `pageSectionQuerySchema`.
+  - `src/validations/cms/testimonial.schema.ts`: Strict separation between `publicTestimonialSubmissionSchema` (`.strict()` mode, mandatory client consent, strictly omitting admin moderation fields) and `adminUpdateTestimonialSchema` (cross-field refinement: VERIFIED requires non-REVOKED consent) and `testimonialQuerySchema`.
+  - `src/validations/cms/media-asset.schema.ts`: Strict MIME allowlist (JPEG, PNG, WebP; strictly rejecting SVG to prevent stored XSS), safe storage keys and filenames preventing directory traversal (`..`), 10MB file size limit, 8192px dimension limit, SHA-256 64-hex digest, and `mediaAssetQuerySchema`.
+  - `src/validations/cms/publication.schema.ts`: Editorial workflow schemas (`submitForReviewSchema`, `approveRevisionSchema`, `rejectRevisionSchema` [min 5 char reason], `publishRevisionSchema` [mandatory OCC `expectedVersion`], `archiveContentSchema`, `restoreContentSchema`).
+  - `src/validations/cms/index.ts` & `src/lib/validations/cms.ts`: Central export hub and re-export for schemas and inferred TypeScript types.
+  - Dedicated CMS validation unit test suite (`tests/unit/cms-validation/`): 7 test files, 87/87 tests passing (100%).
+  - Full regression test suite passing: 38 test files, 555/555 Vitest tests passing.
+  - Clean quality gates: 0 typecheck errors, 0 ESLint warnings/errors, 33/33 Next.js routes built cleanly.
+  - Strict database safety: zero database operations; production Neon was never accessed, contacted, or modified.
+
+---
+
 ## [0.10.6] — 2026-11-13
 ### Phase 10.1: Task 10.1.3 — Prisma Client Generation & Type Export
 
