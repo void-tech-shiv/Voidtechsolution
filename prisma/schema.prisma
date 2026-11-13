@@ -535,7 +535,7 @@ model ContentItem {
 model ContentRevision {
   id                  String                  @id @default(cuid())
   contentItemId       String
-  contentItem         ContentItem             @relation("ContentItemRevisions", fields: [contentItemId], references: [id], onDelete: Cascade)
+  contentItem         ContentItem             @relation("ContentItemRevisions", fields: [contentItemId], references: [id], onDelete: Restrict)
   versionNumber       Int
   revisionStatus      RevisionLifecycleStatus @default(WORKING_DRAFT)
   isPublishedSnapshot Boolean                 @default(false)

@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.4] — 2026-11-13
+### Phase 10.1: Task 10.1.2 — PostgreSQL Migration Generation & Verification
+
+#### Added
+- **PostgreSQL Migration Generation & Verification Report (`docs/phases/PHASE_10_1_2_MIGRATION_VERIFICATION_REPORT.md`):**
+  - Generated and validated migration `20261114000000_admin_cms_foundation` targeting PostgreSQL on isolated test database (`voidtech_test_concurrency` on `localhost:5432`).
+  - Added six custom PostgreSQL enums: `ContentType`, `ContentPublicationStatus`, `RevisionLifecycleStatus`, `TestimonialVerificationStatus`, `ClientConsentStatus`, and `StorageProviderType`.
+  - Added five core CMS tables: `content_items`, `content_revisions`, `page_sections`, `testimonials`, and `media_assets`.
+  - Augmented existing domain tables (`services`, `pricing_packages`, `portfolio_projects`, `faqs`) with nullable `contentItemId` and `publishedAt`.
+  - Implemented custom PostgreSQL trigger function `verify_revision_ownership()` and trigger `trg_verify_revision_ownership` on `content_items` to reject foreign/cross-item revision pointers (Safeguard 3.B).
+  - Implemented custom PostgreSQL trigger function `protect_published_revisions()` and trigger `trg_protect_published_revisions` on `content_revisions` to block deletion of published snapshot revisions (Safeguard 3.A).
+  - Enforced `ON DELETE RESTRICT` on `content_revisions.contentItemId` and all domain table `contentItemId` foreign keys.
+  - Authored comprehensive, idempotent reverse migration script `prisma/migrations/20261114000000_admin_cms_foundation/down.sql`.
+  - Verified 100% test pass rate across 12 automated integration steps covering forward migration, table existence, enum creation, legacy compatibility, cross-item ownership rejection, published revision deletion protection, dual-pointer coexistence, domain 1-to-1 uniqueness, fixture cleanup, rollback via `down.sql`, and re-apply of `migration.sql`.
+  - Maintained strict database safety: production Neon was never accessed, migrated, or modified.
+
+---
+
 ## [0.10.3] — 2026-11-13
 ### Phase 10.1: Task 10.1.1 — Prisma Schema Additions & Relations
 
