@@ -4,7 +4,7 @@
   "private": true,
   "description": "VOIDTECH SOLUTION — Professional Software Development Agency Platform",
   "scripts": {
-    "dev": "next dev",
+    "dev": "node -e \"const fs=require('fs');if(fs.existsSync('.next/BUILD_ID')){fs.rmSync('.next',{recursive:true,force:true})}\" && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -13,6 +13,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:gate": "playwright test tests/e2e/production-visual-integrity.spec.ts",
     "prisma:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate:status": "prisma migrate status",

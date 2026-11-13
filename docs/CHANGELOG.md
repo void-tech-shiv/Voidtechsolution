@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.11] — 2026-11-13
+### Phase 10.1: Task 10.1.5.2 — Production Visual Integrity & Release Readiness Audit
+
+#### Fixed & Hardened
+- **Development / Production Webpack Cache Invariant:**
+  - Diagnosed and resolved the root cause of the unstyled appearance on `localhost:3000` (development server fracturing module map after finding leftover `.next` production build artifacts, causing `TypeError: __webpack_modules__[moduleId] is not a function` and CSS 404).
+  - Added cross-platform pre-dev cache cleanup check in `package.json` (`node -e "const fs=require('fs');if(fs.existsSync('.next/BUILD_ID')){fs.rmSync('.next',{recursive:true,force:true})}" && next dev`) ensuring that dev server starts with fresh cache when transitioning from production builds.
+- **Tailwind Content Scanning Unification:**
+  - Updated `tailwind.config.ts` content array to `"./src/**/*.{js,ts,jsx,tsx,mdx}"` ensuring comprehensive utility purging and class inclusion across all current and future modules.
+- **Automated Visual Integrity Release Gate Suite:**
+  - Implemented `tests/e2e/production-visual-integrity.spec.ts` covering 49 permutations (7 viewports x 7 routes).
+  - Enforced assertions for 200 OK stylesheet delivery, computed Obsidian/Electric Violet CSS custom properties, Inter/JetBrains Mono typography, non-zero button padding/border-radius, zero horizontal scroll overflow, and zero unhandled console errors.
+  - Added `npm run test:gate` script to `package.json`.
+  - All 49 visual integrity tests and 22 responsive screenshot tests passing (100% pass rate).
+  - Full Vitest regression (642/642 tests passing), typecheck (0 errors), lint (0 errors), build (33/33 routes).
+- **Audit Documentation:**
+  - Created `docs/phases/PHASE_10_1_5_2_PRODUCTION_VISUAL_INTEGRITY_REPORT.md`.
+
+---
+
 ## [0.10.10] — 2026-11-13
 ### Phase 10.1: Task 10.1.5.1 — Repository Integrity Closure Audit
 
