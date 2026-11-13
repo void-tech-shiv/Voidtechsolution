@@ -153,6 +153,7 @@ CREATE INDEX IF NOT EXISTS "content_items_contentType_publicationStatus_idx" ON 
 CREATE INDEX IF NOT EXISTS "content_items_slug_idx" ON "content_items"("slug");
 
 CREATE UNIQUE INDEX IF NOT EXISTS "content_revisions_contentItemId_versionNumber_key" ON "content_revisions"("contentItemId", "versionNumber");
+CREATE UNIQUE INDEX IF NOT EXISTS "content_revisions_contentItemId_id_key" ON "content_revisions"("contentItemId", "id");
 CREATE INDEX IF NOT EXISTS "content_revisions_contentItemId_revisionStatus_idx" ON "content_revisions"("contentItemId", "revisionStatus");
 CREATE INDEX IF NOT EXISTS "content_revisions_contentItemId_isPublishedSnapshot_idx" ON "content_revisions"("contentItemId", "isPublishedSnapshot");
 CREATE INDEX IF NOT EXISTS "content_revisions_authorId_idx" ON "content_revisions"("authorId");
@@ -203,6 +204,19 @@ ALTER TABLE "content_items"
 ALTER TABLE "content_items" 
     ADD CONSTRAINT "content_items_currentWorkingRevisionId_fkey" 
     FOREIGN KEY ("currentWorkingRevisionId") REFERENCES "content_revisions"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- Composite Revision Ownership Foreign Keys (Declarative Cross-Item Protection)
+ALTER TABLE "content_items"
+    ADD CONSTRAINT "content_items_published_revision_ownership_fkey"
+    FOREIGN KEY ("id", "currentPublishedRevisionId")
+    REFERENCES "content_revisions"("contentItemId", "id")
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE "content_items"
+    ADD CONSTRAINT "content_items_working_revision_ownership_fkey"
+    FOREIGN KEY ("id", "currentWorkingRevisionId")
+    REFERENCES "content_revisions"("contentItemId", "id")
+    ON DELETE SET NULL ("currentWorkingRevisionId") ON UPDATE RESTRICT;
 
 -- Published Revision Deletion Protection (Requirement 3.A: ON DELETE RESTRICT)
 ALTER TABLE "content_revisions" 
@@ -304,3 +318,71 @@ CREATE TRIGGER trg_protect_published_revisions
 BEFORE DELETE ON content_revisions
 FOR EACH ROW
 EXECUTE FUNCTION protect_published_revisions();
+
+-- 3. Enforce Revision Immutability & Prevent Reassignment / Tampering (Task 10.1.2.1 Audit Closure)
+CREATE OR REPLACE FUNCTION protect_revision_immutability()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- 1. Reassignment protection: contentItemId cannot ever be mutated on any revision
+  IF NEW."contentItemId" <> OLD."contentItemId" THEN
+    RAISE EXCEPTION 'Illegal operation: Cannot reassign contentItemId of revision % (ContentItem ownership is immutable)',
+      OLD.id
+      USING ERRCODE = 'integrity_constraint_violation';
+  END IF;
+
+  -- 2. Version number cannot ever be mutated
+  IF NEW."versionNumber" <> OLD."versionNumber" THEN
+    RAISE EXCEPTION 'Illegal operation: Cannot change versionNumber of revision %',
+      OLD.id
+      USING ERRCODE = 'integrity_constraint_violation';
+  END IF;
+
+  -- 3. Published Snapshot Immutability:
+  IF OLD."isPublishedSnapshot" = TRUE THEN
+    -- Prevent unpublishing / downgrade of snapshot marker
+    IF NEW."isPublishedSnapshot" = FALSE THEN
+      RAISE EXCEPTION 'Illegal operation: Cannot unpublish or downgrade published revision snapshot %',
+        OLD.id
+        USING ERRCODE = 'integrity_constraint_violation';
+    END IF;
+
+    -- Prevent mutation of revision data, title, or summary
+    IF NEW."snapshotData" IS DISTINCT FROM OLD."snapshotData" 
+       OR NEW."title" IS DISTINCT FROM OLD."title"
+       OR NEW."changeSummary" IS DISTINCT FROM OLD."changeSummary" THEN
+      RAISE EXCEPTION 'Illegal operation: Cannot modify content or metadata of published revision snapshot % (snapshots are strictly immutable)',
+        OLD.id
+        USING ERRCODE = 'integrity_constraint_violation';
+    END IF;
+
+    -- Prevent reverting revisionStatus away from published/archived
+    IF OLD."revisionStatus" = 'PUBLISHED_SNAPSHOT' AND NEW."revisionStatus" = 'WORKING_DRAFT' THEN
+      RAISE EXCEPTION 'Illegal operation: Cannot revert published revision % status to WORKING_DRAFT',
+        OLD.id
+        USING ERRCODE = 'integrity_constraint_violation';
+    END IF;
+  END IF;
+
+  -- 4. Active published pointer protection:
+  IF EXISTS (
+    SELECT 1 FROM content_items
+    WHERE "currentPublishedRevisionId" = OLD.id
+  ) THEN
+    IF NEW."snapshotData" IS DISTINCT FROM OLD."snapshotData" THEN
+      RAISE EXCEPTION 'Illegal operation: Cannot modify snapshotData of actively published revision %',
+        OLD.id
+        USING ERRCODE = 'integrity_constraint_violation';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_protect_revision_immutability ON content_revisions;
+CREATE TRIGGER trg_protect_revision_immutability
+BEFORE UPDATE ON content_revisions
+FOR EACH ROW
+EXECUTE FUNCTION protect_revision_immutability();
+
+

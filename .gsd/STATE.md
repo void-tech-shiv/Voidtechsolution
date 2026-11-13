@@ -1,35 +1,34 @@
 ---
-updated: 2026-11-13T18:50:00+05:30
+updated: 2026-11-13T19:04:00+05:30
 ---
 
 # Project State — VOIDTECH SOLUTION
 
 ## Current Position
 
-**Milestone:** 10.1 — CMS Database Schema & Content Repositories (Task 10.1.2 COMPLETE)  
+**Milestone:** 10.1 — CMS Database Schema & Content Repositories (Task 10.1.2.1 COMPLETE)  
 **Phase:** 10 — Admin CMS  
-**Status:** active (Phase 10.1 In Progress: Task 10.1.2 Complete. Generated migration `20261114000000_admin_cms_foundation` and reversible `down.sql`. Applied to isolated local PostgreSQL test database `voidtech_test_concurrency` on `localhost:5432`. Verified custom triggers `verify_revision_ownership()` and `protect_published_revisions()`, foreign key constraints, legacy compatibility, rollback, and re-apply with 100% pass rate. Production Neon completely isolated and untouched)  
+**Status:** active (Phase 10.1 In Progress: Task 10.1.2.1 Integrity Closure Complete. Designed and verified declarative Composite Foreign Keys on `content_items` and `protect_revision_immutability()` trigger on `content_revisions`. Proved published snapshot immutability, revision reassignment rejection, cross-item pointer defense, and draft pruning on isolated local test DB `voidtech_test_concurrency` with 100% pass rate. Classified rollback data loss taxonomy; documented Prisma tracking state without unauthorized modification. Production Neon completely isolated and untouched)  
 **Visual Reference:** SmartStruct Cybernetic Layout + Official Purple/Violet Brand Identity  
 
 ## Last Action
 
-- Executed Task 10.1.2 — PostgreSQL Migration Generation & Verification:
-  - Authored implementation report: `docs/phases/PHASE_10_1_2_MIGRATION_VERIFICATION_REPORT.md`.
-  - Hardened `prisma/schema.prisma` with `onDelete: Restrict` on `ContentRevision.contentItem`.
-  - Generated `prisma/migrations/20261114000000_admin_cms_foundation/migration.sql` with 6 enums, 5 tables, 4 domain alterations, indexes, foreign keys, and 2 custom PostgreSQL triggers.
-  - Authored idempotent reverse migration `prisma/migrations/20261114000000_admin_cms_foundation/down.sql`.
-  - Executed automated 12-step test suite against isolated local PostgreSQL test database (`voidtech_test_concurrency` on `localhost:5432`).
-  - Empirically verified all 4 engineering safeguards:
-    - Safeguard 3.A: Published revisions deletion protection trigger & `onDelete: Restrict`.
-    - Safeguard 3.B: Cross-item revision ownership verification trigger.
-    - Safeguard 3.C: 1-to-1 unique domain attachment constraint.
-    - Safeguard 3.D: Dual pointer coexistence (`PUBLISHED` snapshot + `WORKING_DRAFT`).
-  - Tested rollback via `down.sql` (clean drop of all CMS tables, triggers, and types) and re-applied `migration.sql` to leave DB in clean Phase 10.1 state.
+- Executed Task 10.1.2.1 — PostgreSQL Migration Integrity Closure Audit:
+  - Authored audit report: `docs/phases/PHASE_10_1_2_1_INTEGRITY_CLOSURE_REPORT.md`.
+  - Added unique composite index `content_revisions_contentItemId_id_key` on `content_revisions("contentItemId", "id")`.
+  - Added declarative composite foreign keys on `content_items`:
+    - `content_items_published_revision_ownership_fkey` (`ON DELETE RESTRICT ON UPDATE RESTRICT`).
+    - `content_items_working_revision_ownership_fkey` (`ON DELETE SET NULL ("currentWorkingRevisionId") ON UPDATE RESTRICT`).
+  - Added custom PostgreSQL trigger function `protect_revision_immutability()` and trigger `trg_protect_revision_immutability` on `content_revisions` (BEFORE UPDATE) blocking unpublishing, content mutation on snapshots, and revision reassignment.
+  - Updated `down.sql` to drop composite foreign keys, unique index, and immutability trigger.
+  - Verified 10 empirical tests: snapshot mutation rejected, snapshot unpublishing rejected, revision reassignment rejected, cross-item pointers rejected, draft pruning verified with automatic pointer NULLing, and rollback/re-apply verified.
+  - Formalized rollback taxonomy: `down.sql` explicitly documented as data-destructive (schema-reversible only).
+  - Inspected and honestly reported Prisma migration tracking: `_prisma_migrations` does not exist in local test DB; zero modifications made without authorization.
   - Maintained strict database safety: production Neon was never accessed, migrated, or modified.
 
 ## Next Steps
 
-1. Present Task 10.1.2 Final Acceptance Report to Owner.
+1. Present Task 10.1.2.1 Final Integrity Closure Report to Owner.
 2. Await Owner Authorization before beginning Task 10.1.3 (Prisma Client Generation & Type Export).
 
 ## Active Decisions

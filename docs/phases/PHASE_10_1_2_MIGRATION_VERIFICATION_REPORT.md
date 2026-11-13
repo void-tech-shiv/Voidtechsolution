@@ -69,23 +69,29 @@ The forward migration script delivers the complete schema upgrade in dependency-
    - `portfolio_projects`: Added `contentItemId VARCHAR(191) UNIQUE` (nullable) and `publishedAt TIMESTAMPTZ`.
    - `faqs`: Added `contentItemId VARCHAR(191) UNIQUE` (nullable) and `publishedAt TIMESTAMPTZ`.
 
-4. **Foreign Key Invariants:**
+4. **Foreign Key Invariants & Composite Declarative Keys:**
    - All domain entity links set to `ON DELETE RESTRICT` (preventing orphan records or cascading deletion of business data).
    - Parent link `content_revisions.contentItemId` set to `ON DELETE RESTRICT` to protect audit and historical revisions.
+   - Composite Foreign Key `content_items_published_revision_ownership_fkey`: `(id, currentPublishedRevisionId) REFERENCES content_revisions(contentItemId, id) ON DELETE RESTRICT ON UPDATE RESTRICT`.
+   - Composite Foreign Key `content_items_working_revision_ownership_fkey`: `(id, currentWorkingRevisionId) REFERENCES content_revisions(contentItemId, id) ON DELETE SET NULL ("currentWorkingRevisionId") ON UPDATE RESTRICT`.
 
 5. **Custom PostgreSQL Functions & Triggers:**
    - **`verify_revision_ownership()`:** Executed `BEFORE INSERT OR UPDATE OF "currentPublishedRevisionId", "currentWorkingRevisionId" ON "content_items"`. Checks that referenced revisions belong exclusively to `NEW.id`. Raises SQLSTATE `23514` (`check_violation`) if cross-item foreign revisions are supplied.
    - **`protect_published_revisions()`:** Executed `BEFORE DELETE ON "content_revisions"`. Checks if `OLD.isPublishedSnapshot = true` or if referenced by `currentPublishedRevisionId`. Raises SQLSTATE `23000` (`integrity_constraint_violation`) blocking deletion of live published history.
+   - **`protect_revision_immutability()`:** Executed `BEFORE UPDATE ON "content_revisions"`. Blocks any modification of `contentItemId` and `versionNumber` across all revisions; blocks unpublishing (`isPublishedSnapshot: true -> false`), content modification (`snapshotData`), or status reversion on published snapshots.
 
 ### 3.2 Rollback File: `prisma/migrations/20261114000000_admin_cms_foundation/down.sql`
 
 The reverse migration script cleanly reverses all changes:
-1. Drops triggers (`trg_verify_revision_ownership`, `trg_protect_published_revisions`).
-2. Drops trigger functions (`verify_revision_ownership()`, `protect_published_revisions()`).
-3. Drops all 13 foreign key constraints referencing `content_items` and `content_revisions`.
+1. Drops triggers (`trg_protect_revision_immutability`, `trg_verify_revision_ownership`, `trg_protect_published_revisions`).
+2. Drops trigger functions (`protect_revision_immutability()`, `verify_revision_ownership()`, `protect_published_revisions()`).
+3. Drops composite foreign keys, unique composite indexes, and all foreign key constraints referencing `content_items` and `content_revisions`.
 4. Drops tables in leaf-to-root order (`media_assets`, `testimonials`, `page_sections`, `content_revisions`, `content_items`).
 5. Drops added columns from existing domain tables (`services`, `pricing_packages`, `portfolio_projects`, `faqs`).
 6. Drops all 6 custom PostgreSQL enums.
+
+> [!CAUTION]
+> **Rollback Data Loss Classification:** `down.sql` is **SCHEMA-REVERSIBLE ONLY**; it is **NOT DATA-REVERSIBLE**. Running `down.sql` permanently drops CMS tables and irrecoverably erases all data inside them. Data recovery requires restoring from a pre-rollback database backup.
 
 ---
 
@@ -192,3 +198,4 @@ ALL TASK 10.1.2 POSTGRESQL MIGRATION & SAFEGUARDS TESTS PASSED (100%)
 - **Completed Task:** Phase 10.1 Task 10.1.2 — PostgreSQL Migration Generation & Verification.
 - **Next Task:** Phase 10.1 Task 10.1.3 — Prisma Client Generation & Type Export (`prisma generate`, `@/types/cms`).
 - **Authorization Boundary:** Task 10.1.3 has NOT been started. Execution has paused immediately for owner review.
+

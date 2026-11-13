@@ -6,6 +6,9 @@
 -- ==============================================================================
 
 -- Drop triggers and trigger functions
+DROP TRIGGER IF EXISTS trg_protect_revision_immutability ON "content_revisions";
+DROP FUNCTION IF EXISTS protect_revision_immutability();
+
 DROP TRIGGER IF EXISTS trg_verify_revision_ownership ON "content_items";
 DROP FUNCTION IF EXISTS verify_revision_ownership();
 
@@ -13,6 +16,10 @@ DROP TRIGGER IF EXISTS trg_protect_published_revisions ON "content_revisions";
 DROP FUNCTION IF EXISTS protect_published_revisions();
 
 -- Drop foreign keys referencing content_items and content_revisions
+ALTER TABLE "content_items" DROP CONSTRAINT IF EXISTS "content_items_working_revision_ownership_fkey";
+ALTER TABLE "content_items" DROP CONSTRAINT IF EXISTS "content_items_published_revision_ownership_fkey";
+ALTER TABLE "content_revisions" DROP CONSTRAINT IF EXISTS "content_revisions_contentItemId_id_key";
+DROP INDEX IF EXISTS "content_revisions_contentItemId_id_key";
 ALTER TABLE "services" DROP CONSTRAINT IF EXISTS "services_contentItemId_fkey";
 ALTER TABLE "portfolio_projects" DROP CONSTRAINT IF EXISTS "portfolio_projects_contentItemId_fkey";
 ALTER TABLE "pricing_packages" DROP CONSTRAINT IF EXISTS "pricing_packages_contentItemId_fkey";
@@ -47,3 +54,4 @@ DROP TYPE IF EXISTS "TestimonialVerificationStatus";
 DROP TYPE IF EXISTS "RevisionLifecycleStatus";
 DROP TYPE IF EXISTS "ContentPublicationStatus";
 DROP TYPE IF EXISTS "ContentType";
+

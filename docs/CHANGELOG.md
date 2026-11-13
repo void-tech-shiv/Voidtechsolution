@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.5] — 2026-11-13
+### Phase 10.1: Task 10.1.2.1 — PostgreSQL Migration Integrity Closure Audit
+
+#### Added
+- **PostgreSQL Migration Integrity Closure Audit Report (`docs/phases/PHASE_10_1_2_1_INTEGRITY_CLOSURE_REPORT.md`):**
+  - Conducted empirical vulnerability audit investigating published revision immutability, revision reassignment, cross-item pointer corruption, rollback classification, and Prisma migration tracking.
+  - Implemented declarative PostgreSQL Composite Foreign Keys on `content_items` (`(id, currentPublishedRevisionId)` with `ON DELETE RESTRICT`, `(id, currentWorkingRevisionId)` with column-specific `ON DELETE SET NULL ("currentWorkingRevisionId")`, and `ON UPDATE RESTRICT`) bound to unique index on `content_revisions("contentItemId", "id")`.
+  - Implemented custom PostgreSQL trigger function `protect_revision_immutability()` and trigger `trg_protect_revision_immutability` on `content_revisions` to unconditionally block revision reassignment (`contentItemId`), version modification (`versionNumber`), snapshot unpublishing (`isPublishedSnapshot: true -> false`), and content mutation on published snapshots.
+  - Formally established rollback classification taxonomy: distinguishing DDL schema rollback (`down.sql`), application data preservation, backup/restore, and post-rollback recovery; explicitly warning that `down.sql` is data-destructive and not data-reversible.
+  - Inspected and honestly reported Prisma migration tracking state: confirmed `_prisma_migrations` table does not exist in `voidtech_test_concurrency` due to `prisma db execute` DDL application; strictly refrained from unauthorized `prisma migrate resolve` calls.
+  - Verified 100% test pass rate across 10 empirical integrity checks. Production Neon was never accessed.
+
+---
+
 ## [0.10.4] — 2026-11-13
 ### Phase 10.1: Task 10.1.2 — PostgreSQL Migration Generation & Verification
 
