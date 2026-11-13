@@ -1,36 +1,39 @@
 ---
-updated: 2026-11-13T15:20:00+05:30
+updated: 2026-11-13T16:50:00+05:30
 ---
 
 # Project State — VOIDTECH SOLUTION
 
 ## Current Position
 
-**Milestone:** 9.3 — CRM End-to-End Testing, Security Validation & Visual Acceptance (COMPLETE & VERIFIED)  
-**Phase:** 9 — Admin Lead Management & Enquiry Pipeline (PHASE 9 COMPLETE)  
-**Status:** complete (Phase 9.3 Complete: All 462 Vitest tests passing, 21 Playwright E2E tests passing, 12 visual proofs captured, RBAC & OCC concurrency verified on real PostgreSQL, sub-10ms query profiling validated)  
+**Milestone:** 10.0 — CMS Discovery & Architecture (COMPLETE & VERIFIED)  
+**Phase:** 10 — Admin CMS  
+**Status:** active (Phase 10.0 Complete: Read-only codebase audit, hybrid content model, ERD & schema design, API contracts, RBAC matrix, security review, testing blueprint, and execution roadmap complete)  
 **Visual Reference:** SmartStruct Cybernetic Layout + Official Purple/Violet Brand Identity  
 
 ## Last Action
 
-- Completed Phase 9.3 Comprehensive Validation & Quality Gates:
-  - Validated real PostgreSQL lead lifecycle workflows (`tests/integration/crm-lifecycle.integration.test.ts` - 9/9 passing).
-  - Validated 3-role RBAC security matrix & notification isolation (`tests/integration/crm-rbac-security.integration.test.ts` - 19/19 passing).
-  - Validated OCC concurrency safety & atomic single-active assignment locking (`tests/integration/crm-concurrency.integration.test.ts` - 4/4 passing).
-  - Executed synthetic scale benchmarks across 10, 100, 500, and 1,000 leads (sub-10ms aggregation and zero N+1 queries confirmed).
-  - Captured 12 visual acceptance screenshots across 10 responsive viewports (320px to 1920px) plus mobile/desktop drawer states (`tests/e2e/crm-acceptance.spec.ts` - 21/21 passing).
-  - Remediated test typing strictness and verified all 6 quality gates (Prisma validate, tsc, lint, vitest, playwright, next build).
-  - Authored `docs/PHASE_9_3_CRM_ACCEPTANCE_REPORT.md` and updated project specifications.
+- Executed Phase 10.0 CMS Discovery & Architecture Mission:
+  - Conducted read-only audit of existing data models, repositories, public routes, admin pages, and test infrastructure.
+  - Formulated Hybrid Content Strategy: normalized domain entities for structured catalogs + `PageSection` blocks for landing page copy.
+  - Defined 4-stage content lifecycle: `DRAFT` -> `REVIEW` -> `PUBLISHED` -> `ARCHIVED`.
+  - Authored comprehensive architecture blueprint with Next.js Draft Mode preview engine and on-demand cache revalidation.
+  - Specified enriched database schema (`CMS_DATABASE_DESIGN.md`) with `PageSection`, `ContentRevision`, `Testimonial`, and `MediaAsset`.
+  - Defined full typed Server Action and API contracts (`CMS_API_DESIGN.md`) with atomic OCC version counters.
+  - Mapped granular RBAC matrix across `SUPER_ADMIN`, `ADMIN`, and `EDITOR` (`CMS_RBAC_PERMISSION_MATRIX.md`).
+  - Authored security threat review covering Stored XSS, file upload pipelines, CSRF, and anti-fabrication controls.
+  - Established 5-tier testing blueprint and phased implementation roadmap (10.0 through 10.4).
+  - Maintained strict execution boundary: 0 application code changes, 0 database writes, 0 migration executions.
 
 ## Next Steps
 
-1. Await Owner Authorization for Phase 10 (Admin CMS: Portfolio, Services, Pricing Administration).
-2. Prepare Phase 10 discovery and specification breakdown.
+1. Present Phase 10.0 Discovery Report & open decisions to Owner.
+2. Await Owner Authorization before beginning Phase 10.1 (Database Schema & Content Repositories).
 
 ## Active Decisions
 
 | Decision | Choice | Made | Affects |
-|----------|--------|------|---------|
+|---|---|---|---|
 | Super Admin Invariant | Strictly EXACTLY ONE SUPER_ADMIN across lifecycle | 2026-11-12 | RBAC, Repo, Bootstrap |
 | Concurrency Lock | PostgreSQL advisory xact lock `super_admin_lifecycle_lock` | 2026-11-12 | `users.repo.ts`, DB |
 | Master Protection | Master account cannot be deleted, demoted, or deactivated | 2026-11-12 | `rbac.ts`, `users.repo.ts` |
@@ -53,3 +56,8 @@ updated: 2026-11-13T15:20:00+05:30
 | Recipient Isolation | `AdminNotification` strictly partitioned by `recipientId` | 2026-11-13 | NotificationsRepo, Security |
 | Dynamic Follow-up Sync | `syncEnquiryNextFollowUpAt` computes earliest active uncompleted task | 2026-11-13 | `lead-followups.repo.ts` |
 | GitHub Remote Backup | Verified fast-forward push to `https://github.com/void-tech-shiv/Voidtechsolution.git` | 2026-11-13 | Version Control, Backup |
+| CMS Content Model | Hybrid Model: Normalized relational entities + `PageSection` blocks | 2026-11-13 | CMS Architecture, DB |
+| CMS Lifecycle States | 4-stage machine: `DRAFT`, `REVIEW`, `PUBLISHED`, `ARCHIVED` | 2026-11-13 | CMS Architecture, UI |
+| CMS Concurrency Engine | Monotonic integer `version` OCC counter + immutable `ContentRevision` snapshots | 2026-11-13 | Database, Server Actions |
+| Media Storage Strategy | Pluggable `StorageService`: local `/public/uploads` dev + Cloudflare R2 production | 2026-11-13 | Media Management, Storage |
+| Trust & Anti-Fabrication | Mandatory `isVerified` record on testimonials; concept lab disclaimers enforced | 2026-11-13 | Database, Content Governance |

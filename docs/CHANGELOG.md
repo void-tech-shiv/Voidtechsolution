@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.0] — 2026-11-13
+### Phase 10.0: Admin CMS Discovery & Architecture
+
+#### Added
+- **Comprehensive CMS Discovery & Codebase Audit Report (`docs/phases/PHASE_10_0_CMS_DISCOVERY_REPORT.md`):**
+  - Read-only audit of existing data layer, repositories, public routes, admin pages, RBAC framework, and test infrastructure.
+  - Identification of reusable assets, codebase discrepancies, and media storage options.
+  - Documented CodeRabbit limitation (signed out) and manual architectural/security review findings.
+- **CMS Architecture & System Blueprint (`docs/architecture/CMS_ARCHITECTURE.md`):**
+  - Full hybrid content strategy: normalized relational entities for structured catalogs combined with `PageSection` blocks for editorial page narrative.
+  - 4-stage content lifecycle: `DRAFT` -> `REVIEW` -> `PUBLISHED` -> `ARCHIVED`.
+  - Immutable revision snapshotting and atomic Optimistic Concurrency Control (OCC) versioning engine.
+  - Next.js Draft Mode preview system with signed secret tokens, `__prerender_bypass` cookies, and `noindex, nofollow` safeguards.
+  - Pluggable media storage provider architecture (local filesystem default; Cloudflare R2 production recommendation with zero egress fees).
+- **CMS Database Design & Schema Specifications (`docs/architecture/CMS_DATABASE_DESIGN.md`):**
+  - Proposed enhancements for `Service`, `PricingPackage`, `PortfolioProject`, and `FAQ` models with publication timestamps, version counters, and SEO fields.
+  - Proposed new models: `PageSection`, `ContentRevision`, `Testimonial`, and `MediaAsset`.
+  - Detailed Entity-Relationship Diagram (ERD), index strategies, and audit action mappings.
+- **CMS Server Action & API Contracts (`docs/architecture/CMS_API_DESIGN.md`):**
+  - Strict Server Action interfaces across services, pricing, portfolio, FAQs, page sections, revisions, and media.
+  - Discriminated union response envelope and error taxonomy (`UNAUTHENTICATED`, `FORBIDDEN`, `VALIDATION_FAILED`, `CONFLICT_DETECTED`).
+- **CMS Role-Based Access Control Matrix (`docs/architecture/CMS_RBAC_PERMISSION_MATRIX.md`):**
+  - Fine-grained permission keys mapping across `SUPER_ADMIN`, `ADMIN`, and `EDITOR`.
+  - Strict commercial protections: `EDITOR` denied from modifying pricing, publishing live content, or altering SEO directives.
+- **CMS Security Review & Threat Analysis (`docs/architecture/CMS_SECURITY_REVIEW.md`):**
+  - Comprehensive threat model covering Stored XSS, RCE via file uploads, CSRF, draft leakage, and commercial defamation.
+  - AST-based Markdown and SVG DOMPurify sanitization rules, magic-byte MIME sniffing, SHA-256 file renaming.
+- **CMS Quality Assurance & Testing Strategy (`docs/architecture/CMS_TESTING_STRATEGY.md`):**
+  - 5-tier testing blueprint spanning unit validation, real PostgreSQL repository integration, RBAC security, public integration, and Playwright E2E browser tests across 10 viewports.
+- **Phase 10 Execution Roadmap (`docs/phases/PHASE_10_ROADMAP.md`):**
+  - Detailed execution phases 10.0 through 10.4 with concrete deliverables, dependencies, and exit criteria.
+
+---
+
 ## [0.9.3] — 2026-11-13
 ### Phase 9.3: CRM End-to-End Testing, Security Validation & Visual Acceptance
 
