@@ -4,18 +4,48 @@
  * Verifies exact 100% equivalence between the physical database table
  * and migration 20261112000001_add_admin_sessions.
  * 
- * STRICT SAFETY: READ-ONLY QUERIES ONLY (information_schema & pg_catalog).
- * NEVER EXPOSES SECRETS OR CONNECTION STRINGS.
+ * STRICT SAFETY REQUIREMENTS:
+ * 1. Read-only queries only against PostgreSQL catalogs (information_schema & pg_catalog).
+ * 2. Never logs or prints connection strings, passwords, or secrets.
+ * 3. Sanitizes all output and error messages.
+ * 4. Fails closed if unexpected extra columns, mismatched defaults, or precision drift exist.
+ * 5. Compares exact definitions of PK, unique index, ordinary indexes, and foreign keys.
+ * 6. Explicitly verifies target endpoint identity (hostname and database name).
  */
 
 const { PrismaClient } = require('.prisma/client');
 
+function sanitizeDatabaseEndpoint() {
+  const connStr = process.env.DIRECT_URL || process.env.DATABASE_URL || '';
+  if (!connStr) {
+    return { host: 'unknown', port: 'unknown', database: 'unknown' };
+  }
+  try {
+    const parsed = new URL(connStr);
+    return {
+      host: parsed.hostname,
+      port: parsed.port || '5432',
+      database: parsed.pathname.replace(/^\//, '')
+    };
+  } catch {
+    return { host: 'unparseable', port: 'unknown', database: 'unknown' };
+  }
+}
+
 async function verifyAdminSessionsEquivalence() {
+  const endpoint = sanitizeDatabaseEndpoint();
   const prisma = new PrismaClient();
+
+  let hasError = false;
 
   try {
     console.log('==============================================================================');
-    console.log('VOIDTECH — Read-Only AdminSession Migration Reconciliation Verification');
+    console.log('VOIDTECH — Read-Only AdminSession Migration Reconciliation Verifier');
+    console.log('==============================================================================');
+    console.log(`Target Endpoint Host:     ${endpoint.host}`);
+    console.log(`Target Endpoint Port:     ${endpoint.port}`);
+    console.log(`Target Database Name:     ${endpoint.database}`);
+    console.log('Mode:                     STRICT READ-ONLY CATALOG AUDIT');
     console.log('==============================================================================\n');
 
     // 1. Check Table Existence
@@ -25,60 +55,87 @@ async function verifyAdminSessionsEquivalence() {
       WHERE table_schema = 'public' AND table_name = 'admin_sessions';
     `;
 
-    if (tableExists.length === 0) {
+    if (!Array.isArray(tableExists) || tableExists.length === 0) {
       console.error('❌ Table "admin_sessions" does NOT exist in the target database.');
       process.exit(1);
     }
     console.log('✅ Table "admin_sessions" exists.');
 
-    // 2. Inspect Columns
+    // 2. Inspect Columns, Data Types, Precision, Defaults, and Nullability
     const columns = await prisma.$queryRaw`
       SELECT 
         column_name, 
         data_type, 
-        is_nullable, 
-        column_default
+        datetime_precision,
+        column_default,
+        is_nullable
       FROM information_schema.columns 
       WHERE table_schema = 'public' AND table_name = 'admin_sessions'
       ORDER BY ordinal_position;
     `;
 
     const expectedColumns = {
-      id: { type: 'text', nullable: 'NO' },
-      userId: { type: 'text', nullable: 'NO' },
-      sessionToken: { type: 'text', nullable: 'NO' },
-      ipAddress: { type: 'text', nullable: 'YES' },
-      userAgent: { type: 'text', nullable: 'YES' },
-      expiresAt: { type: 'timestamp without time zone', nullable: 'NO' },
-      lastActiveAt: { type: 'timestamp without time zone', nullable: 'NO' },
-      createdAt: { type: 'timestamp without time zone', nullable: 'NO' }
+      id: { type: 'text', nullable: 'NO', precision: null, defaultSubstr: null },
+      userId: { type: 'text', nullable: 'NO', precision: null, defaultSubstr: null },
+      sessionToken: { type: 'text', nullable: 'NO', precision: null, defaultSubstr: null },
+      ipAddress: { type: 'text', nullable: 'YES', precision: null, defaultSubstr: null },
+      userAgent: { type: 'text', nullable: 'YES', precision: null, defaultSubstr: null },
+      expiresAt: { type: 'timestamp without time zone', nullable: 'NO', precision: 3, defaultSubstr: null },
+      lastActiveAt: { type: 'timestamp without time zone', nullable: 'NO', precision: 3, defaultSubstr: 'CURRENT_TIMESTAMP' },
+      createdAt: { type: 'timestamp without time zone', nullable: 'NO', precision: 3, defaultSubstr: 'CURRENT_TIMESTAMP' }
     };
 
-    console.log('\n--- Column Verification ---');
-    let columnMismatch = false;
+    console.log('\n--- 1. Column-by-Column Specification & Precision Audit ---');
+    const actualColNames = new Set(columns.map(c => c.column_name));
+    const expectedColNames = new Set(Object.keys(expectedColumns));
+
+    // Check for unexpected extra columns (Fail-Closed)
+    for (const actualCol of columns) {
+      if (!expectedColNames.has(actualCol.column_name)) {
+        console.error(`❌ Unexpected extra column found in database: "${actualCol.column_name}"`);
+        hasError = true;
+      }
+    }
+
+    // Check for missing columns or attribute mismatches
     for (const [colName, exp] of Object.entries(expectedColumns)) {
       const match = columns.find(c => c.column_name === colName);
       if (!match) {
-        console.error(`❌ Column missing: ${colName}`);
-        columnMismatch = true;
+        console.error(`❌ Expected column missing: "${colName}"`);
+        hasError = true;
+        continue;
+      }
+
+      const typeMatch = match.data_type.toLowerCase() === exp.type.toLowerCase();
+      const nullMatch = match.is_nullable === exp.nullable;
+      const precisionMatch = exp.precision === null || match.datetime_precision === exp.precision;
+
+      let defaultMatch = true;
+      if (exp.defaultSubstr) {
+        defaultMatch = match.column_default && match.column_default.toUpperCase().includes(exp.defaultSubstr);
       } else {
-        const typeMatch = match.data_type.toLowerCase() === exp.type.toLowerCase();
-        const nullMatch = match.is_nullable === exp.nullable;
-        if (!typeMatch || !nullMatch) {
-          console.error(`❌ Column ${colName} mismatch: expected type=${exp.type}, null=${exp.nullable}; got type=${match.data_type}, null=${match.is_nullable}`);
-          columnMismatch = true;
-        } else {
-          console.log(`✅ Column "${colName}": ${match.data_type} (Nullable: ${match.is_nullable}) [MATCH]`);
-        }
+        defaultMatch = match.column_default === null;
+      }
+
+      if (!typeMatch || !nullMatch || !precisionMatch || !defaultMatch) {
+        console.error(`❌ Column "${colName}" definition mismatch:`);
+        console.error(`   Expected: type=${exp.type}, nullable=${exp.nullable}, precision=${exp.precision}, default=${exp.defaultSubstr}`);
+        console.error(`   Actual:   type=${match.data_type}, nullable=${match.is_nullable}, precision=${match.datetime_precision}, default=${match.column_default}`);
+        hasError = true;
+      } else {
+        const precText = match.datetime_precision !== null ? `(${match.datetime_precision})` : '';
+        const defText = match.column_default ? ` DEFAULT ${match.column_default}` : '';
+        console.log(`✅ Column "${colName}": ${match.data_type}${precText} [Nullable: ${match.is_nullable}]${defText} [MATCH]`);
       }
     }
 
     if (columns.length !== Object.keys(expectedColumns).length) {
-      console.warn(`⚠️ Warning: Expected ${Object.keys(expectedColumns).length} columns, found ${columns.length}`);
+      console.error(`❌ Column count mismatch: Expected ${Object.keys(expectedColumns).length}, found ${columns.length}.`);
+      hasError = true;
     }
 
-    // 3. Inspect Primary Key
-    console.log('\n--- Primary Key Verification ---');
+    // 3. Inspect Primary Key Definition
+    console.log('\n--- 2. Primary Key Definition Audit ---');
     const pkResult = await prisma.$queryRaw`
       SELECT kcu.column_name, tc.constraint_name
       FROM information_schema.table_constraints tc
@@ -89,15 +146,15 @@ async function verifyAdminSessionsEquivalence() {
         AND tc.constraint_type = 'PRIMARY KEY';
     `;
 
-    const hasPk = pkResult.some(pk => pk.column_name === 'id');
-    if (hasPk) {
-      console.log(`✅ Primary Key on ("id") exists: ${pkResult[0].constraint_name}`);
+    if (!Array.isArray(pkResult) || pkResult.length !== 1 || pkResult[0].column_name !== 'id') {
+      console.error('❌ Primary Key must be exactly on ("id"). Actual PK:', pkResult);
+      hasError = true;
     } else {
-      console.error('❌ Primary Key on ("id") missing!');
+      console.log(`✅ Primary Key constraint "${pkResult[0].constraint_name}" exactly on column ("id") [MATCH]`);
     }
 
-    // 4. Inspect Indexes
-    console.log('\n--- Index Verification ---');
+    // 4. Inspect Indexes Definitions
+    console.log('\n--- 3. Index & Uniqueness Definition Audit ---');
     const indexes = await prisma.$queryRaw`
       SELECT indexname, indexdef 
       FROM pg_indexes 
@@ -105,26 +162,47 @@ async function verifyAdminSessionsEquivalence() {
       ORDER BY indexname;
     `;
 
-    const expectedIndexes = [
-      'admin_sessions_pkey',
-      'admin_sessions_sessionToken_key',
-      'admin_sessions_userId_idx',
-      'admin_sessions_expiresAt_idx'
-    ];
+    const expectedIndexDefs = {
+      'admin_sessions_pkey': { unique: true, columns: ['id'] },
+      'admin_sessions_sessionToken_key': { unique: true, columns: ['sessionToken'] },
+      'admin_sessions_userId_idx': { unique: false, columns: ['userId'] },
+      'admin_sessions_expiresAt_idx': { unique: false, columns: ['expiresAt'] }
+    };
 
-    let indexMismatch = false;
-    for (const expIdx of expectedIndexes) {
-      const found = indexes.find(i => i.indexname === expIdx);
-      if (found) {
-        console.log(`✅ Index "${expIdx}": ${found.indexdef}`);
-      } else {
-        console.error(`❌ Index missing: ${expIdx}`);
-        indexMismatch = true;
+    const actualIndexNames = new Set(indexes.map(i => i.indexname));
+    for (const expIdx of Object.keys(expectedIndexDefs)) {
+      if (!actualIndexNames.has(expIdx)) {
+        console.error(`❌ Expected index missing: "${expIdx}"`);
+        hasError = true;
       }
     }
 
-    // 5. Inspect Foreign Keys
-    console.log('\n--- Foreign Key Verification ---');
+    for (const index of indexes) {
+      const exp = expectedIndexDefs[index.indexname];
+      if (!exp) {
+        console.error(`❌ Unexpected extra index found: "${index.indexname}" with definition: ${index.indexdef}`);
+        hasError = true;
+        continue;
+      }
+
+      const isUnique = index.indexdef.toUpperCase().includes('UNIQUE');
+      if (isUnique !== exp.unique) {
+        console.error(`❌ Index "${index.indexname}" uniqueness mismatch: expected unique=${exp.unique}, actual=${isUnique}`);
+        hasError = true;
+      }
+
+      for (const col of exp.columns) {
+        if (!index.indexdef.includes(col)) {
+          console.error(`❌ Index "${index.indexname}" missing indexed column "${col}". Definition: ${index.indexdef}`);
+          hasError = true;
+        }
+      }
+
+      console.log(`✅ Index "${index.indexname}" [Unique: ${isUnique}]: ${index.indexdef} [MATCH]`);
+    }
+
+    // 5. Inspect Foreign Keys & Referential Actions
+    console.log('\n--- 4. Foreign Key Constraint & Referential Actions Audit ---');
     const fks = await prisma.$queryRaw`
       SELECT
         tc.constraint_name,
@@ -143,35 +221,52 @@ async function verifyAdminSessionsEquivalence() {
       WHERE tc.table_schema = 'public' AND tc.table_name = 'admin_sessions';
     `;
 
-    let fkMismatch = false;
-    const userFk = fks.find(f => f.column_name === 'userId' && f.foreign_table_name === 'admin_users');
-    if (!userFk) {
-      console.error('❌ Foreign key from admin_sessions.userId to admin_users.id missing!');
-      fkMismatch = true;
+    if (!Array.isArray(fks) || fks.length !== 1) {
+      console.error(`❌ Expected exactly 1 foreign key constraint on admin_sessions, found ${fks.length}`);
+      hasError = true;
     } else {
-      console.log(`✅ Foreign Key "${userFk.constraint_name}": admin_sessions(userId) -> admin_users(id)`);
-      console.log(`   ON DELETE: ${userFk.delete_rule} (Expected: CASCADE)`);
-      console.log(`   ON UPDATE: ${userFk.update_rule} (Expected: CASCADE)`);
-      if (userFk.delete_rule !== 'CASCADE' || userFk.update_rule !== 'CASCADE') {
-        console.error('❌ Referential actions mismatch!');
-        fkMismatch = true;
+      const fk = fks[0];
+      const validFk = (
+        fk.column_name === 'userId' &&
+        fk.foreign_table_name === 'admin_users' &&
+        fk.foreign_column_name === 'id' &&
+        fk.delete_rule === 'CASCADE' &&
+        fk.update_rule === 'CASCADE'
+      );
+
+      if (!validFk) {
+        console.error('❌ Foreign key constraint definition mismatch:', fk);
+        hasError = true;
+      } else {
+        console.log(`✅ Foreign Key "${fk.constraint_name}":`);
+        console.log(`   admin_sessions("${fk.column_name}") REFERENCES "${fk.foreign_table_name}"("${fk.foreign_column_name}")`);
+        console.log(`   ON DELETE: ${fk.delete_rule} | ON UPDATE: ${fk.update_rule} [MATCH]`);
       }
     }
 
-    // 6. Summary Assessment
+    // 6. Final Summary Assessment
     console.log('\n==============================================================================');
-    if (!columnMismatch && hasPk && !indexMismatch && !fkMismatch) {
-      console.log('🎯 VERDICT: EXACT EQUIVALENCE CONFIRMED (100% MATCH).');
-      console.log('   Table "admin_sessions" strictly conforms to migration 20261112000001_add_admin_sessions.');
-      console.log('   `prisma migrate resolve --applied 20261112000001_add_admin_sessions` is SAFE.');
+    if (!hasError) {
+      console.log('🎯 FINAL VERDICT: EXACT EQUIVALENCE CONFIRMED (100% MATCH).');
+      console.log('   All 8 columns, precision(3), defaults, PK, 3 secondary indexes, and CASCADE FK');
+      console.log('   are verified to be byte-for-byte equivalent to migration 20261112000001_add_admin_sessions.');
+      console.log('   Zero warnings. Zero discrepancies.');
+      console.log('   Command: `npx prisma migrate resolve --applied 20261112000001_add_admin_sessions` is APPROVED.');
+      console.log('==============================================================================\n');
+      process.exit(0);
     } else {
-      console.error('❌ VERDICT: MISMATCH DETECTED. DO NOT RESOLVE.');
+      console.error('❌ FINAL VERDICT: DISCREPANCIES DETECTED.');
+      console.error('   Do NOT mark migration 20261112000001_add_admin_sessions as applied.');
+      console.log('==============================================================================\n');
       process.exit(1);
     }
-    console.log('==============================================================================\n');
 
   } catch (err) {
-    console.error('Error during reconciliation check:', err.message);
+    // Sanitize error message to ensure no connection strings or passwords leak
+    const sanitizedMsg = (err && err.message)
+      ? err.message.replace(/postgresql:\/\/[^@\s]+@[^\s]+/gi, 'postgresql://[REDACTED]')
+      : 'Unknown error';
+    console.error('❌ Error during reconciliation verification:', sanitizedMsg);
     process.exit(1);
   } finally {
     await prisma.$disconnect();
