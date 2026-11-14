@@ -157,3 +157,32 @@ export class ContentItemDeletionBlockedError extends CmsRepositoryError {
     this.reason = reason;
   }
 }
+
+/**
+ * Thrown when a business precondition is not satisfied before publishing
+ * (e.g. testimonial lacks verification or explicit client consent).
+ */
+export class PreconditionFailedError extends CmsRepositoryError {
+  readonly precondition: string;
+
+  constructor(precondition: string, message?: string) {
+    super(
+      message ?? `Precondition failed: ${precondition}`,
+      "PRECONDITION_FAILED"
+    );
+    this.precondition = precondition;
+  }
+}
+
+/**
+ * Thrown when content payload or snapshotData fails schema validation.
+ */
+export class SchemaValidationError extends CmsRepositoryError {
+  readonly details?: unknown;
+
+  constructor(message: string, details?: unknown) {
+    super(message, "VALIDATION_FAILED");
+    this.details = details;
+  }
+}
+

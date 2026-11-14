@@ -25,3 +25,7 @@ export * from "./media-asset.schema";
 
 // 7. Publication workflow schemas and DTO types
 export * from "./publication.schema";
+
+// 8. Domain snapshot schemas for materialization validation
+export * from "./domain-snapshots.schema";
+

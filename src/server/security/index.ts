@@ -6,3 +6,5 @@ export * from "./rate-limiter";
 export * from "./session";
 export * from "./origin";
 export * from "./rbac";
+export * from "./cms-rbac";
+
