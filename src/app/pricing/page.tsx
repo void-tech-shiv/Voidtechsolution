@@ -9,7 +9,8 @@ import {
   Calculator,
 } from "lucide-react";
 import { siteConfig } from "@/config/site";
-import { FaqRepo } from "@/server/repositories";
+import { FaqRepo, PricingRepo } from "@/server/repositories";
+
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { PublicPageHero } from "@/components/layout/public-page-hero";
@@ -42,8 +43,12 @@ export const metadata: Metadata = {
 };
 
 export default async function PricingPage() {
-  // Concurrently load FAQs from repository with fallback
-  const faqs = await FaqRepo.getActiveFaqs();
+  // Concurrently load packages and FAQs from repository with fallback
+  const [packages, faqs] = await Promise.all([
+    PricingRepo.getActivePricingPackages(),
+    FaqRepo.getActiveFaqs(),
+  ]);
+
 
   return (
     <div className="public-editorial relative overflow-hidden">
@@ -88,7 +93,8 @@ export default async function PricingPage() {
           </p>
         </div>
 
-        <PricingTable />
+        <PricingTable packages={packages} />
+
       </section>
 
       {/* ========================================================================= */}

@@ -45,3 +45,4 @@ export interface StorageProvider {
    */
   exists(storageKey: string): Promise<boolean>;
 }
+

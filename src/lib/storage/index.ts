@@ -12,3 +12,4 @@ export function getStorageProvider(): StorageProvider {
   }
   return defaultProvider;
 }
+

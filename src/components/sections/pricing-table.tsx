@@ -9,31 +9,37 @@ import {
   Calculator,
 } from "lucide-react";
 import { approvedPricingPackages } from "@/config/pricing";
+import type { PricingPackage } from "@prisma/client";
 
 export type FilterCategory = "ALL" | "WEBSITES" | "PLATFORMS" | "ENTERPRISE_AI";
 
-export function PricingTable() {
+export interface PricingTableProps {
+  packages?: Array<PricingPackage | (typeof approvedPricingPackages)[number]>;
+}
+
+export function PricingTable({ packages = approvedPricingPackages }: PricingTableProps) {
   const [activeFilter, setActiveFilter] = React.useState<FilterCategory>("ALL");
 
   const filteredPackages = React.useMemo(() => {
     switch (activeFilter) {
       case "WEBSITES":
-        return approvedPricingPackages.filter((p) =>
+        return packages.filter((p) =>
           ["basic-static", "standard-business", "professional"].includes(p.slug)
         );
       case "PLATFORMS":
-        return approvedPricingPackages.filter((p) =>
+        return packages.filter((p) =>
           ["premium-custom", "e-commerce", "saas", "marketplace"].includes(p.slug)
         );
       case "ENTERPRISE_AI":
-        return approvedPricingPackages.filter((p) =>
+        return packages.filter((p) =>
           ["lms", "erp-crm", "ai-powered"].includes(p.slug)
         );
       case "ALL":
       default:
-        return approvedPricingPackages;
+        return packages;
     }
-  }, [activeFilter]);
+  }, [activeFilter, packages]);
+
 
   return (
     <div className="space-y-8">

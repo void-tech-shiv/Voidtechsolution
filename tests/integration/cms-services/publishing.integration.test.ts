@@ -212,3 +212,4 @@ describe("Task 10.1.6: Real PostgreSQL 9-Step Atomic Publishing Transaction Inte
     expect(revAfterFailure?.isPublishedSnapshot).toBe(false);
   });
 });
+

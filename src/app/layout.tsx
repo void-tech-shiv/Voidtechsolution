@@ -2,7 +2,10 @@ import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { DraftModeHudBanner } from "@/components/layout/draft-mode-hud-banner";
+import { draftMode } from "next/headers";
 import { siteConfig } from "@/config/site";
+
 import "./globals.css";
 
 const sansFont = Inter({
@@ -83,17 +86,31 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  let isDraftMode = false;
+  try {
+    const draft = await draftMode();
+    isDraftMode = draft.isEnabled;
+  } catch {
+    // Draft mode helper safe fallback
+  }
+
   return (
     <html
       lang="en"
       className={`dark ${sansFont.variable} ${monoFont.variable}`}
     >
+      <head>
+        {isDraftMode && (
+          <meta name="robots" content="noindex, nofollow" />
+        )}
+      </head>
       <body className="min-h-screen bg-void-black font-sans text-void-light antialiased selection:bg-electric-purple selection:text-white">
+        {isDraftMode && <DraftModeHudBanner />}
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-lg focus:bg-electric-purple focus:px-4 focus:py-2.5 focus:text-white focus:shadow-glow-md focus:outline-none focus:ring-2 focus:ring-white"
@@ -111,3 +128,4 @@ export default function RootLayout({
     </html>
   );
 }
+
