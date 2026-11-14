@@ -17,7 +17,11 @@ import {
   Settings,
   ShieldAlert,
   X,
+  MessageSquareQuote,
+  LayoutTemplate,
+  ImageIcon,
 } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import { hasPermission, type PermissionKey } from "@/server/security/rbac";
 import { BrandLogo } from "@/components/ui/brand-logo";
@@ -75,7 +79,33 @@ export const ADMIN_NAV_ITEMS: NavItemConfig[] = [
     requiredPermission: "faqs:manage",
   },
   {
+    name: "CMS Hub",
+    href: "/admin/cms",
+    icon: LayoutTemplate,
+    requiredPermission: "dashboard:view",
+    badge: "CMS",
+  },
+  {
+    name: "Testimonials",
+    href: "/admin/cms/testimonials",
+    icon: MessageSquareQuote,
+    requiredPermission: "services:manage",
+  },
+  {
+    name: "Page Sections",
+    href: "/admin/cms/sections",
+    icon: LayoutTemplate,
+    requiredPermission: "services:manage",
+  },
+  {
+    name: "Media Library",
+    href: "/admin/cms/media",
+    icon: ImageIcon,
+    requiredPermission: "services:manage",
+  },
+  {
     name: "Team & Access",
+
     href: "/admin/users",
     icon: Users,
     requiredPermission: "admins:manage",

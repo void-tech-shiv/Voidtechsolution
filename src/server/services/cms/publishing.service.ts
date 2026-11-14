@@ -126,14 +126,16 @@ function validateSnapshotData(contentType: ContentType, snapshotData: unknown) {
 /**
  * Materializes validated snapshot payload into the designated domain table.
  */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 async function materializeDomainRecord(
   tx: Prisma.TransactionClient,
   contentType: ContentType,
   contentItemId: string,
   slug: string,
-  validatedData: Record<string, unknown>,
+  validatedData: any,
   publishedAt: Date
 ) {
+
 
   switch (contentType) {
     case ContentType.SERVICE: {
