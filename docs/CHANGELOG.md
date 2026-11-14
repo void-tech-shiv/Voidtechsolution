@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.12] — 2026-11-14
+### Phase 10.1: Task 10.1.5.2.1 — Production Release Gate Integrity Closure Audit
+
+#### Hardened & Verified
+- **Server Isolation & Port Conflict Elimination:**
+  - Configured dedicated port `3005` in `playwright.gate.config.ts` with `reuseExistingServer: false`, eliminating potential silent reuse of local development servers running on port `3000`.
+  - Added pre-flight health test asserting `data.environment === "production"` via `/api/health` and verifying the absence of development artifacts (`react-refresh.js`, `__next_dev__`, `data-next-dev-tools`).
+- **Mandatory Route-Specific CTA Contracts:**
+  - Removed conditional/silent skips (`if (buttonInfo)`) and established explicit `CtaRequirement` contracts for every route.
+  - Enforced strict assertions: `toBeVisible()`, bounding box `width > 0 && height > 0`, non-zero horizontal padding, non-zero border-radius, `cursor: pointer`, and valid internal route destinations.
+- **Dynamic Route Testing:**
+  - Added dynamic portfolio detail case study route `/portfolio/algorithmic-liquidity-engine` across all 7 viewports.
+  - Verified breadcrumbs navigation, case study layout, "Request Architecture Brief", and "Back to Portfolio" CTAs.
+- **Real Network Response & Font Loading Verification:**
+  - Captured all CSS network responses, asserting HTTP 200, Content-Type `text/css`, non-empty payload size (> 1KB), and zero failed CSS requests.
+  - Evaluated browser Font Loading API (`await document.fonts.ready; document.fonts.status === 'loaded'`), Inter typography family, and zero failed `.woff2` requests.
+- **Cross-Platform Runner Script:**
+  - Authored `scripts/run-visual-gate.ts` linked to `npm run test:gate`, automating port 3005 preflight cleanup, `next build`, Playwright test execution, and post-test teardown.
+- **Browser Runtime Audit & Test Results:**
+  - Audited local browser channels (Chromium via Microsoft Edge exercised; documented absence of Playwright bundled Firefox/WebKit).
+  - All 57 visual release gate tests passing across 7 viewports and 8 routes (100% pass rate in 40.3s).
+  - 56 visual screenshot proofs captured and cataloged in `test-results/screenshots/`.
+  - Full Vitest regression baseline preserved: 642/642 tests passing across 45 test files.
+  - Static analysis: `npm run typecheck` (0 errors), `npm run lint` (0 errors).
+- **Audit Documentation:**
+  - Created `docs/phases/PHASE_10_1_5_2_1_RELEASE_GATE_INTEGRITY_REPORT.md`.
+
+---
+
 ## [0.10.11] — 2026-11-13
 ### Phase 10.1: Task 10.1.5.2 — Production Visual Integrity & Release Readiness Audit
 

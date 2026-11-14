@@ -13,7 +13,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "test:gate": "playwright test tests/e2e/production-visual-integrity.spec.ts",
+    "test:gate": "tsx scripts/run-visual-gate.ts",
     "prisma:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate:status": "prisma migrate status",
