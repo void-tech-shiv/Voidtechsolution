@@ -149,6 +149,24 @@ flowchart LR
 
 ---
 
+### Task 10.4.6.1: Security Verification Hardening & Final Phase 10 Closure (COMPLETE & VERIFIED)
+- **Status:** **COMPLETE & VERIFIED**
+- **Objective:** Close three remaining verification and security concerns from the Task 10.4.6 source review.
+- **Delivered Remediations:**
+  - **Finding A (Fail-Closed Database Row Locking):** Removed blanket `try...catch` from `SELECT id FROM content_items WHERE id = $1 FOR UPDATE` in both `publishContentItem` and `archiveContentItem` (`src/server/services/cms/publishing.service.ts`). PostgreSQL statement timeouts, deadlocks, and connection failures now immediately abort the transaction, rolling back all operations.
+  - **Finding B (Guarded Real PostgreSQL Integration Tests):** Hardened `tests/integration/cms-services/publishing.integration.test.ts` to fail closed if local PostgreSQL is unreachable (no silent `if (!isDbAvailable) return;` skips). Added explicit pre-flight host assertions against non-local and Neon endpoints. Added concurrent archiving integration tests verifying atomic deactivation, version increment, and conflict handling with deterministic test cleanup.
+  - **Finding C (Secure POST Draft Mode & CSRF Defense):** Migrated Draft Mode activation (`src/app/api/draft-mode/enable/route.ts`) from GET query parameters to secure POST with JSON body (`{ secret, path }`). Replaced GET handler with strict HTTP 405 Method Not Allowed (`Allow: POST`). Added strict Origin & Referer CSRF validation via `validateRequestOrigin(request.headers)` (rejects cross-origin activation with HTTP 403 `CSRF_ORIGIN_MISMATCH`). Retained timing-safe token verification and open-redirect path sanitization.
+- **Verification Evidence:**
+  - `tests/unit/cms-services/publishing.service.test.ts` (13 tests passing).
+  - `tests/integration/cms-services/publishing.integration.test.ts` (6 real PostgreSQL integration tests passing).
+  - `tests/unit/draft-mode.test.tsx` (17 tests passing).
+  - Full Vitest regression suite: 57 files, 733 tests passing (100% pass rate).
+  - Playwright visual release gate: 57 tests passing on port 3005.
+  - TypeScript static analysis (`tsc --noEmit`): 0 errors.
+  - Authored `PHASE_10_4_6_1_SECURITY_HARDENING_REPORT.md`.
+
+---
+
 ## 3. Dependency Graph & Risk Mitigation
 
 | Identified Risk | Impact | Mitigation Strategy |

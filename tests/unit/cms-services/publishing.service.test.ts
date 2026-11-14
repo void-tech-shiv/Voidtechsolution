@@ -5,6 +5,7 @@ import {
 } from "@/server/services/cms/publishing.service";
 import { prisma } from "@/lib/prisma";
 import {
+  ContentItemNotFoundError,
   ConcurrencyConflictError,
   RevisionOwnershipMismatchError,
   InvalidRevisionStateError,
@@ -426,5 +427,59 @@ describe("Task 10.1.6 — 9-Step Atomic Publishing Transaction Engine", () => {
         }),
       })
     );
+  });
+
+  describe("Task 10.4.6.1 Finding A: Fail-Closed Database Row Locking Tests", () => {
+    it("fails closed and aborts publication when row lock cannot be acquired", async () => {
+      (prisma as any).$queryRawUnsafe.mockRejectedValueOnce(
+        new Error("canceling statement due to statement timeout / lock acquisition failure")
+      );
+
+      await expect(
+        publishContentItem({
+          contentItemId: "ci_lock_fail",
+          revisionId: "rev_1",
+          expectedVersion: 1,
+          actor: mockAdmin,
+        })
+      ).rejects.toThrow(/lock acquisition failure/);
+
+      // Verify no downstream mutation occurred
+      expect((prisma as any).contentItem.findUnique).not.toHaveBeenCalled();
+      expect((prisma as any).contentItem.updateMany).not.toHaveBeenCalled();
+      expect((prisma as any).auditLog.create).not.toHaveBeenCalled();
+    });
+
+    it("fails closed and aborts archiving when row lock cannot be acquired", async () => {
+      (prisma as any).$queryRawUnsafe.mockRejectedValueOnce(
+        new Error("deadlock detected while acquiring lock on content_items")
+      );
+
+      await expect(
+        archiveContentItem({
+          contentItemId: "ci_lock_fail",
+          expectedVersion: 1,
+          actor: mockAdmin,
+        })
+      ).rejects.toThrow(/deadlock detected/);
+
+      expect((prisma as any).contentItem.findUnique).not.toHaveBeenCalled();
+      expect((prisma as any).contentItem.updateMany).not.toHaveBeenCalled();
+      expect((prisma as any).auditLog.create).not.toHaveBeenCalled();
+    });
+
+    it("throws ContentItemNotFoundError when locking succeeds on missing item", async () => {
+      (prisma as any).$queryRawUnsafe.mockResolvedValueOnce([]); // 0 rows
+      (prisma as any).contentItem.findUnique.mockResolvedValueOnce(null);
+
+      await expect(
+        publishContentItem({
+          contentItemId: "ci_nonexistent",
+          revisionId: "rev_1",
+          expectedVersion: 1,
+          actor: mockAdmin,
+        })
+      ).rejects.toThrow(ContentItemNotFoundError);
+    });
   });
 });

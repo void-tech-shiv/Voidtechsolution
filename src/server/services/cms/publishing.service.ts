@@ -362,16 +362,12 @@ export async function publishContentItem(
   }
 
   return prisma.$transaction(async (tx) => {
-    // Acquire row-level lock on the target ContentItem in PostgreSQL to serialize
-    // concurrent publication attempts and ensure fresh, consistent OCC version evaluation.
-    try {
-      await tx.$queryRawUnsafe(
-        `SELECT id FROM content_items WHERE id = $1 FOR UPDATE`,
-        input.contentItemId
-      );
-    } catch {
-      // Gracefully proceed if mock or testing driver does not support raw SQL row-level locking
-    }
+    // Acquire exclusive PostgreSQL row-level lock on the target ContentItem.
+    // Must fail-closed: if the lock cannot be acquired or query fails, abort publication immediately.
+    await tx.$queryRawUnsafe(
+      `SELECT id FROM content_items WHERE id = $1 FOR UPDATE`,
+      input.contentItemId
+    );
 
     // Step 2: Fetch ContentItem and Check Server-Side Publishing Permission
     const item = await tx.contentItem.findUnique({
@@ -554,14 +550,12 @@ export async function archiveContentItem(
   }
 
   return prisma.$transaction(async (tx) => {
-    try {
-      await tx.$queryRawUnsafe(
-        `SELECT id FROM content_items WHERE id = $1 FOR UPDATE`,
-        input.contentItemId
-      );
-    } catch {
-      // Gracefully proceed if mock or testing driver does not support raw SQL row-level locking
-    }
+    // Acquire exclusive PostgreSQL row-level lock on the target ContentItem.
+    // Must fail-closed: if the lock cannot be acquired or query fails, abort archiving immediately.
+    await tx.$queryRawUnsafe(
+      `SELECT id FROM content_items WHERE id = $1 FOR UPDATE`,
+      input.contentItemId
+    );
 
     const item = await tx.contentItem.findUnique({
       where: { id: input.contentItemId },

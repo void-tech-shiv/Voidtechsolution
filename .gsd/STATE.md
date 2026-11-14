@@ -1,32 +1,32 @@
 ---
-updated: 2026-11-15T02:07:00+05:30
+updated: 2026-11-15T02:33:00+05:30
 ---
 
 # Project State — VOIDTECH SOLUTION
 
 ## Current Position
 
-**Milestone:** Phase 10 — Admin CMS COMPLETE (Tasks 10.1–10.4 + Task 10.4.6 Security & Integrity Remediation VERIFIED)
+**Milestone:** Phase 10 — Admin CMS COMPLETE (Tasks 10.1–10.4 + Tasks 10.4.6 & 10.4.6.1 Security & Verification Hardening VERIFIED)
 **Phase:** 10 — Admin CMS
-**Status:** complete (Task 10.4.6 Critical CMS Security & Integrity Remediation is complete and verified. Findings A, B, and C closed: Draft Mode fail-closed secret & open redirect prevention, PostgreSQL atomic OCC publishing row lock & conditional updateMany, fabricated static testimonial removal & safe empty fallback. 726 Vitest tests pass across 57 suites; 57 visual gate tests pass on port 3005; SEC-01–15 security threat audit verified; 39 routes build cleanly; 0 typecheck errors; 0 ESLint errors. Phase 11 [SEO] pending owner authorization.)
+**Status:** complete (Task 10.4.6.1 Security Verification Hardening & Final Phase 10 Closure is complete and verified. Findings A, B, and C closed: fail-closed row locking in publishing service without silent catches, real PostgreSQL integration tests guarded to fail closed with concurrent archiving tests and deterministic cleanup, secure POST Draft Mode flow with Origin/CSRF validation and GET 405 rejection. 733 Vitest tests pass across 57 suites; 57 visual gate tests pass on port 3005; SEC-01–15 security threat audit verified; 39 routes build cleanly; 0 typecheck errors; 0 ESLint errors. Phase 11 [SEO] pending owner authorization.)
 **Visual Reference:** SmartStruct Cybernetic Layout + Official Purple/Violet Brand Identity  
 
 ## Last Action
 
-- Executed Task 10.4.6 — Critical CMS Security & Integrity Remediation:
-  - Finding A: Removed hardcoded secret fallback, enforced fail-closed HTTP 500 when `DRAFT_MODE_SECRET` is missing/empty, implemented crypto constant-time string comparison, blocked open redirects via `safeInternalRedirectPath` (protocol-relative, backslash, encoded bypasses blocked), and added `Cache-Control: no-store` and `X-Robots-Tag: noindex, nofollow`.
-  - Finding B: Added PostgreSQL row-level lock `SELECT id FROM content_items WHERE id = $1 FOR UPDATE` within publishing transaction, fresh read, and atomic conditional update `updateMany({ where: { id, version: expectedVersion } })`. Verified exactly one winner and one controlled conflict under real concurrent load.
-  - Finding C: Completely removed `staticTestimonials` and all fabricated client names, companies, statements, and synthetic DocuSign URLs from `testimonials.repo.ts`. Implemented safe empty list fallback `[]` for offline/empty states.
-  - Authored remediation report: `docs/phases/PHASE_10_4_6_SECURITY_REMEDIATION_REPORT.md`.
-  - Added regression test suites: `tests/unit/draft-mode.test.tsx` (15 tests passing), `tests/unit/testimonials.repo.test.tsx` (10 tests passing), updated `tests/integration/cms-services/publishing.integration.test.ts` (4 real PostgreSQL concurrency tests passing).
-  - Verified full test regression: 726/726 Vitest tests passing across 57 suites (100% pass rate).
+- Executed Task 10.4.6.1 — Security Verification Hardening & Final Phase 10 Closure:
+  - Finding A: Removed blanket `try...catch` from `SELECT id FROM content_items WHERE id = $1 FOR UPDATE` in both `publishContentItem` and `archiveContentItem` (`src/server/services/cms/publishing.service.ts`). Row locking failures fail closed immediately, triggering transaction rollback and preventing un-serialized writes.
+  - Finding B: Hardened `tests/integration/cms-services/publishing.integration.test.ts` to fail closed if local PostgreSQL is unreachable (no silent skipping). Added pre-flight safety checks preventing remote/Neon execution. Added real concurrent PostgreSQL archiving tests verifying atomic deactivation, version increment, and single-winner conflict handling with deterministic test cleanup.
+  - Finding C: Migrated `/api/draft-mode/enable` from GET query secret flow to secure POST JSON body flow (`{ secret, path }`). Replaced GET handler with HTTP 405 `METHOD_NOT_ALLOWED`. Integrated `validateRequestOrigin(request.headers)` to enforce strict Origin and Referer CSRF validation, returning HTTP 403 `CSRF_ORIGIN_MISMATCH` on cross-origin requests. Retained constant-time comparison, fail-closed 500 when secret is unset, open-redirect path sanitization, and strict `Cache-Control: no-store` / `X-Robots-Tag: noindex, nofollow` headers.
+  - Authored report: `docs/phases/PHASE_10_4_6_1_SECURITY_HARDENING_REPORT.md`.
+  - Added regression test suites: `tests/unit/cms-services/publishing.service.test.ts` (13 tests passing), `tests/integration/cms-services/publishing.integration.test.ts` (6 real PostgreSQL integration tests passing), `tests/unit/draft-mode.test.tsx` (17 tests passing).
+  - Verified full test regression: 733/733 Vitest tests passing across 57 suites (100% pass rate).
   - Verified visual release gate: 57/57 Playwright tests passing on port 3005 across 8 routes and 7 viewports.
-  - Verified compilation: `npm run typecheck` (0 errors), `npm run lint` (0 errors/warnings).
+  - Verified compilation: `npm run typecheck` (0 errors), Next.js production build (39 routes).
   - Maintained strict database safety: production Neon was never accessed, contacted, migrated, or modified.
 
 ## Next Steps
 
-1. Present Task 10.4.6 Remediation Report and Final Evidence to Project Owner.
+1. Present Task 10.4.6.1 Security Verification Hardening Report and Final Evidence to Project Owner.
 2. Halt and await explicit owner authorization before proceeding to Phase 11 (SEO).
 
 ## Active Decisions

@@ -1,10 +1,12 @@
 import crypto from "node:crypto";
 import { draftMode } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
+import { validateRequestOrigin } from "@/server/security/origin";
 
 /**
  * Validates and sanitizes internal redirect destination.
- * Rejects external URLs, protocol-relative paths, backslashes, and encoded bypass attempts.
+ * Rejects external URLs, protocol-relative paths, backslashes, control characters,
+ * and encoded bypass attempts.
  */
 export function safeInternalRedirectPath(
   rawPath: string | null | undefined,
@@ -16,7 +18,7 @@ export function safeInternalRedirectPath(
 
   const trimmed = rawPath.trim();
 
-  // Reject paths that don't start with '/', start with '//', contain backslashes, or control characters
+  // Reject paths that don't start with '/', start with '//', contain backslashes, control characters, or encoded slashes
   if (
     !trimmed.startsWith("/") ||
     trimmed.startsWith("//") ||
@@ -76,10 +78,49 @@ const SECURITY_HEADERS = {
   "X-Robots-Tag": "noindex, nofollow",
 };
 
-export async function GET(request: NextRequest) {
-  const expectedSecret = process.env.DRAFT_MODE_SECRET;
+/**
+ * GET requests to /api/draft-mode/enable are strictly rejected.
+ * Secrets must never be transmitted via URL query strings.
+ */
+export async function GET() {
+  return NextResponse.json(
+    {
+      error:
+        "Method Not Allowed: Draft Mode preview activation requires a POST request with the secret in the JSON request body.",
+      code: "METHOD_NOT_ALLOWED",
+    },
+    {
+      status: 405,
+      headers: {
+        Allow: "POST",
+        ...SECURITY_HEADERS,
+      },
+    }
+  );
+}
 
-  // A.1: Fail closed if secret is missing or empty — no hardcoded fallback
+/**
+ * POST handler for secure Draft Mode activation.
+ * Secret is supplied strictly in the JSON request body.
+ */
+export async function POST(request: NextRequest) {
+  // 1. Cross-Origin & CSRF Defense: Enforce same-origin request
+  const isOriginValid = validateRequestOrigin(request.headers);
+  if (!isOriginValid) {
+    return NextResponse.json(
+      {
+        error: "Forbidden: Cross-origin preview activation is rejected.",
+        code: "CSRF_ORIGIN_MISMATCH",
+      },
+      {
+        status: 403,
+        headers: SECURITY_HEADERS,
+      }
+    );
+  }
+
+  // 2. Secret Configuration Check: Fail closed if unconfigured
+  const expectedSecret = process.env.DRAFT_MODE_SECRET;
   if (!expectedSecret || expectedSecret.trim().length === 0) {
     return NextResponse.json(
       {
@@ -93,11 +134,42 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const { searchParams } = new URL(request.url);
-  const secret = searchParams.get("secret");
-  const rawRedirect = searchParams.get("redirect");
+  // 3. Request Body Parsing & Payload Validation
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      {
+        error: "Bad Request: Request body must be valid JSON.",
+        code: "INVALID_REQUEST_BODY",
+      },
+      {
+        status: 400,
+        headers: SECURITY_HEADERS,
+      }
+    );
+  }
 
-  // A.2: Validate input token and perform constant-time comparison
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json(
+      {
+        error: "Bad Request: Request body must be a JSON object.",
+        code: "INVALID_REQUEST_BODY",
+      },
+      {
+        status: 400,
+        headers: SECURITY_HEADERS,
+      }
+    );
+  }
+
+  const { secret, redirect } = body as {
+    secret?: unknown;
+    redirect?: unknown;
+  };
+
+  // 4. Token Input Validation & Constant-Time Comparison
   if (
     !secret ||
     typeof secret !== "string" ||
@@ -116,23 +188,28 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // A.3: Sanitize redirect destination to internal paths only
-  const safePath = safeInternalRedirectPath(rawRedirect, request.url);
+  // 5. Sanitize internal redirect destination
+  const safePath = safeInternalRedirectPath(
+    typeof redirect === "string" ? redirect : undefined,
+    request.url
+  );
 
-  // Activate Next.js Draft Mode only after secret is verified
+  // 6. Activate Draft Mode
   const draft = await draftMode();
   draft.enable();
 
-  const redirectUrl = new URL(safePath, request.url);
-  const response = NextResponse.redirect(redirectUrl);
-
-  // A.4: Indexing and caching protection headers
-  response.headers.set("X-Robots-Tag", "noindex, nofollow");
-  response.headers.set(
-    "Cache-Control",
-    "no-store, no-cache, must-revalidate, max-age=0"
+  // 7. Return successful activation response with security headers and safe destination
+  return NextResponse.json(
+    {
+      success: true,
+      redirect: safePath,
+    },
+    {
+      status: 200,
+      headers: {
+        ...SECURITY_HEADERS,
+        Location: safePath,
+      },
+    }
   );
-  response.headers.set("Pragma", "no-cache");
-
-  return response;
 }

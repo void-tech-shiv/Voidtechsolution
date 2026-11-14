@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.16] — 2026-11-15
+### Task 10.4.6.1: Security Verification Hardening & Final Phase 10 Closure
+
+#### Remediated & Hardened
+- **Finding A: Fail-Closed Database Row Locking in Publishing Service:**
+  - Removed blanket `try...catch` from `SELECT id FROM content_items WHERE id = $1 FOR UPDATE` in both `publishContentItem` and `archiveContentItem` (`src/server/services/cms/publishing.service.ts`).
+  - Row locking failures (e.g. PostgreSQL lock timeouts, deadlocks, connection errors) now fail closed immediately, throwing an exception and triggering automatic transaction rollback, preventing partial or un-serialized writes.
+  - Added unit tests in `tests/unit/cms-services/publishing.service.test.ts` verifying fail-closed transaction abortion when row locking fails.
+- **Finding B: Guarded Real PostgreSQL Concurrency & Archiving Integration Tests:**
+  - Hardened `tests/integration/cms-services/publishing.integration.test.ts` with strict database safety checks: fails closed and aborts immediately if local PostgreSQL is unreachable, rather than silently skipping assertions.
+  - Asserted `TEST_DATABASE_URL`, `DATABASE_URL`, and `DIRECT_URL` target safe local test databases (`voidtech_test_concurrency`) and prohibit remote/Neon execution.
+  - Added real concurrent PostgreSQL archiving tests verifying atomic deactivation, version increment, and single-winner concurrency conflict handling with deterministic test cleanup.
+- **Finding C: Secure POST Draft Mode Flow & Origin/CSRF Verification:**
+  - Migrated `/api/draft-mode/enable` from GET query-string secrets to secure POST requests receiving JSON payloads (`{ secret, path }`), completely preventing secret leakage in browser history, proxy access logs, and referrer headers.
+  - Replaced GET handler with HTTP 405 `METHOD_NOT_ALLOWED` (`Allow: POST`).
+  - Integrated `validateRequestOrigin(request.headers)` to enforce strict Origin and Referer validation against allowed application origins, returning HTTP 403 `CSRF_ORIGIN_MISMATCH` on cross-origin requests.
+  - Maintained timing-safe token comparison (`crypto.timingSafeEqual`), fail-closed HTTP 500 when `DRAFT_MODE_SECRET` is unset/empty, open-redirect path sanitization, and strict `Cache-Control: no-store` / `X-Robots-Tag: noindex, nofollow` headers.
+  - Added 17 unit tests in `tests/unit/draft-mode.test.tsx` verifying all POST, GET 405, CSRF origin mismatch, and authentication branches.
+- **Verification Metrics:**
+  - Full Vitest suite: 57 test files, 733 tests passing (100% pass rate).
+  - Playwright visual release gate: 57/57 tests passing on port 3005 across 8 routes and 7 viewports.
+  - `npm run typecheck`: Clean (0 errors).
+  - Authored `docs/phases/PHASE_10_4_6_1_SECURITY_HARDENING_REPORT.md`.
+
+---
+
 ## [0.10.15] — 2026-11-15
 ### Task 10.4.6: Critical CMS Security & Integrity Remediation
 

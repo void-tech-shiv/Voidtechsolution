@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { PrismaClient, ContentType, ServiceCategory } from "@prisma/client";
-import { publishContentItem } from "@/server/services/cms/publishing.service";
+import {
+  publishContentItem,
+  archiveContentItem,
+} from "@/server/services/cms/publishing.service";
 import { createContentItem } from "@/server/repositories/cms/content-item.repo";
 import { createWorkingRevision } from "@/server/repositories/cms/content-revision.repo";
 import {
@@ -12,18 +15,32 @@ const TEST_DATABASE_URL =
   process.env.TEST_DATABASE_URL ||
   "postgresql://postgres:root@localhost:5432/voidtech_test_concurrency";
 
-if (
-  TEST_DATABASE_URL.includes("neon.tech") ||
-  !TEST_DATABASE_URL.includes("localhost")
-) {
-  throw new Error(
-    `[INTEGRITY ERROR] Attempted to run integration tests against non-local database: ${TEST_DATABASE_URL}`
-  );
-}
+// Strict database connection pre-flight assertions
+const assertSafeLocalDatabaseUrl = (url: string | undefined, varName: string) => {
+  if (!url) return;
+  if (!url.includes("localhost") && !url.includes("127.0.0.1")) {
+    throw new Error(
+      `[SAFETY BLOCK] ${varName} targets non-local host. Integration tests must run strictly against isolated local database.`
+    );
+  }
+  if (url.includes("neon.tech")) {
+    throw new Error(
+      `[SAFETY BLOCK] ${varName} targets Neon production! Test harness is prohibited from connecting to Neon.`
+    );
+  }
+  if (!url.includes("voidtech_test_concurrency") && !url.includes("test")) {
+    throw new Error(
+      `[SAFETY BLOCK] ${varName} database name is not an isolated test database.`
+    );
+  }
+};
+
+assertSafeLocalDatabaseUrl(TEST_DATABASE_URL, "TEST_DATABASE_URL");
+assertSafeLocalDatabaseUrl(process.env.DATABASE_URL, "DATABASE_URL");
+assertSafeLocalDatabaseUrl(process.env.DIRECT_URL, "DIRECT_URL");
 
 describe("Task 10.1.6: Real PostgreSQL 9-Step Atomic Publishing Transaction Integration", () => {
   let dbClient: PrismaClient;
-  let isDbAvailable = false;
   let testContentItemId: string;
   let testRevisionId: string;
   const testSlug = `publish-int-test-${Date.now()}`;
@@ -35,71 +52,69 @@ describe("Task 10.1.6: Real PostgreSQL 9-Step Atomic Publishing Transaction Inte
   };
 
   beforeAll(async () => {
+    dbClient = new PrismaClient({
+      datasources: { db: { url: TEST_DATABASE_URL } },
+    });
+
     try {
-      dbClient = new PrismaClient({
-        datasources: { db: { url: TEST_DATABASE_URL } },
-      });
       await dbClient.$queryRaw`SELECT 1`;
-      isDbAvailable = true;
-
-      // Create an admin user if not exists for FK
-      await dbClient.adminUser.upsert({
-        where: { id: adminActor.id },
-        update: { isActive: true },
-        create: {
-          id: adminActor.id,
-          email: "integration_publisher@voidtech.test",
-          passwordHash: "dummyhash",
-          name: "Integration Publisher",
-          role: "ADMIN",
-          isActive: true,
-        },
-      });
-
-      // Create test ContentItem
-      const item = await createContentItem(
-        {
-          slug: testSlug,
-          contentType: ContentType.SERVICE,
-        },
-        dbClient as any
-      );
-      testContentItemId = item.id;
-
-      // Create working revision
-      const rev = await createWorkingRevision(
-        {
-          contentItemId: item.id,
-          title: "Integration Test Service",
-          authorName: "Integration Test",
-          snapshotData: {
-            title: "Integration Test Service",
-            shortDesc: "Real database integration testing service",
-            fullDesc: "Testing full atomic transaction promotion in local PostgreSQL.",
-            icon: "Terminal",
-            category: ServiceCategory.WEB_DEVELOPMENT,
-            deliverables: ["Test 1", "Test 2"],
-            technologies: ["Node.js", "PostgreSQL"],
-            startingPriceInr: 25000,
-            currency: "INR",
-            isFeatured: false,
-            orderIndex: 99,
-          },
-        },
-        dbClient as any
-      );
-      testRevisionId = rev.id;
     } catch (err) {
-      isDbAvailable = false;
-      console.warn(
-        `[integration-test] Real PostgreSQL database not reachable at ${TEST_DATABASE_URL}. Skipping integration suite.`,
-        err
+      throw new Error(
+        `[INTEGRATION TEST BLOCKER] Local PostgreSQL is unreachable at ${TEST_DATABASE_URL}. Dedicated database integration tests must fail closed when database is unavailable: ${err instanceof Error ? err.message : String(err)}`
       );
     }
+
+    // Create an admin user if not exists for FK
+    await dbClient.adminUser.upsert({
+      where: { id: adminActor.id },
+      update: { isActive: true },
+      create: {
+        id: adminActor.id,
+        email: "integration_publisher@voidtech.test",
+        passwordHash: "dummyhash",
+        name: "Integration Publisher",
+        role: "ADMIN",
+        isActive: true,
+      },
+    });
+
+    // Create test ContentItem
+    const item = await createContentItem(
+      {
+        slug: testSlug,
+        contentType: ContentType.SERVICE,
+      },
+      dbClient as any
+    );
+    testContentItemId = item.id;
+
+    // Create working revision
+    const rev = await createWorkingRevision(
+      {
+        contentItemId: item.id,
+        title: "Integration Test Service",
+        authorName: "Integration Test",
+        snapshotData: {
+          title: "Integration Test Service",
+          shortDesc: "Real database integration testing service",
+          fullDesc: "Testing full atomic transaction promotion in local PostgreSQL.",
+          icon: "Terminal",
+          category: ServiceCategory.WEB_DEVELOPMENT,
+          deliverables: ["Test 1", "Test 2"],
+          technologies: ["Node.js", "PostgreSQL"],
+          startingPriceInr: 25000,
+          currency: "INR",
+          isFeatured: false,
+          orderIndex: 99,
+        },
+      },
+      dbClient as any
+    );
+    testRevisionId = rev.id;
   });
 
   afterAll(async () => {
-    if (!isDbAvailable) return;
+    if (!dbClient) return;
     try {
       await dbClient.service.deleteMany({
         where: { contentItemId: testContentItemId },
@@ -120,11 +135,6 @@ describe("Task 10.1.6: Real PostgreSQL 9-Step Atomic Publishing Transaction Inte
   });
 
   it("atomically promotes working revision, materializes Service table, and advances version on real PostgreSQL", async () => {
-    if (!isDbAvailable) {
-      console.warn("Skipping real database test: DB unavailable");
-      return;
-    }
-
     const result = await publishContentItem({
       contentItemId: testContentItemId,
       revisionId: testRevisionId,
@@ -171,11 +181,6 @@ describe("Task 10.1.6: Real PostgreSQL 9-Step Atomic Publishing Transaction Inte
   });
 
   it("rolls back completely without changing version or domain table when validation fails mid-transaction", async () => {
-    if (!isDbAvailable) {
-      console.warn("Skipping real database test: DB unavailable");
-      return;
-    }
-
     // Create a second revision with invalid snapshot
     const invalidRev = await createWorkingRevision(
       {
@@ -217,11 +222,6 @@ describe("Task 10.1.6: Real PostgreSQL 9-Step Atomic Publishing Transaction Inte
 
   describe("Task 10.4.6 Finding B: PostgreSQL Concurrent Publishing Race Protection", () => {
     it("guarantees exactly one winner and one controlled conflict when two requests publish the same ContentItem with the same expectedVersion", async () => {
-      if (!isDbAvailable) {
-        console.warn("Skipping real database test: DB unavailable");
-        return;
-      }
-
       // Read current version of testContentItemId (should be 2)
       const currentItem = await dbClient.contentItem.findUniqueOrThrow({
         where: { id: testContentItemId },
@@ -389,11 +389,6 @@ describe("Task 10.1.6: Real PostgreSQL 9-Step Atomic Publishing Transaction Inte
     });
 
     it("allows concurrent publishing of separate ContentItems without unnecessary serialization", async () => {
-      if (!isDbAvailable) {
-        console.warn("Skipping real database test: DB unavailable");
-        return;
-      }
-
       // Create two distinct ContentItems
       const item1 = await createContentItem(
         {
@@ -489,6 +484,172 @@ describe("Task 10.1.6: Real PostgreSQL 9-Step Atomic Publishing Transaction Inte
         });
       } catch {
         // Intentional: PostgreSQL trigger protects published revision snapshots from deletion
+      }
+    });
+  });
+
+  describe("Task 10.4.6.1 Finding A & B: PostgreSQL Archiving Row Locking & Concurrency Protection", () => {
+    it("atomically deactivates domain record, advances version, and logs audit on real PostgreSQL", async () => {
+      const archiveItem = await createContentItem(
+        {
+          slug: `archive-test-${Date.now()}`,
+          contentType: ContentType.SERVICE,
+        },
+        dbClient as any
+      );
+
+      try {
+        const rev = await createWorkingRevision(
+          {
+            contentItemId: archiveItem.id,
+            title: "Service to be archived",
+            authorName: "Admin",
+            snapshotData: {
+              title: "Archivable Service",
+              shortDesc: "Valid short description",
+              fullDesc: "Valid full description of archivable service",
+              icon: "Terminal",
+              category: ServiceCategory.WEB_DEVELOPMENT,
+              deliverables: ["A"],
+              technologies: ["Tech"],
+              startingPriceInr: 15000,
+              currency: "INR",
+              isFeatured: false,
+              orderIndex: 1,
+            },
+          },
+          dbClient as any
+        );
+
+        await publishContentItem({
+          contentItemId: archiveItem.id,
+          revisionId: rev.id,
+          expectedVersion: 1,
+          actor: adminActor,
+        });
+
+        // Now archive the item at version 2
+        const archiveResult = await archiveContentItem({
+          contentItemId: archiveItem.id,
+          expectedVersion: 2,
+          actor: adminActor,
+          reason: "Test sunset",
+        });
+
+        expect(archiveResult.contentItemId).toBe(archiveItem.id);
+        expect(archiveResult.version).toBe(3);
+
+        const dbItem = await dbClient.contentItem.findUniqueOrThrow({
+          where: { id: archiveItem.id },
+        });
+        expect(dbItem.publicationStatus).toBe("ARCHIVED");
+        expect(dbItem.version).toBe(3);
+
+        const dbService = await dbClient.service.findUniqueOrThrow({
+          where: { contentItemId: archiveItem.id },
+        });
+        expect(dbService.isActive).toBe(false);
+
+        const audit = await dbClient.auditLog.findFirst({
+          where: {
+            entityId: archiveItem.id,
+            action: "CONTENT_ARCHIVED",
+          },
+        });
+        expect(audit).not.toBeNull();
+      } finally {
+        await dbClient.service.deleteMany({
+          where: { contentItemId: archiveItem.id },
+        });
+      }
+    });
+
+    it("guarantees exactly one winner and one conflict when two concurrent requests archive the same item with identical expectedVersion", async () => {
+      const item = await createContentItem(
+        {
+          slug: `archive-race-${Date.now()}`,
+          contentType: ContentType.SERVICE,
+        },
+        dbClient as any
+      );
+
+      try {
+        const rev = await createWorkingRevision(
+          {
+            contentItemId: item.id,
+            title: "Service for archive race",
+            authorName: "Admin",
+            snapshotData: {
+              title: "Archivable Race Service",
+              shortDesc: "Valid race short description",
+              fullDesc: "Valid race full description of archivable service",
+              icon: "Terminal",
+              category: ServiceCategory.WEB_DEVELOPMENT,
+              deliverables: ["A"],
+              technologies: ["Tech"],
+              startingPriceInr: 15000,
+              currency: "INR",
+              isFeatured: false,
+              orderIndex: 1,
+            },
+          },
+          dbClient as any
+        );
+
+        await publishContentItem({
+          contentItemId: item.id,
+          revisionId: rev.id,
+          expectedVersion: 1,
+          actor: adminActor,
+        });
+
+        const initialAuditCount = await dbClient.auditLog.count({
+          where: {
+            entityId: item.id,
+            action: "CONTENT_ARCHIVED",
+          },
+        });
+
+        // Concurrently archive targeting version 2
+        const [resA, resB] = await Promise.allSettled([
+          archiveContentItem({
+            contentItemId: item.id,
+            expectedVersion: 2,
+            actor: adminActor,
+            reason: "Race request A",
+          }),
+          archiveContentItem({
+            contentItemId: item.id,
+            expectedVersion: 2,
+            actor: adminActor,
+            reason: "Race request B",
+          }),
+        ]);
+
+        const fulfilled = [resA, resB].filter(
+          (r) => r.status === "fulfilled"
+        ) as PromiseFulfilledResult<any>[];
+        const rejected = [resA, resB].filter(
+          (r) => r.status === "rejected"
+        ) as PromiseRejectedResult[];
+
+        expect(fulfilled.length).toBe(1);
+        expect(rejected.length).toBe(1);
+        expect(rejected[0]!.reason).toBeInstanceOf(ConcurrencyConflictError);
+
+        expect(fulfilled[0]!.value.version).toBe(3);
+
+        const finalAuditCount = await dbClient.auditLog.count({
+          where: {
+            entityId: item.id,
+            action: "CONTENT_ARCHIVED",
+          },
+        });
+        expect(finalAuditCount).toBe(initialAuditCount + 1);
+      } finally {
+        await dbClient.service.deleteMany({
+          where: { contentItemId: item.id },
+        });
       }
     });
   });
