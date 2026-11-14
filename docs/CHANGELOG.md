@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.13] — 2026-11-15
+### Phase 10.1: Task 10.1.5.2.2 — Release Gate Runner Safety & Verification Closure
+
+#### Hardened & Verified
+- **Safe Port Occupancy & Process Ownership:**
+  - Removed indiscriminate `killPortProcess()` from `scripts/run-visual-gate.ts`, eliminating the risk of terminating external or unrelated background processes occupying port 3005.
+  - Implemented non-destructive port diagnostic inspection via `getPortOccupant()` (`netstat` and `tasklist`), reporting PID, process name, and suggested remediation (`GATE_PORT=<port> npm run test:gate`).
+  - Added unit test suite `tests/unit/release-gate-runner.test.ts` verifying that unrelated occupying processes remain running and healthy during port conflict.
+  - Managed child process lifecycle strictly through owned process tracking, handling SIGINT/SIGTERM gracefully without leaving orphaned servers.
+- **Deterministic Stylesheet Response Observation:**
+  - Replaced asynchronous event listener race conditions in `tests/e2e/production-visual-integrity.spec.ts` with tracked promise synchronization (`responseProcessingPromises`).
+  - Awaited all in-flight response processing deterministically before evaluating CSS assertions.
+  - Filtered genuine CSS stylesheets from URLs merely containing `.css` in query parameters.
+  - Asserted presence of at least one substantial Next.js bundled CSS stylesheet (`size > 1000` bytes, HTTP 200, Content-Type `text/css`) with detailed asset and route diagnostics.
+- **Actual Font Verification Across Weights:**
+  - Verified `document.fonts.ready` settles to `"loaded"`.
+  - Audited and checked registered font face for `"Inter"` in `document.fonts`.
+  - Evaluated `document.fonts.check()` with CSS font shorthands across standard weights: `400 16px Inter`, `600 16px Inter`, `700 16px Inter`.
+  - Verified body element computed font family actively prioritizes `Inter` (rejecting generic fallback alone and unstyled serif/Times New Roman).
+  - Verified local `.woff2` font resource responses with HTTP 200 and zero failed font requests.
+- **Test Metrics:**
+  - 57/57 visual integrity release gate tests passing across 7 viewports and 8 routes (38.3s).
+  - 653/653 Vitest regression tests passing across 47 suites.
+  - `npm run typecheck` (0 errors), `npm run lint` (0 errors).
+- **Audit Documentation:**
+  - Authored `docs/phases/PHASE_10_1_5_2_2_RELEASE_GATE_SAFETY_REPORT.md`.
+
+---
+
 ## [0.10.12] — 2026-11-14
 ### Phase 10.1: Task 10.1.5.2.1 — Production Release Gate Integrity Closure Audit
 

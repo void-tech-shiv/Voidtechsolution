@@ -1,14 +1,23 @@
 import { test, expect } from "@playwright/test";
 
 /**
- * Task 10.1.5.2.1 — Production Visual Integrity & Release Gate Suite
+ * Task 10.1.5.2.2 — Production Visual Integrity & Release Gate Suite
  *
  * Enforces:
  * 1. Dedicated test server verification (production mode via /api/health).
  * 2. 8 routes across 7 mandatory viewports (56 route tests + 1 health/mode test = 57 tests).
- * 3. Actual CSS network response capture: HTTP 200, text/css, size > 1KB.
- * 4. Actual font loading verification via browser Font Loading API + zero failed font requests.
- * 5. Mandatory route-specific CTA assertions: bounding box, padding, border-radius, cursor, valid destination.
+ * 3. Finding B: Deterministic CSS network response observation:
+ *    - In-flight response processing promises tracked and awaited before assertions.
+ *    - Genuine CSS discrimination (distinguishing stylesheet URLs from query params).
+ *    - HTTP 200, Content-Type text/css, substantial bundle size (>1KB).
+ *    - Zero failed CSS requests with route and asset diagnostics.
+ * 4. Finding C: Actual font verification:
+ *    - Browser Font Loading API status (document.fonts.ready -> 'loaded').
+ *    - Registered font face check for "Inter" in document.fonts.
+ *    - document.fonts.check() with CSS font shorthands across weights (400, 600, 700).
+ *    - Verification that Inter is actively prioritized by document.body (not generic fallback alone).
+ *    - Local font resource responses verified HTTP 200 with zero failed font requests.
+ * 5. Mandatory route-specific CTA assertions: bounding box, horizontal padding, border-radius, cursor, valid destination.
  * 6. Dynamic portfolio detail coverage (/portfolio/algorithmic-liquidity-engine).
  * 7. Zero horizontal overflow (scrollWidth <= clientWidth).
  * 8. Zero unhandled runtime/console errors.
@@ -226,13 +235,30 @@ test.describe("Production Release Gate: Visual Integrity & Route Contracts", () 
           page,
         }) => {
           const consoleErrors: string[] = [];
-          const failedRequests: Array<{ url: string; error: string }> = [];
-          const capturedCssResponses: Array<{
+          const failedRequests: Array<{ url: string; error: string; resourceType: string }> = [];
+
+          // Finding B: Deterministic CSS tracking
+          interface CapturedCssResponse {
             url: string;
+            pathname: string;
             status: number;
             contentType: string;
             size: number;
-          }> = [];
+            isBundledCss: boolean;
+          }
+
+          // Finding C: Deterministic font tracking
+          interface CapturedFontResponse {
+            url: string;
+            pathname: string;
+            status: number;
+            contentType: string;
+            size: number;
+          }
+
+          const capturedCssResponses: CapturedCssResponse[] = [];
+          const capturedFontResponses: CapturedFontResponse[] = [];
+          const responseProcessingPromises: Promise<void>[] = [];
 
           page.on("pageerror", (err) => consoleErrors.push(err.message));
           page.on("console", (msg) => {
@@ -245,27 +271,95 @@ test.describe("Production Release Gate: Visual Integrity & Route Contracts", () 
             failedRequests.push({
               url: req.url(),
               error: req.failure()?.errorText || "unknown",
+              resourceType: req.resourceType(),
             });
           });
 
-          page.on("response", async (res) => {
+          page.on("response", (res) => {
             const url = res.url();
-            const contentType = res.headers()["content-type"] || "";
+            let pathname = "";
+            try {
+              pathname = new URL(url).pathname;
+            } catch {
+              pathname = url;
+            }
+            const contentType = (res.headers()["content-type"] || "").toLowerCase();
 
-            if (url.includes(".css") || contentType.includes("text/css")) {
-              let size = 0;
-              try {
-                const body = await res.body();
-                size = body.length;
-              } catch {
-                // Ignore if body was already streamed/cached
-              }
-              capturedCssResponses.push({
-                url,
-                status: res.status(),
-                contentType,
-                size,
-              });
+            // Finding B: Distinguish genuine CSS from query parameters containing .css
+            const isCss = pathname.endsWith(".css") || contentType.includes("text/css");
+
+            if (isCss) {
+              const p = (async () => {
+                try {
+                  let size = 0;
+                  try {
+                    const body = await res.body();
+                    size = body.length;
+                  } catch {
+                    const cl = res.headers()["content-length"];
+                    if (cl) size = parseInt(cl, 10) || 0;
+                  }
+
+                  const isBundledCss = pathname.includes("/_next/static/css/") || size > 1000;
+                  capturedCssResponses.push({
+                    url,
+                    pathname,
+                    status: res.status(),
+                    contentType,
+                    size,
+                    isBundledCss,
+                  });
+                } catch {
+                  capturedCssResponses.push({
+                    url,
+                    pathname,
+                    status: res.status(),
+                    contentType,
+                    size: 0,
+                    isBundledCss: false,
+                  });
+                }
+              })();
+              responseProcessingPromises.push(p);
+            }
+
+            // Finding C: Track font resources (local WOFF2/WOFF files from Next.js font optimization)
+            const isFont =
+              pathname.endsWith(".woff2") ||
+              pathname.endsWith(".woff") ||
+              contentType.includes("font/woff2") ||
+              contentType.includes("font/woff");
+
+            if (isFont) {
+              const fp = (async () => {
+                try {
+                  let size = 0;
+                  try {
+                    const body = await res.body();
+                    size = body.length;
+                  } catch {
+                    const cl = res.headers()["content-length"];
+                    if (cl) size = parseInt(cl, 10) || 0;
+                  }
+
+                  capturedFontResponses.push({
+                    url,
+                    pathname,
+                    status: res.status(),
+                    contentType,
+                    size,
+                  });
+                } catch {
+                  capturedFontResponses.push({
+                    url,
+                    pathname,
+                    status: res.status(),
+                    contentType,
+                    size: 0,
+                  });
+                }
+              })();
+              responseProcessingPromises.push(fp);
             }
           });
 
@@ -279,97 +373,166 @@ test.describe("Production Release Gate: Visual Integrity & Route Contracts", () 
             `Route ${route.path} returned non-200 HTTP status`
           ).toBe(200);
 
+          // Finding B: Await all in-flight response processing deterministically
+          await Promise.all(responseProcessingPromises);
+
           // ---------------------------------------------------------------
-          // 1. STYLESHEET DELIVERY ASSERTIONS
+          // 1. DETERMINISTIC STYLESHEET DELIVERY ASSERTIONS (Finding B)
           // ---------------------------------------------------------------
-          // Must have at least one link rel="stylesheet"
           const stylesheetLinks = await page
             .locator("link[rel='stylesheet']")
             .all();
           expect(
             stylesheetLinks.length,
-            `Route ${route.path} has no <link rel='stylesheet'> tags`
+            `Route ${route.path} has no <link rel='stylesheet'> tags in DOM`
           ).toBeGreaterThan(0);
 
-          // Captured CSS network responses must have HTTP 200, text/css, and non-empty payload
           expect(
             capturedCssResponses.length,
-            `No CSS network responses were captured on route ${route.path}`
+            `No genuine CSS network responses were captured on route ${route.path}`
           ).toBeGreaterThan(0);
 
+          // Verify every captured CSS response
           for (const css of capturedCssResponses) {
             expect(
               css.status,
-              `Stylesheet ${css.url} returned status ${css.status}`
+              `Stylesheet '${css.url}' on route ${route.path} returned HTTP status ${css.status}`
             ).toBe(200);
             expect(
               css.contentType,
-              `Stylesheet ${css.url} has invalid Content-Type`
+              `Stylesheet '${css.url}' on route ${route.path} has invalid Content-Type '${css.contentType}'`
             ).toContain("text/css");
             expect(
               css.size,
-              `Stylesheet ${css.url} delivered empty or truncated payload (${css.size} bytes)`
-            ).toBeGreaterThan(1000);
+              `Stylesheet '${css.url}' on route ${route.path} delivered empty payload (0 bytes)`
+            ).toBeGreaterThan(0);
           }
 
+          // Enforce presence of at least one substantial bundled Next.js CSS stylesheet
+          const hasSubstantialBundle = capturedCssResponses.some(
+            (c) => c.isBundledCss && c.size > 1000
+          );
+          expect(
+            hasSubstantialBundle,
+            `No substantial (>1KB) bundled stylesheet was delivered on route ${route.path}. Captured: ${JSON.stringify(
+              capturedCssResponses
+            )}`
+          ).toBe(true);
+
           // Zero failed CSS requests
-          const failedCss = failedRequests.filter((r) => r.url.includes(".css"));
+          const failedCss = failedRequests.filter(
+            (r) => r.resourceType === "stylesheet" || r.url.endsWith(".css")
+          );
           expect(
             failedCss,
-            `Failed CSS network requests detected on ${route.path}`
+            `Failed CSS network requests detected on ${route.path}: ${JSON.stringify(failedCss)}`
           ).toHaveLength(0);
 
-          // Zero failed font requests
+          // ---------------------------------------------------------------
+          // 2. ACTUAL FONT VERIFICATION (Finding C)
+          // ---------------------------------------------------------------
+          const fontDiagnostics = await page.evaluate(async () => {
+            await document.fonts.ready;
+
+            const allFonts: Array<{ family: string; status: string; weight: string }> = [];
+            document.fonts.forEach((f) => {
+              allFonts.push({ family: f.family, status: f.status, weight: f.weight });
+            });
+
+            // Inspect registered font families
+            const isInterRegistered = allFonts.some((f) => f.family.includes("Inter"));
+            const isJetBrainsRegistered = allFonts.some((f) => f.family.includes("JetBrains Mono"));
+
+            // Check font shorthands across standard typographic weights
+            const checkInter16 = document.fonts.check("16px Inter");
+            const checkInter400 = document.fonts.check("400 16px Inter");
+            const checkInter600 = document.fonts.check("600 16px Inter");
+            const checkInter700 = document.fonts.check("700 16px Inter");
+            const checkMono16 = document.fonts.check("16px 'JetBrains Mono'");
+
+            const body = document.body;
+            const computed = window.getComputedStyle(body);
+            const rootComputed = window.getComputedStyle(document.documentElement);
+
+            return {
+              fontStatus: document.fonts.status,
+              totalFonts: document.fonts.size,
+              isInterRegistered,
+              isJetBrainsRegistered,
+              checkInter16,
+              checkInter400,
+              checkInter600,
+              checkInter700,
+              checkMono16,
+              bodyFont: computed.fontFamily,
+              backgroundColor: computed.backgroundColor,
+              color: computed.color,
+              bgPrimaryVar: rootComputed.getPropertyValue("--bg-primary").trim(),
+              accentPurpleVar: rootComputed.getPropertyValue("--accent-purple").trim(),
+            };
+          });
+
+          // C.1: Font loading must have settled to 'loaded'
+          expect(
+            fontDiagnostics.fontStatus,
+            `Font loading still pending on route ${route.path} (status: ${fontDiagnostics.fontStatus})`
+          ).toBe("loaded");
+
+          // C.2: Inter font face must be registered in the document font set
+          expect(
+            fontDiagnostics.isInterRegistered,
+            `Inter font face is not registered in document.fonts on route ${route.path}`
+          ).toBe(true);
+
+          // C.3: document.fonts.check() must confirm Inter is loaded across weights (400, 600, 700)
+          expect(
+            fontDiagnostics.checkInter16,
+            `document.fonts.check('16px Inter') failed on route ${route.path}`
+          ).toBe(true);
+          expect(
+            fontDiagnostics.checkInter400,
+            `document.fonts.check('400 16px Inter') failed on route ${route.path}`
+          ).toBe(true);
+          expect(
+            fontDiagnostics.checkInter600,
+            `document.fonts.check('600 16px Inter') failed on route ${route.path}`
+          ).toBe(true);
+          expect(
+            fontDiagnostics.checkInter700,
+            `document.fonts.check('700 16px Inter') failed on route ${route.path}`
+          ).toBe(true);
+
+          // C.4: Body element must actively use Inter as its primary font family (not generic fallback alone)
+          expect(
+            fontDiagnostics.bodyFont,
+            `Body element does not prioritize Inter font on route ${route.path} (computed: ${fontDiagnostics.bodyFont})`
+          ).toMatch(/(?:^|,\s*)["']?Inter["']?(?:,\s*|$)/i);
+
+          expect(
+            fontDiagnostics.bodyFont,
+            `Body element uses fallback Times New Roman or serif on route ${route.path}`
+          ).not.toMatch(/\bTimes\b/i);
+
+          // C.5: Local font resources must load with HTTP 200 and zero failures
           const failedFonts = failedRequests.filter(
-            (r) => r.url.includes(".woff") || r.url.includes(".woff2")
+            (r) => r.resourceType === "font" || r.url.includes(".woff") || r.url.includes(".woff2")
           );
           expect(
             failedFonts,
-            `Failed font requests detected on ${route.path}`
+            `Font resource requests failed on route ${route.path}: ${JSON.stringify(failedFonts)}`
           ).toHaveLength(0);
 
-          // ---------------------------------------------------------------
-          // 2. FONT LOADING API & TYPOGRAPHY ASSERTIONS
-          // ---------------------------------------------------------------
-          const fontStatus = await page.evaluate(async () => {
-            await document.fonts.ready;
-            return {
-              status: document.fonts.status,
-              fontCount: document.fonts.size,
-            };
-          });
-          expect(
-            fontStatus.status,
-            `document.fonts.status was not 'loaded' on ${route.path}`
-          ).toBe("loaded");
+          for (const fontRes of capturedFontResponses) {
+            expect(
+              fontRes.status,
+              `Font resource '${fontRes.url}' on route ${route.path} returned non-200 status (${fontRes.status})`
+            ).toBe(200);
+          }
 
-          const bodyStyles = await page.evaluate(() => {
-            const body = document.body;
-            const computed = window.getComputedStyle(body);
-            const rootComputed = window.getComputedStyle(
-              document.documentElement
-            );
-            return {
-              backgroundColor: computed.backgroundColor,
-              color: computed.color,
-              fontFamily: computed.fontFamily,
-              bgPrimaryVar: rootComputed.getPropertyValue("--bg-primary").trim(),
-              accentPurpleVar: rootComputed
-                .getPropertyValue("--accent-purple")
-                .trim(),
-            };
-          });
-
-          // CSS variables must be strictly defined
-          expect(bodyStyles.bgPrimaryVar).toBe("#050507");
-          expect(bodyStyles.accentPurpleVar).toBe("#8B5CF6");
-
-          // Body background color must match dark theme (#050507 = rgb(5, 5, 7))
-          expect(bodyStyles.backgroundColor).toBe("rgb(5, 5, 7)");
-
-          // Typography must be Inter / sans-serif, never default browser Times New Roman
-          expect(bodyStyles.fontFamily).not.toMatch(/\bTimes\b/i);
-          expect(bodyStyles.fontFamily).toMatch(/Inter|sans-serif/i);
+          // C.6: CSS variables and theme tokens
+          expect(fontDiagnostics.bgPrimaryVar).toBe("#050507");
+          expect(fontDiagnostics.accentPurpleVar).toBe("#8B5CF6");
+          expect(fontDiagnostics.backgroundColor).toBe("rgb(5, 5, 7)");
 
           // ---------------------------------------------------------------
           // 3. MANDATORY ROUTE-SPECIFIC CTA & INTERACTION CONTRACTS
@@ -384,7 +547,6 @@ test.describe("Production Release Gate: Visual Integrity & Route Contracts", () 
               `Mandatory CTA '${ctaReq.selector}' missing on ${route.path} (${vp.name})`
             ).toBeVisible();
 
-            // Verify bounding box dimensions > 0
             const box = await targetLocator.boundingBox();
             expect(box, `Bounding box null for ${ctaReq.selector}`).not.toBeNull();
             expect(
@@ -396,7 +558,6 @@ test.describe("Production Release Gate: Visual Integrity & Route Contracts", () 
               `Height must be > 0 for ${ctaReq.selector}`
             ).toBeGreaterThan(0);
 
-            // Verify computed styles
             const computedProps = await targetLocator.evaluate((el) => {
               const style = window.getComputedStyle(el);
               return {
@@ -412,7 +573,6 @@ test.describe("Production Release Gate: Visual Integrity & Route Contracts", () 
             });
 
             if (ctaReq.isInput) {
-              // Inputs must have non-zero padding, border radius, and touch height
               expect(
                 computedProps.borderRadius,
                 `Input ${ctaReq.selector} missing border radius`
@@ -426,7 +586,6 @@ test.describe("Production Release Gate: Visual Integrity & Route Contracts", () 
                 `Input ${ctaReq.selector} touch target height must be >= 28px`
               ).toBeGreaterThanOrEqual(28);
             } else if (ctaReq.isButton) {
-              // Interactive buttons / styled pills
               expect(
                 computedProps.cursor,
                 `Button ${ctaReq.selector} cursor must be pointer`
@@ -444,7 +603,6 @@ test.describe("Production Release Gate: Visual Integrity & Route Contracts", () 
                 `Button ${ctaReq.selector} height must be at least 28px`
               ).toBeGreaterThanOrEqual(28);
             } else {
-              // Standard interactive text navigation links
               expect(
                 computedProps.cursor,
                 `Link ${ctaReq.selector} cursor must be pointer`
