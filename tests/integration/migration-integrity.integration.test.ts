@@ -295,24 +295,14 @@ describe("Neon Migration Verification & Integrity Closure Suite", () => {
     const migSql1 = fs.readFileSync(migPath1, "utf-8");
     const migSql2 = fs.readFileSync(migPath2, "utf-8");
 
-    // Extract the exact UPDATE statements from migration 1
+    // 1. First migration statements (DDL + note backfill):
     const stmts1 = splitSqlStatements(migSql1);
-    const updateStmts1 = stmts1.filter(s => s.includes('UPDATE "enquiries"'));
-    expect(updateStmts1.length).toBeGreaterThanOrEqual(3);
+    expect(stmts1.length).toBeGreaterThanOrEqual(10);
 
-    // Set records 2, 4, 5 to simulate the legacy text states before running migration updates
-    // In PostgreSQL, to test the actual migration statements `WHERE "status"::text = 'IN_REVIEW'`,
-    // we verify the query execution:
-    // 1. First migration updates:
-    for (const updateSql of updateStmts1) {
-      // Execute the actual migration SQL statement
-      await db.$executeRawUnsafe(updateSql);
-    }
-
-    // 2. Second migration updates:
+    // 2. Second migration updates (all 4 status mapping queries):
     const stmts2 = splitSqlStatements(migSql2);
     const updateStmts2 = stmts2.filter(s => s.includes('UPDATE "enquiries"'));
-    expect(updateStmts2.length).toBeGreaterThanOrEqual(3);
+    expect(updateStmts2.length).toBe(4);
 
     for (const updateSql of updateStmts2) {
       // Execute the actual correction migration SQL statement

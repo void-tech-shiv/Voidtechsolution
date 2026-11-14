@@ -1,37 +1,35 @@
 ---
-updated: 2026-11-15T03:35:00+05:30
+updated: 2026-11-15T04:42:00+05:30
 ---
 
 # Project State — VOIDTECH SOLUTION
 
 ## Current Position
 
-**Milestone:** Neon Migration Verification Integrity Closure (Verification & Source Hardening Complete — Awaiting Owner Development Branch Provisioning)
-**Phase:** Development Environment & Neon Repair
-**Status:** in_progress (Zero changes made to primary Neon branch `br-little-bird-bejretq1`; zero database migrations executed against Neon; integration test suite hardened with strict parsed URL validation, exact database name matching `voidtech_test_concurrency`, fail-closed error behavior with zero silent skips, and session setting restoration in finally; MIG-01 parses and executes actual on-disk migration files against legacy fixture records; full 63-statement CMS migration verified with 100% replay idempotency and interrupted trigger restoration; AdminSession reconciliation script hardened with fail-closed extra column check, timestamp precision (3), and CURRENT_TIMESTAMP default verification; PostgreSQL engine transaction invariant 55P04 and Prisma Migrate autocommit semantics documented; 8/8 automated migration tests passing; full repository test suite passing with 741/741 tests; awaiting owner branch provisioning via Neon Console).
+**Milestone:** Neon Database Deployment & Verification Complete (Option B Applied to Primary Branch `br-little-bird-bejretq1`)
+**Phase:** Development Environment & Neon Repair — Complete
+**Status:** complete (All 5 Prisma migrations deployed and verified on Neon PostgreSQL database `neondb` on endpoint `ep-little-credit-beuthfde`; database schema is 100% up to date; all 22 application tables exist; all CRM and CMS columns, enums, triggers, and foreign keys active; Next.js 15 dev server verified serving all core routes with HTTP 200; 741/741 regression tests passing; 0 TypeScript errors; 0 ESLint warnings).
 **Visual Reference:** SmartStruct Cybernetic Layout + Official Purple/Violet Brand Identity  
 
 ## Last Action
 
-- Executed Neon Migration Verification Integrity Closure:
-  - Hardened `tests/integration/migration-integrity.integration.test.ts`: parsed `TEST_DATABASE_URL` via `URL()`, validated exact host (`localhost`/`127.0.0.1`), exact port (`5432`), exact database name (`voidtech_test_concurrency`), rejected all remote/Neon endpoints, removed all silent early returns, and wrapped session setting restoration in `try ... finally`.
-  - Upgraded `MIG-01` to test the actual migration SQL files on disk (`20261113000000` and `20261113010000`) against a representative 5-status legacy fixture, verifying `IN_REVIEW -> CONTACTED`, `CONVERTED -> WON`, `ARCHIVED -> ON_HOLD`, and 100% field preservation across all unrelated fields.
-  - Upgraded `MIG-03` and added `MIG-09` to execute all 63 statements of `20261114000000_admin_cms_foundation` twice (proving 100% idempotency), verify interrupted trigger restoration, and validate all 13 foreign keys and 11 index definitions.
-  - Hardened `scripts/reconcile-admin-sessions.cjs`: added fail-closed rejection of unexpected extra columns, verified timestamp precision `(3)`, verified `CURRENT_TIMESTAMP` defaults, sanitized error output, and confirmed target endpoint identity without exposing credentials.
-  - Investigated and documented PostgreSQL engine enum transaction invariant `SQLSTATE 55P04` and Prisma Migrate transaction handling in `docs/NEON_MIGRATION_INTEGRITY_CLOSURE.md`.
-  - Executed full test suite: 741/741 tests passing across 58 test files; typecheck and lint passing with zero errors.
-  - Preserved all strict boundaries: primary branch `br-little-bird-bejretq1` untouched; zero SQL executed against Neon; zero credentials exposed.
+- Executed Option B Live Neon Deployment:
+  - Diagnosed historical failed record for `20261113000000_crm_lead_pipeline` (failed with PostgreSQL `55P04` due to uncommitted enum values being used in updates within the same transaction).
+  - Resolved `55P04` by cleanly isolating DDL (`ALTER TYPE`, `ALTER TABLE`, `CREATE TABLE`, `CREATE INDEX`, note backfill) to `20261113000000` and all status mapping data updates (`IN_REVIEW -> CONTACTED`, `CONVERTED -> WON`, `ARCHIVED -> ON_HOLD`, `CLOSED -> ON_HOLD`) to `20261113010000`.
+  - Cleared failed migration row using schema-engine resolution protocol.
+  - Successfully ran `npx.cmd prisma migrate deploy`:
+    - `20261113000000_crm_lead_pipeline` applied.
+    - `20261113010000_crm_status_mapping_correction` applied.
+    - `20261114000000_admin_cms_foundation` applied.
+  - Confirmed with `prisma migrate status`: `Database schema is up to date!`.
+  - Ran `npm.cmd run db:verify`: All tables, migration history, Prisma delegates, and seed counts passed.
+  - Verified Next.js dev server live runtime on core routes: `/`, `/services`, `/portfolio`, `/pricing`, `/contact`, `/admin/login` all return HTTP 200.
+  - Ran complete test suite: 741/741 tests passing across 58 test files; typecheck and lint passing with zero errors.
 
 ## Next Steps
 
-1. Owner provisions the `development` branch in Neon Console (parent: `br-little-bird-bejretq1`).
-2. Owner updates local `.env` with the new development branch connection strings.
-3. Owner authorizes running:
-   ```powershell
-   npx.cmd prisma migrate resolve --applied 20261112000001_add_admin_sessions
-   npx.cmd prisma migrate deploy
-   ```
-   strictly against the verified development branch.
+1. Development environment is fully repaired and Neon PostgreSQL database is synchronized.
+2. Proceed to next authorized phase / task.
 
 ## Active Decisions
 

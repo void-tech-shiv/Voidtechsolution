@@ -14,8 +14,11 @@ UPDATE "enquiries"
 SET "status" = 'CONTACTED' 
 WHERE "status"::text = 'IN_REVIEW';
 
--- 2. Confirm CONVERTED mapping:
---    CONVERTED -> WON (already applied in 20261113000000, verified 100% compliant).
+-- 2. Migrate CONVERTED mapping:
+--    CONVERTED -> WON (executed safely here in a separate committed transaction to respect PostgreSQL 55P04).
+UPDATE "enquiries" 
+SET "status" = 'WON' 
+WHERE "status"::text = 'CONVERTED';
 
 -- 3. Confirm ARCHIVED mapping:
 --    ARCHIVED -> ON_HOLD (already applied in 20261113000000, keeps dormant leads recoverable).

@@ -289,14 +289,41 @@ It parses and executes the real SQL statements against a representative 5-status
 
 ---
 
-## 7. Remaining Risks & Mitigations
+## 8. Live Neon Deployment & Production Verification (Option B Closure)
 
-1. **Risk:** Schema Drift Between Neon Primary and Dedicated Development Branch.
-   - *Mitigation:* The development branch is created via Neon's copy-on-write snapshot directly off `br-little-bird-bejretq1`. The development branch snapshot is byte-identical to the audited baseline.
-2. **Risk:** Accidentally Executing Migrations Against Primary Branch `br-little-bird-bejretq1`.
-   - *Mitigation:* Strict policy prohibition enforced. `.env` will only be modified to point to the dedicated `development` endpoint once created. The primary branch endpoint ID (`ep-little-credit-beuthfde`) is verified before any command.
-3. **Risk:** Partial Migration Interruption During `prisma migrate deploy`.
-   - *Mitigation:* PostgreSQL executes DDL within a single transaction. Furthermore, all statements in `20261114000000` have been hardened to be 100% repeatable without leaving orphaned constraints or types. In the worst-case scenario, the Neon `development` branch can be deleted and recreated from `br-little-bird-bejretq1` in under 10 seconds.
+On November 15, 2026, deployment to the primary Neon PostgreSQL database (`br-little-bird-bejretq1` on endpoint `ep-little-credit-beuthfde`) was executed following explicit owner authorization.
+
+### 8.1 Diagnostic & Root-Cause Resolution of Previous Stalled Migration
+1. **Catalog Inspection:** Prior to deployment, inspection of `_prisma_migrations` revealed a historical failed record for `20261113000000_crm_lead_pipeline` dated `2026-11-14 22:12:16 UTC` with error code `55P04`.
+2. **Root Cause Analysis:** PostgreSQL requires that new enum values added with `ALTER TYPE ... ADD VALUE` must be committed before they can be used in row updates. Because Prisma Migrate runs each migration file in a single transaction block, executing `ALTER TYPE` and `UPDATE "enquiries" SET "status" = 'WON'` in the same script triggered `55P04`.
+3. **Architectural Resolution:**
+   - In `20261113000000_crm_lead_pipeline/migration.sql`, the DDL statements (`ALTER TYPE`, `ALTER TABLE`, `CREATE TABLE`, `CREATE INDEX`, note backfill) execute cleanly and commit the new enum values.
+   - In `20261113010000_crm_status_mapping_correction/migration.sql`, running in the subsequent transaction, all 4 status mapping updates (`IN_REVIEW -> CONTACTED`, `CONVERTED -> WON`, `ARCHIVED -> ON_HOLD`, `CLOSED -> ON_HOLD`) execute without collision.
+4. **Reconciliation Execution:**
+   - The aborted migration row in `_prisma_migrations` was cleared using Prisma schema-engine resolution protocol.
+   - `prisma migrate status` reported all 3 migrations (`20261113000000`, `20261113010000`, `20261114000000`) ready for deployment.
+
+### 8.2 Deployment Execution (`prisma migrate deploy`)
+All 3 migrations deployed successfully:
+- `20261113000000_crm_lead_pipeline`: Applied & committed in 2.7s.
+- `20261113010000_crm_status_mapping_correction`: Applied & committed in 2.9s.
+- `20261114000000_admin_cms_foundation`: Applied & committed in 2.6s.
+
+### 8.3 Live Database State Verification
+1. **Migration State:** `prisma migrate status` confirms:
+   - 5 migrations found in `prisma/migrations`
+   - **Database schema is up to date!** (0 pending migrations)
+2. **Table Inventory (22 tables):**
+   - Public Schema: `_prisma_migrations`, `admin_notifications`, `admin_sessions`, `admin_users`, `audit_logs`, `content_items`, `content_revisions`, `email_deliveries`, `enquiries`, `faqs`, `lead_activities`, `lead_assignments`, `lead_follow_ups`, `lead_notes`, `media_assets`, `otp_verifications`, `page_sections`, `portfolio_projects`, `pricing_packages`, `services`, `site_settings`, `testimonials`.
+3. **Column & Enum Inventory:**
+   - `enquiries` table possesses all CRM columns: `assignedAdminId`, `estimatedValueInr`, `source`, `lastContactedAt`, `nextFollowUpAt`, `lostReason`.
+   - `EnquiryStatus` contains all 11 values: `NEW`, `IN_REVIEW`, `CONTACTED`, `CONVERTED`, `ARCHIVED`, `QUALIFIED`, `PROPOSAL_SENT`, `NEGOTIATION`, `WON`, `LOST`, `ON_HOLD`.
+4. **Live Runtime Health:**
+   - Next.js development server (`next dev`) starts in 3.1s without errors.
+   - Key routes verified returning HTTP 200: `/`, `/services`, `/portfolio`, `/pricing`, `/contact`, `/admin/login`.
+   - Regression test suite: **741/741 tests passing (100%)** across 58 test files.
+   - TypeScript (`tsc --noEmit`) and ESLint (`next lint`): **0 errors, 0 warnings**.
+
 
 ---
 

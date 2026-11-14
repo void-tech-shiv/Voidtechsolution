@@ -16,11 +16,11 @@ ALTER TYPE "EnquiryStatus" ADD VALUE IF NOT EXISTS 'LOST';
 ALTER TYPE "EnquiryStatus" ADD VALUE IF NOT EXISTS 'ON_HOLD';
 
 -- ------------------------------------------------------------------------------
--- 2. MIGRATE EXISTING ENQUIRY STATUSES TO EXTENDED VALUES
+-- 2. STATUS MAPPING DEFERRED TO MIGRATION 20261113010000
+-- Note: In PostgreSQL, newly added enum values (WON, ON_HOLD) cannot be used
+-- within the same transaction block (SQLSTATE 55P04). Status updates are safely
+-- executed in forward migration 20261113010000_crm_status_mapping_correction.
 -- ------------------------------------------------------------------------------
-UPDATE "enquiries" SET "status" = 'CONTACTED' WHERE "status"::text = 'IN_REVIEW';
-UPDATE "enquiries" SET "status" = 'WON' WHERE "status"::text = 'CONVERTED';
-UPDATE "enquiries" SET "status" = 'ON_HOLD' WHERE "status"::text = 'ARCHIVED';
 
 -- ------------------------------------------------------------------------------
 -- 3. EXTEND enquiries TABLE WITH CRM COLUMNS & RELATIONSHIPS
