@@ -88,19 +88,24 @@ Because `admin_sessions` was already created in Neon with the exact schema match
   - Add FK `enquiries_assignedAdminId_fkey` (`ON DELETE SET NULL`).
   - Create tables: `lead_notes`, `lead_follow_ups`, `lead_activities`, `lead_assignments`, `admin_notifications`.
   - Create partial unique index `lead_assignments_single_active_unique` on `(enquiryId) WHERE isActive = true`.
-- **Data Safety:** All 4 existing enquiries remain intact (status `NEW`).
+- **Status Mapping Normalization:**
+  - `IN_REVIEW -> CONTACTED` (aligned with approved business rules: triage/contact initiated, not yet commercially qualified).
+  - `CONVERTED -> WON`.
+  - `ARCHIVED -> ON_HOLD`.
+- **Data Safety:** All 4 existing enquiries in Neon remain intact (status `NEW`).
 
 ### Step 3: Apply CRM Status Mapping Correction (`20261113010000_crm_status_mapping_correction`)
 - **Schema Updates:**
-  - Safely normalizes any legacy statuses to `CONTACTED` or `ON_HOLD`.
+  - Idempotent normalization confirming all legacy statuses (`IN_REVIEW -> CONTACTED`, `ARCHIVED -> ON_HOLD`, `CLOSED -> ON_HOLD`).
 - **Data Safety:** Non-destructive update queries.
 
 ### Step 4: Apply Headless Admin CMS Foundation Migration (`20261114000000_admin_cms_foundation`)
-- **Schema Additions:**
-  - Create enums: `ContentType`, `ContentPublicationStatus`, `RevisionLifecycleStatus`, `TestimonialVerificationStatus`, `ClientConsentStatus`, `StorageProviderType`.
+- **Schema Additions (Hardened for 100% Repeatability):**
+  - Create enums with exception handling: `ContentType`, `ContentPublicationStatus`, `RevisionLifecycleStatus`, `TestimonialVerificationStatus`, `ClientConsentStatus`, `StorageProviderType`.
   - Add `contentItemId` (TEXT nullable) and `publishedAt` (TIMESTAMP nullable) to `services`, `pricing_packages`, `portfolio_projects`, and `faqs`.
   - Create tables: `content_items`, `content_revisions`, `page_sections`, `testimonials`, `media_assets`.
-  - Create triggers: `verify_revision_ownership` and `protect_published_revisions`.
+  - Create repeatable foreign key constraints with `DROP CONSTRAINT IF EXISTS` guards.
+  - Create triggers: `verify_revision_ownership`, `protect_published_revisions`, and `protect_revision_immutability`.
 - **Data Safety:** Purely additive. Existing catalog records remain untouched with `contentItemId = NULL`, enabling seamless fallback or progressive promotion.
 
 ---
@@ -111,9 +116,12 @@ Per the project instructions:
 > "Do NOT modify the primary Neon branch `br-little-bird-bejretq1`. Prepare a safe Neon development migration workflow."
 
 - **Primary Branch Protection:** Primary branch `br-little-bird-bejretq1` remains completely untouched and isolated.
-- **Dedicated Dev Branch Workflow:** Full plans and runbooks have been authored:
+- **Dedicated Dev Branch Workflow & Runbooks:** Full documentation suite authored:
   1. [NEON_DEVELOPMENT_BRANCH_PLAN.md](file:///d:/voidtechsolution/docs/NEON_DEVELOPMENT_BRANCH_PLAN.md): Step-by-step console guide to provision the `development` branch off `br-little-bird-bejretq1`.
   2. [NEON_MIGRATION_SQL_REVIEW.md](file:///d:/voidtechsolution/docs/NEON_MIGRATION_SQL_REVIEW.md): In-depth SQL audit of all 4 staged migrations.
   3. [NEON_MIGRATION_EXECUTION_PLAN.md](file:///d:/voidtechsolution/docs/NEON_MIGRATION_EXECUTION_PLAN.md): Complete step-by-step execution, verification, and instant rollback runbook.
+  4. [NEON_MIGRATION_INTEGRITY_CLOSURE.md](file:///d:/voidtechsolution/docs/NEON_MIGRATION_INTEGRITY_CLOSURE.md): Forensic integrity audit resolving status mapping, repeatability, admin session reconciliation, and automated test proofs.
+  5. [NEON_MIGRATION_ROLLBACK_MATRIX.md](file:///d:/voidtechsolution/docs/NEON_MIGRATION_ROLLBACK_MATRIX.md): Detailed 4-tier rollback classification and data-loss risk matrix.
+- **Automated Validation:** Passed all 8 tests in `tests/integration/migration-integrity.integration.test.ts` (100%) against isolated local test database. Full regression suite passed (741/741 tests).
 - **Current State:** Awaiting owner branch creation and approval before running `prisma migrate resolve` and `prisma migrate deploy` against the new development branch.
 

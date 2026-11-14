@@ -18,7 +18,7 @@ ALTER TYPE "EnquiryStatus" ADD VALUE IF NOT EXISTS 'ON_HOLD';
 -- ------------------------------------------------------------------------------
 -- 2. MIGRATE EXISTING ENQUIRY STATUSES TO EXTENDED VALUES
 -- ------------------------------------------------------------------------------
-UPDATE "enquiries" SET "status" = 'QUALIFIED' WHERE "status"::text = 'IN_REVIEW';
+UPDATE "enquiries" SET "status" = 'CONTACTED' WHERE "status"::text = 'IN_REVIEW';
 UPDATE "enquiries" SET "status" = 'WON' WHERE "status"::text = 'CONVERTED';
 UPDATE "enquiries" SET "status" = 'ON_HOLD' WHERE "status"::text = 'ARCHIVED';
 

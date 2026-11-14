@@ -7,23 +7,42 @@
 -- Custom Features: verify_revision_ownership trigger & protect_published_revisions trigger
 -- ==============================================================================
 
--- CreateEnum
-CREATE TYPE "ContentType" AS ENUM ('SERVICE', 'PRICING_PACKAGE', 'PORTFOLIO_PROJECT', 'FAQ', 'PAGE_SECTION', 'TESTIMONIAL');
+-- CreateEnum (Safely Repeatable)
+DO $$ BEGIN
+    CREATE TYPE "ContentType" AS ENUM ('SERVICE', 'PRICING_PACKAGE', 'PORTFOLIO_PROJECT', 'FAQ', 'PAGE_SECTION', 'TESTIMONIAL');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
 
--- CreateEnum
-CREATE TYPE "ContentPublicationStatus" AS ENUM ('DRAFT', 'REVIEW', 'PUBLISHED', 'ARCHIVED');
+DO $$ BEGIN
+    CREATE TYPE "ContentPublicationStatus" AS ENUM ('DRAFT', 'REVIEW', 'PUBLISHED', 'ARCHIVED');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
 
--- CreateEnum
-CREATE TYPE "RevisionLifecycleStatus" AS ENUM ('WORKING_DRAFT', 'PENDING_REVIEW', 'APPROVED', 'PUBLISHED_SNAPSHOT', 'SUPERSEDED', 'REJECTED');
+DO $$ BEGIN
+    CREATE TYPE "RevisionLifecycleStatus" AS ENUM ('WORKING_DRAFT', 'PENDING_REVIEW', 'APPROVED', 'PUBLISHED_SNAPSHOT', 'SUPERSEDED', 'REJECTED');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
 
--- CreateEnum
-CREATE TYPE "TestimonialVerificationStatus" AS ENUM ('UNVERIFIED', 'VERIFIED', 'REJECTED');
+DO $$ BEGIN
+    CREATE TYPE "TestimonialVerificationStatus" AS ENUM ('UNVERIFIED', 'VERIFIED', 'REJECTED');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
 
--- CreateEnum
-CREATE TYPE "ClientConsentStatus" AS ENUM ('PENDING', 'GRANTED', 'REVOKED');
+DO $$ BEGIN
+    CREATE TYPE "ClientConsentStatus" AS ENUM ('PENDING', 'GRANTED', 'REVOKED');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
 
--- CreateEnum
-CREATE TYPE "StorageProviderType" AS ENUM ('LOCAL', 'R2');
+DO $$ BEGIN
+    CREATE TYPE "StorageProviderType" AS ENUM ('LOCAL', 'R2');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
 
 -- AlterTable
 ALTER TABLE "faqs" ADD COLUMN IF NOT EXISTS "contentItemId" TEXT,
@@ -176,43 +195,52 @@ CREATE UNIQUE INDEX IF NOT EXISTS "portfolio_projects_contentItemId_key" ON "por
 CREATE UNIQUE INDEX IF NOT EXISTS "pricing_packages_contentItemId_key" ON "pricing_packages"("contentItemId");
 CREATE UNIQUE INDEX IF NOT EXISTS "faqs_contentItemId_key" ON "faqs"("contentItemId");
 
--- AddForeignKeys with Explicit Delete Actions
+-- AddForeignKeys with Explicit Delete Actions (Safely Repeatable)
 ALTER TABLE "services" 
+    DROP CONSTRAINT IF EXISTS "services_contentItemId_fkey",
     ADD CONSTRAINT "services_contentItemId_fkey" 
     FOREIGN KEY ("contentItemId") REFERENCES "content_items"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE "portfolio_projects" 
+    DROP CONSTRAINT IF EXISTS "portfolio_projects_contentItemId_fkey",
     ADD CONSTRAINT "portfolio_projects_contentItemId_fkey" 
     FOREIGN KEY ("contentItemId") REFERENCES "content_items"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE "pricing_packages" 
+    DROP CONSTRAINT IF EXISTS "pricing_packages_contentItemId_fkey",
     ADD CONSTRAINT "pricing_packages_contentItemId_fkey" 
     FOREIGN KEY ("contentItemId") REFERENCES "content_items"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE "faqs" 
+    DROP CONSTRAINT IF EXISTS "faqs_contentItemId_fkey",
     ADD CONSTRAINT "faqs_contentItemId_fkey" 
     FOREIGN KEY ("contentItemId") REFERENCES "content_items"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE "content_items" 
+    DROP CONSTRAINT IF EXISTS "content_items_publishedById_fkey",
     ADD CONSTRAINT "content_items_publishedById_fkey" 
     FOREIGN KEY ("publishedById") REFERENCES "admin_users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 ALTER TABLE "content_items" 
+    DROP CONSTRAINT IF EXISTS "content_items_currentPublishedRevisionId_fkey",
     ADD CONSTRAINT "content_items_currentPublishedRevisionId_fkey" 
     FOREIGN KEY ("currentPublishedRevisionId") REFERENCES "content_revisions"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 ALTER TABLE "content_items" 
+    DROP CONSTRAINT IF EXISTS "content_items_currentWorkingRevisionId_fkey",
     ADD CONSTRAINT "content_items_currentWorkingRevisionId_fkey" 
     FOREIGN KEY ("currentWorkingRevisionId") REFERENCES "content_revisions"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- Composite Revision Ownership Foreign Keys (Declarative Cross-Item Protection)
 ALTER TABLE "content_items"
+    DROP CONSTRAINT IF EXISTS "content_items_published_revision_ownership_fkey",
     ADD CONSTRAINT "content_items_published_revision_ownership_fkey"
     FOREIGN KEY ("id", "currentPublishedRevisionId")
     REFERENCES "content_revisions"("contentItemId", "id")
     ON DELETE RESTRICT ON UPDATE RESTRICT;
 
 ALTER TABLE "content_items"
+    DROP CONSTRAINT IF EXISTS "content_items_working_revision_ownership_fkey",
     ADD CONSTRAINT "content_items_working_revision_ownership_fkey"
     FOREIGN KEY ("id", "currentWorkingRevisionId")
     REFERENCES "content_revisions"("contentItemId", "id")
@@ -220,26 +248,32 @@ ALTER TABLE "content_items"
 
 -- Published Revision Deletion Protection (Requirement 3.A: ON DELETE RESTRICT)
 ALTER TABLE "content_revisions" 
+    DROP CONSTRAINT IF EXISTS "content_revisions_contentItemId_fkey",
     ADD CONSTRAINT "content_revisions_contentItemId_fkey" 
     FOREIGN KEY ("contentItemId") REFERENCES "content_items"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE "content_revisions" 
+    DROP CONSTRAINT IF EXISTS "content_revisions_authorId_fkey",
     ADD CONSTRAINT "content_revisions_authorId_fkey" 
     FOREIGN KEY ("authorId") REFERENCES "admin_users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 ALTER TABLE "page_sections" 
+    DROP CONSTRAINT IF EXISTS "page_sections_contentItemId_fkey",
     ADD CONSTRAINT "page_sections_contentItemId_fkey" 
     FOREIGN KEY ("contentItemId") REFERENCES "content_items"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE "testimonials" 
+    DROP CONSTRAINT IF EXISTS "testimonials_contentItemId_fkey",
     ADD CONSTRAINT "testimonials_contentItemId_fkey" 
     FOREIGN KEY ("contentItemId") REFERENCES "content_items"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE "testimonials" 
+    DROP CONSTRAINT IF EXISTS "testimonials_verifiedById_fkey",
     ADD CONSTRAINT "testimonials_verifiedById_fkey" 
     FOREIGN KEY ("verifiedById") REFERENCES "admin_users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 ALTER TABLE "media_assets" 
+    DROP CONSTRAINT IF EXISTS "media_assets_uploaderId_fkey",
     ADD CONSTRAINT "media_assets_uploaderId_fkey" 
     FOREIGN KEY ("uploaderId") REFERENCES "admin_users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
