@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.14] — 2026-11-15
+### Phase 10: Complete Admin CMS (Backend Foundation, Admin Dashboard, Public Integration & Final Acceptance)
+
+#### Added & Implemented
+- **Phase 10.1 — CMS Backend Foundation (Tasks 10.1.6 – 10.1.12):**
+  - **9-Step Atomic Publishing Transaction Engine (`src/server/services/cms/publishing.service.ts`):** Enforces OCC version checking (`expectedVersion`), parent ownership validation, domain record materialization, dual pointer promotion, and transaction-bound audit logging with automatic rollback on failure.
+  - **Draft Retention Auto-Pruner:** Maintains a max 20 working draft revisions limit per item with parent row locking, permanently shielding published snapshots.
+  - **Domain Repositories:** Implemented `PageSectionsRepo`, `TestimonialsRepo`, enhanced `ServicesRepo`, `PricingRepo`, `PortfolioRepo`, `FaqRepo`.
+  - **Storage Abstraction & Pipeline:** `StorageProvider` interface and `LocalFileSystemStorageProvider` with path traversal and null-byte defenses; Sharp WebP image processing pipeline with EXIF stripping and default SVG rejection.
+  - **GFM Markdown Engine:** `src/lib/markdown.ts` compiler with `rehype-sanitize` for clean, safe HTML rendering.
+  - **Static Fallback Resilience:** 5-scenario resilient fallback handler (`src/lib/cms/fallback-handler.ts`) ensuring zero downtime and complete database credential sanitization.
+- **Phase 10.2 — Admin CMS Dashboard & Interactive UI (Tasks 10.2.1 – 10.2.10):**
+  - CMS Overview Hub at `/admin/cms` with live metrics, quick-action navigation, and revision audit feed.
+  - Management interfaces for Services, Pricing, Portfolio, FAQs, Testimonials (with legal consent verification), Page Sections, and Media Library.
+  - Strict RBAC restrictions locking Pricing changes to `SUPER_ADMIN` and `ADMIN`.
+  - Interactive revision history with side-by-side visual diff dialog and one-click rollback.
+- **Phase 10.3 — Public Website CMS Integration & Preview Subsystem (Tasks 10.3.1 – 10.3.5):**
+  - Wired domain repositories into public routes (`/`, `/services`, `/pricing`, `/portfolio`, `/portfolio/[slug]`, `/about`, `/contact`) with static fallback safety.
+  - On-demand cache revalidation (`revalidatePath`) on publication.
+  - Next.js Draft Mode preview subsystem (`/api/draft-mode/enable`, `/api/draft-mode/disable`) with amber HUD warning banner and `X-Robots-Tag: noindex, nofollow` search indexing prevention.
+  - Verified 57/57 visual release gate tests on port 3005 across 8 routes and 7 responsive viewports.
+- **Phase 10.4 — Security Threat Audit & Final Acceptance:**
+  - Evaluated and mitigated 15 security threat scenarios (SEC-01 through SEC-15).
+  - Executed complete Vitest regression suite: 56 test files, 703 tests passing (100% pass rate).
+  - Executed Playwright visual release gate: 57 tests passing.
+  - TypeScript (`tsc --noEmit`) 0 errors; ESLint (`next lint`) 0 errors, 0 warnings; Next.js build 39 routes clean.
+  - Authored `docs/phases/PHASE_10_3_COMPLETION_REPORT.md`, `docs/phases/PHASE_10_4_ACCEPTANCE_REPORT.md`, and `docs/phases/PHASE_10_FINAL_COMPLETION_REPORT.md`.
+
+---
+
 ## [0.10.13] — 2026-11-15
 ### Phase 10.1: Task 10.1.5.2.2 — Release Gate Runner Safety & Verification Closure
 
