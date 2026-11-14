@@ -3,7 +3,10 @@ import { PrismaClient, ContentType, ServiceCategory } from "@prisma/client";
 import { publishContentItem } from "@/server/services/cms/publishing.service";
 import { createContentItem } from "@/server/repositories/cms/content-item.repo";
 import { createWorkingRevision } from "@/server/repositories/cms/content-revision.repo";
-import { SchemaValidationError } from "@/server/repositories/cms/cms-repository.errors";
+import {
+  SchemaValidationError,
+  ConcurrencyConflictError,
+} from "@/server/repositories/cms/cms-repository.errors";
 
 const TEST_DATABASE_URL =
   process.env.TEST_DATABASE_URL ||
@@ -210,6 +213,284 @@ describe("Task 10.1.6: Real PostgreSQL 9-Step Atomic Publishing Transaction Inte
     });
     expect(revAfterFailure?.revisionStatus).toBe("WORKING_DRAFT");
     expect(revAfterFailure?.isPublishedSnapshot).toBe(false);
+  });
+
+  describe("Task 10.4.6 Finding B: PostgreSQL Concurrent Publishing Race Protection", () => {
+    it("guarantees exactly one winner and one controlled conflict when two requests publish the same ContentItem with the same expectedVersion", async () => {
+      if (!isDbAvailable) {
+        console.warn("Skipping real database test: DB unavailable");
+        return;
+      }
+
+      // Read current version of testContentItemId (should be 2)
+      const currentItem = await dbClient.contentItem.findUniqueOrThrow({
+        where: { id: testContentItemId },
+      });
+      const initialVersion = currentItem.version;
+
+      // Count existing publication audit logs for this item
+      const initialAuditCount = await dbClient.auditLog.count({
+        where: {
+          entityId: testContentItemId,
+          action: "CONTENT_PUBLISHED",
+        },
+      });
+
+      // Create two competing working revisions
+      const revA = await createWorkingRevision(
+        {
+          contentItemId: testContentItemId,
+          title: "Competing Revision A",
+          authorName: "Editor Alpha",
+          snapshotData: {
+            title: "Service Alpha Competitor",
+            shortDesc: "Alpha short description",
+            fullDesc: "Alpha full description for race testing.",
+            icon: "Terminal",
+            category: ServiceCategory.WEB_DEVELOPMENT,
+            deliverables: ["Alpha Deliverable"],
+            technologies: ["Node.js"],
+            startingPriceInr: 30000,
+            currency: "INR",
+            isFeatured: false,
+            orderIndex: 10,
+          },
+        },
+        dbClient as any
+      );
+
+      const revB = await createWorkingRevision(
+        {
+          contentItemId: testContentItemId,
+          title: "Competing Revision B",
+          authorName: "Editor Beta",
+          snapshotData: {
+            title: "Service Beta Competitor",
+            shortDesc: "Beta short description",
+            fullDesc: "Beta full description for race testing.",
+            icon: "Terminal",
+            category: ServiceCategory.WEB_DEVELOPMENT,
+            deliverables: ["Beta Deliverable"],
+            technologies: ["PostgreSQL"],
+            startingPriceInr: 35000,
+            currency: "INR",
+            isFeatured: false,
+            orderIndex: 11,
+          },
+        },
+        dbClient as any
+      );
+
+      // Launch both publish operations simultaneously targeting the same expectedVersion
+      const [resultA, resultB] = await Promise.allSettled([
+        publishContentItem({
+          contentItemId: testContentItemId,
+          revisionId: revA.id,
+          expectedVersion: initialVersion,
+          actor: adminActor,
+          changeSummary: "Race attempt Alpha",
+        }),
+        publishContentItem({
+          contentItemId: testContentItemId,
+          revisionId: revB.id,
+          expectedVersion: initialVersion,
+          actor: adminActor,
+          changeSummary: "Race attempt Beta",
+        }),
+      ]);
+
+      // Assertion 1 & 2: Exactly one succeeds and exactly one fails
+      const fulfilledResults = [resultA, resultB].filter(
+        (r) => r.status === "fulfilled"
+      ) as PromiseFulfilledResult<any>[];
+      const rejectedResults = [resultA, resultB].filter(
+        (r) => r.status === "rejected"
+      ) as PromiseRejectedResult[];
+
+      expect(fulfilledResults.length).toBe(1);
+      expect(rejectedResults.length).toBe(1);
+
+      // Assertion 3: Rejection is a typed ConcurrencyConflictError
+      expect(rejectedResults[0]!.reason).toBeInstanceOf(ConcurrencyConflictError);
+
+      const winnerResult = fulfilledResults[0]!.value;
+      const winnerRevId = winnerResult.publishedRevisionId;
+      const loserRevId = winnerRevId === revA.id ? revB.id : revA.id;
+      const expectedNewVersion = initialVersion + 1;
+
+      expect(winnerResult.version).toBe(expectedNewVersion);
+
+      // Assertion 4: Final published pointer references the winning revision
+      const finalItem = await dbClient.contentItem.findUniqueOrThrow({
+        where: { id: testContentItemId },
+      });
+      expect(finalItem.version).toBe(expectedNewVersion);
+      expect(finalItem.currentPublishedRevisionId).toBe(winnerRevId);
+
+      // Assertion 5: Domain materialization matches the winning revision
+      const materializedService = await dbClient.service.findUniqueOrThrow({
+        where: { contentItemId: testContentItemId },
+      });
+      const winningTitle =
+        winnerRevId === revA.id
+          ? "Service Alpha Competitor"
+          : "Service Beta Competitor";
+      expect(materializedService.title).toBe(winningTitle);
+
+      // Assertion 6: Exactly one publication audit event was created
+      const finalAuditCount = await dbClient.auditLog.count({
+        where: {
+          entityId: testContentItemId,
+          action: "CONTENT_PUBLISHED",
+        },
+      });
+      expect(finalAuditCount).toBe(initialAuditCount + 1);
+
+      // Assertion 7: No losing transaction mutations remain
+      const loserRevision = await dbClient.contentRevision.findUniqueOrThrow({
+        where: { id: loserRevId },
+      });
+      expect(loserRevision.revisionStatus).toBe("WORKING_DRAFT");
+      expect(loserRevision.isPublishedSnapshot).toBe(false);
+
+      // Assertion 8: Subsequent publish with the new expected version succeeds cleanly
+      const followUpRev = await createWorkingRevision(
+        {
+          contentItemId: testContentItemId,
+          title: "Follow-up Valid Revision",
+          authorName: "Editor Lead",
+          snapshotData: {
+            title: "Service Follow-up Title",
+            shortDesc: "Follow-up short description",
+            fullDesc: "Follow-up full description.",
+            icon: "Terminal",
+            category: ServiceCategory.WEB_DEVELOPMENT,
+            deliverables: ["Follow-up"],
+            technologies: ["Node.js"],
+            startingPriceInr: 40000,
+            currency: "INR",
+            isFeatured: false,
+            orderIndex: 12,
+          },
+        },
+        dbClient as any
+      );
+
+      const subsequentResult = await publishContentItem({
+        contentItemId: testContentItemId,
+        revisionId: followUpRev.id,
+        expectedVersion: expectedNewVersion,
+        actor: adminActor,
+        changeSummary: "Subsequent publication after race resolution",
+      });
+
+      expect(subsequentResult.version).toBe(expectedNewVersion + 1);
+      expect(subsequentResult.publishedRevisionId).toBe(followUpRev.id);
+    });
+
+    it("allows concurrent publishing of separate ContentItems without unnecessary serialization", async () => {
+      if (!isDbAvailable) {
+        console.warn("Skipping real database test: DB unavailable");
+        return;
+      }
+
+      // Create two distinct ContentItems
+      const item1 = await createContentItem(
+        {
+          slug: `concurrent-item-1-${Date.now()}`,
+          contentType: ContentType.SERVICE,
+        },
+        dbClient as any
+      );
+
+      const item2 = await createContentItem(
+        {
+          slug: `concurrent-item-2-${Date.now()}`,
+          contentType: ContentType.SERVICE,
+        },
+        dbClient as any
+      );
+
+      const rev1 = await createWorkingRevision(
+        {
+          contentItemId: item1.id,
+          title: "Service 1 Revision",
+          authorName: "Editor 1",
+          snapshotData: {
+            title: "Distinct Service 1",
+            shortDesc: "Desc 1",
+            fullDesc: "Full desc 1",
+            icon: "Terminal",
+            category: ServiceCategory.WEB_DEVELOPMENT,
+            deliverables: ["D1"],
+            technologies: ["Tech 1"],
+            startingPriceInr: 10000,
+            currency: "INR",
+            isFeatured: false,
+            orderIndex: 1,
+          },
+        },
+        dbClient as any
+      );
+
+      const rev2 = await createWorkingRevision(
+        {
+          contentItemId: item2.id,
+          title: "Service 2 Revision",
+          authorName: "Editor 2",
+          snapshotData: {
+            title: "Distinct Service 2",
+            shortDesc: "Desc 2",
+            fullDesc: "Full desc 2",
+            icon: "Terminal",
+            category: ServiceCategory.WEB_DEVELOPMENT,
+            deliverables: ["D2"],
+            technologies: ["Tech 2"],
+            startingPriceInr: 20000,
+            currency: "INR",
+            isFeatured: false,
+            orderIndex: 2,
+          },
+        },
+        dbClient as any
+      );
+
+      // Concurrently publish item1 and item2 (both have initial version 1)
+      const [res1, res2] = await Promise.all([
+        publishContentItem({
+          contentItemId: item1.id,
+          revisionId: rev1.id,
+          expectedVersion: 1,
+          actor: adminActor,
+        }),
+        publishContentItem({
+          contentItemId: item2.id,
+          revisionId: rev2.id,
+          expectedVersion: 1,
+          actor: adminActor,
+        }),
+      ]);
+
+      expect(res1.contentItemId).toBe(item1.id);
+      expect(res1.version).toBe(2);
+      expect(res2.contentItemId).toBe(item2.id);
+      expect(res2.version).toBe(2);
+
+      // Clean up the two test items (best effort, trigger protects published revisions)
+      try {
+        await dbClient.service.deleteMany({
+          where: { contentItemId: { in: [item1.id, item2.id] } },
+        });
+        await dbClient.contentRevision.deleteMany({
+          where: { contentItemId: { in: [item1.id, item2.id] } },
+        });
+        await dbClient.contentItem.deleteMany({
+          where: { id: { in: [item1.id, item2.id] } },
+        });
+      } catch {
+        // Intentional: PostgreSQL trigger protects published revision snapshots from deletion
+      }
+    });
   });
 });
 

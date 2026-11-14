@@ -1,29 +1,32 @@
 ---
-updated: 2026-11-15T01:45:00+05:30
+updated: 2026-11-15T02:07:00+05:30
 ---
 
 # Project State — VOIDTECH SOLUTION
 
 ## Current Position
 
-**Milestone:** Phase 10 — Admin CMS COMPLETE (All sub-phases 10.1, 10.2, 10.3, 10.4 Verified & Accepted)
+**Milestone:** Phase 10 — Admin CMS COMPLETE (Tasks 10.1–10.4 + Task 10.4.6 Security & Integrity Remediation VERIFIED)
 **Phase:** 10 — Admin CMS
-**Status:** complete (Phase 10 is fully complete and empirically verified. 703 Vitest tests pass across 56 suites; 57 visual gate tests pass on port 3005; SEC-01–15 security threat audit verified; 39 routes build cleanly; 0 typecheck errors; 0 ESLint errors. Phase 11 [SEO] pending owner authorization.)
+**Status:** complete (Task 10.4.6 Critical CMS Security & Integrity Remediation is complete and verified. Findings A, B, and C closed: Draft Mode fail-closed secret & open redirect prevention, PostgreSQL atomic OCC publishing row lock & conditional updateMany, fabricated static testimonial removal & safe empty fallback. 726 Vitest tests pass across 57 suites; 57 visual gate tests pass on port 3005; SEC-01–15 security threat audit verified; 39 routes build cleanly; 0 typecheck errors; 0 ESLint errors. Phase 11 [SEO] pending owner authorization.)
 **Visual Reference:** SmartStruct Cybernetic Layout + Official Purple/Violet Brand Identity  
 
 ## Last Action
 
-- Completed Phase 10: Admin CMS in its entirety:
-  - Phase 10.1: 9-step atomic publishing transaction, 20-draft pruning, domain repos, storage abstraction, Sharp WebP media pipeline, GFM markdown parser, 5-scenario static fallbacks.
-  - Phase 10.2: CMS Overview Hub (`/admin/cms`), Services, Pricing (with RBAC locks), Portfolio, FAQs, Testimonials (with legal consent verification), Page Sections, Media Library, and visual diff sheet.
-  - Phase 10.3: Multi-route public hydration across 8 routes, Next.js Draft Mode preview with amber HUD banner, mandatory `X-Robots-Tag: noindex, nofollow`, and on-demand cache revalidation.
-  - Phase 10.4: SEC-01 through SEC-15 threat audit, 703 Vitest tests passing (56 suites), 57 visual gate tests passing on port 3005, clean build across 39 routes.
-  - Authored completion reports: `PHASE_10_1_COMPLETION_REPORT.md`, `PHASE_10_2_COMPLETION_REPORT.md`, `PHASE_10_3_COMPLETION_REPORT.md`, `PHASE_10_4_ACCEPTANCE_REPORT.md`, `PHASE_10_FINAL_COMPLETION_REPORT.md`.
-  - Maintained zero access to production Neon and zero Cloudflare/Vercel deployments.
+- Executed Task 10.4.6 — Critical CMS Security & Integrity Remediation:
+  - Finding A: Removed hardcoded secret fallback, enforced fail-closed HTTP 500 when `DRAFT_MODE_SECRET` is missing/empty, implemented crypto constant-time string comparison, blocked open redirects via `safeInternalRedirectPath` (protocol-relative, backslash, encoded bypasses blocked), and added `Cache-Control: no-store` and `X-Robots-Tag: noindex, nofollow`.
+  - Finding B: Added PostgreSQL row-level lock `SELECT id FROM content_items WHERE id = $1 FOR UPDATE` within publishing transaction, fresh read, and atomic conditional update `updateMany({ where: { id, version: expectedVersion } })`. Verified exactly one winner and one controlled conflict under real concurrent load.
+  - Finding C: Completely removed `staticTestimonials` and all fabricated client names, companies, statements, and synthetic DocuSign URLs from `testimonials.repo.ts`. Implemented safe empty list fallback `[]` for offline/empty states.
+  - Authored remediation report: `docs/phases/PHASE_10_4_6_SECURITY_REMEDIATION_REPORT.md`.
+  - Added regression test suites: `tests/unit/draft-mode.test.tsx` (15 tests passing), `tests/unit/testimonials.repo.test.tsx` (10 tests passing), updated `tests/integration/cms-services/publishing.integration.test.ts` (4 real PostgreSQL concurrency tests passing).
+  - Verified full test regression: 726/726 Vitest tests passing across 57 suites (100% pass rate).
+  - Verified visual release gate: 57/57 Playwright tests passing on port 3005 across 8 routes and 7 viewports.
+  - Verified compilation: `npm run typecheck` (0 errors), `npm run lint` (0 errors/warnings).
+  - Maintained strict database safety: production Neon was never accessed, contacted, migrated, or modified.
 
 ## Next Steps
 
-1. Present Final Phase 10 Acceptance Matrix to Project Owner.
+1. Present Task 10.4.6 Remediation Report and Final Evidence to Project Owner.
 2. Halt and await explicit owner authorization before proceeding to Phase 11 (SEO).
 
 ## Active Decisions

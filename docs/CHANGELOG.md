@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.15] — 2026-11-15
+### Task 10.4.6: Critical CMS Security & Integrity Remediation
+
+#### Remediated & Hardened
+- **Finding A: Draft Mode Hardcoded Secret Fallback & Open Redirect Elimination:**
+  - Removed `voidtech_draft_preview_secret_2026` fallback string; endpoint now fails closed with HTTP 500 `PREVIEW_UNAVAILABLE` when `DRAFT_MODE_SECRET` is unconfigured or empty.
+  - Implemented `crypto.timingSafeEqual` constant-time string comparison to prevent timing side-channel attacks on preview authentication tokens.
+  - Built `safeInternalRedirectPath` blocking external origins, protocol-relative paths (`//`), backslashes (`\`), encoded slashes/backslashes (`%2f`, `%5c`), and control characters.
+  - Added strict `Cache-Control: no-store, no-cache, must-revalidate, max-age=0`, `Pragma: no-cache`, and `X-Robots-Tag: noindex, nofollow` headers to `/api/draft-mode/enable` and `/api/draft-mode/disable`.
+  - Added comprehensive test suite in `tests/unit/draft-mode.test.tsx` (15 passing tests).
+- **Finding B: PostgreSQL Publishing Transaction Optimistic Concurrency Race Remediation:**
+  - Added PostgreSQL row-level lock `SELECT id FROM content_items WHERE id = $1 FOR UPDATE` inside the publishing transaction to serialize concurrent publication requests targeting the same ContentItem.
+  - Enforced atomic conditional OCC update via `tx.contentItem.updateMany({ where: { id, version: expectedVersion } })`, triggering `ConcurrencyConflictError` if `count === 0`.
+  - Guaranteed full transaction atomicity: domain record upsert, revision status updates, pointer promotions, and audit event logging occur in the same transaction with full rollback on conflict.
+  - Verified with real PostgreSQL concurrent integration tests (`tests/integration/cms-services/publishing.integration.test.ts`): exactly 1 winner, 1 conflict, zero partial state, exactly 1 audit event.
+- **Finding C: Fabricated Testimonial Fallback Elimination & Legal Integrity:**
+  - Removed `staticTestimonials` and all fabricated client names, companies, statements, and synthetic DocuSign URLs from `src/server/repositories/testimonials.repo.ts`.
+  - Implemented safe empty list fallback `[]` when the database has no records or is unreachable.
+  - Enforced database invariants: `isActive: true`, `verificationStatus: 'VERIFIED'`, `clientConsentStatus: 'GRANTED'`, and `publishedAt: { not: null }`.
+  - Added dedicated test suite `tests/unit/testimonials.repo.test.tsx` (10 passing tests).
+- **Test Metrics:**
+  - Full Vitest suite: 57 test files, 726 tests passing (100% pass rate).
+  - Playwright visual release gate: 57/57 tests passing on port 3005 across 8 routes and 7 viewports.
+  - `npm run typecheck` (0 errors), `npm run lint` (0 errors, 0 warnings).
+  - Authored `docs/phases/PHASE_10_4_6_SECURITY_REMEDIATION_REPORT.md`.
+
+---
+
 ## [0.10.14] — 2026-11-15
 ### Phase 10: Complete Admin CMS (Backend Foundation, Admin Dashboard, Public Integration & Final Acceptance)
 

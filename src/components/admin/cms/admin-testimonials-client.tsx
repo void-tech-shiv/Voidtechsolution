@@ -53,7 +53,7 @@ export function AdminTestimonialsClient({
   const handleRecordConsent = async (id: string) => {
     const url = prompt(
       "Enter client written consent documentation URL (e.g. DocuSign or verified confirmation):",
-      "https://voidtechsolution.codedev.co.in/legal/consent-evidence"
+      ""
     );
     if (!url) return;
 

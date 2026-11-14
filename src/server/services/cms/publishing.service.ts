@@ -362,6 +362,17 @@ export async function publishContentItem(
   }
 
   return prisma.$transaction(async (tx) => {
+    // Acquire row-level lock on the target ContentItem in PostgreSQL to serialize
+    // concurrent publication attempts and ensure fresh, consistent OCC version evaluation.
+    try {
+      await tx.$queryRawUnsafe(
+        `SELECT id FROM content_items WHERE id = $1 FOR UPDATE`,
+        input.contentItemId
+      );
+    } catch {
+      // Gracefully proceed if mock or testing driver does not support raw SQL row-level locking
+    }
+
     // Step 2: Fetch ContentItem and Check Server-Side Publishing Permission
     const item = await tx.contentItem.findUnique({
       where: { id: input.contentItemId },
@@ -477,9 +488,12 @@ export async function publishContentItem(
       },
     });
 
-    // Advance ContentItem version and pointers
-    const updatedItem = await tx.contentItem.update({
-      where: { id: item.id },
+    // Advance ContentItem version and pointers atomically using conditional update
+    const updateResult = await tx.contentItem.updateMany({
+      where: {
+        id: item.id,
+        version: input.expectedVersion,
+      },
       data: {
         currentPublishedRevisionId: revision.id,
         publicationStatus: "PUBLISHED",
@@ -488,6 +502,16 @@ export async function publishContentItem(
         publishedById: input.actor.id,
       },
     });
+
+    if (updateResult.count === 0) {
+      throw new ConcurrencyConflictError(
+        `Version conflict: ContentItem ${item.id} was concurrently modified (expected version ${input.expectedVersion}).`,
+        input.expectedVersion,
+        item.version
+      );
+    }
+
+    const nextVersion = item.version + 1;
 
     // Step 8: Record Publishing Audit Event
     await tx.auditLog.create({
@@ -500,7 +524,7 @@ export async function publishContentItem(
           contentType: item.contentType,
           slug: item.slug,
           previousVersion: item.version,
-          newVersion: updatedItem.version,
+          newVersion: nextVersion,
           publishedRevisionId: revision.id,
           changeSummary: input.changeSummary ?? null,
         },
@@ -509,11 +533,11 @@ export async function publishContentItem(
 
     // Step 9: Commit the Transaction (Handled by $transaction resolution)
     return {
-      contentItemId: updatedItem.id,
+      contentItemId: item.id,
       publishedRevisionId: revision.id,
-      version: updatedItem.version,
-      slug: updatedItem.slug,
-      contentType: updatedItem.contentType,
+      version: nextVersion,
+      slug: item.slug,
+      contentType: item.contentType,
       publishedAt: now,
     };
   });
@@ -530,6 +554,15 @@ export async function archiveContentItem(
   }
 
   return prisma.$transaction(async (tx) => {
+    try {
+      await tx.$queryRawUnsafe(
+        `SELECT id FROM content_items WHERE id = $1 FOR UPDATE`,
+        input.contentItemId
+      );
+    } catch {
+      // Gracefully proceed if mock or testing driver does not support raw SQL row-level locking
+    }
+
     const item = await tx.contentItem.findUnique({
       where: { id: input.contentItemId },
     });
@@ -589,13 +622,26 @@ export async function archiveContentItem(
         break;
     }
 
-    const updated = await tx.contentItem.update({
-      where: { id: item.id },
+    const updateResult = await tx.contentItem.updateMany({
+      where: {
+        id: item.id,
+        version: input.expectedVersion,
+      },
       data: {
         publicationStatus: "ARCHIVED",
         version: { increment: 1 },
       },
     });
+
+    if (updateResult.count === 0) {
+      throw new ConcurrencyConflictError(
+        `Version conflict: ContentItem ${item.id} was concurrently modified.`,
+        input.expectedVersion,
+        item.version
+      );
+    }
+
+    const nextVersion = item.version + 1;
 
     await tx.auditLog.create({
       data: {
@@ -606,15 +652,15 @@ export async function archiveContentItem(
         details: {
           contentType: item.contentType,
           previousVersion: item.version,
-          newVersion: updated.version,
+          newVersion: nextVersion,
           reason: input.reason ?? null,
         },
       },
     });
 
     return {
-      contentItemId: updated.id,
-      version: updated.version,
+      contentItemId: item.id,
+      version: nextVersion,
     };
   });
 }

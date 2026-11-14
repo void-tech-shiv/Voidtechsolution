@@ -131,6 +131,24 @@ flowchart LR
 
 ---
 
+### Task 10.4.6: Critical CMS Security & Integrity Remediation (COMPLETE & VERIFIED)
+- **Status:** **COMPLETE & VERIFIED**
+- **Objective:** Remediate three verified source-level security and integrity findings discovered during Phase 10 review.
+- **Delivered Remediations:**
+  - **Finding A (Draft Mode Security):** Removed hardcoded secret fallback `voidtech_draft_preview_secret_2026`, enforced fail-closed HTTP 500 when `DRAFT_MODE_SECRET` is missing/empty, implemented crypto `timingSafeEqual`, blocked open redirects via `safeInternalRedirectPath` (protocol-relative, backslash, encoded bypasses blocked), and added `Cache-Control: no-store` and `X-Robots-Tag: noindex, nofollow`.
+  - **Finding B (Publishing OCC Concurrency):** Added PostgreSQL row-level lock `SELECT id FROM content_items WHERE id = $1 FOR UPDATE` within the transaction, followed by fresh read and atomic conditional update `updateMany({ where: { id, version: expectedVersion } })`. Verified exactly one winner and one controlled conflict under real concurrent load.
+  - **Finding C (Fabricated Testimonial Fallback):** Completely removed `staticTestimonials` and fabricated customer data/DocuSign URLs. Implemented safe empty list fallback `[]` for offline/empty states. Preserved dual audit & legal consent verification.
+- **Verification Evidence:**
+  - `tests/unit/draft-mode.test.tsx` (15 tests passing).
+  - `tests/integration/cms-services/publishing.integration.test.ts` (4 real PostgreSQL concurrency tests passing).
+  - `tests/unit/testimonials.repo.test.tsx` (10 tests passing).
+  - Full Vitest suite: 57 files, 726 tests passing (100% pass rate).
+  - Playwright visual release gate: 57 tests passing on port 3005.
+  - TypeScript & ESLint: 0 errors.
+  - Authored `PHASE_10_4_6_SECURITY_REMEDIATION_REPORT.md`.
+
+---
+
 ## 3. Dependency Graph & Risk Mitigation
 
 | Identified Risk | Impact | Mitigation Strategy |

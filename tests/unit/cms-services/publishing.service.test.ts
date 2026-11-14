@@ -18,9 +18,11 @@ import { ContentType, ServiceCategory } from "@prisma/client";
 // Mock prisma transaction and models
 vi.mock("@/lib/prisma", () => {
   const mockTx = {
+    $queryRawUnsafe: vi.fn().mockResolvedValue([]),
     contentItem: {
       findUnique: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     contentRevision: {
       findUnique: vi.fn(),

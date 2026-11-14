@@ -1,10 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type {
-  Testimonial,
-  TestimonialVerificationStatus,
-  ClientConsentStatus,
-} from "@prisma/client";
-
+import type { Testimonial } from "@prisma/client";
 
 /**
  * VOIDTECH SOLUTION — Testimonial Repository
@@ -14,86 +9,23 @@ import type {
  * - verificationStatus === 'VERIFIED'
  * - clientConsentStatus === 'GRANTED'
  * - isActive === true
+ * - publishedAt IS NOT NULL
+ * 
+ * In accordance with ethical standards and legal compliance:
+ * - No fabricated client endorsements, invented companies, or synthetic testimonials exist.
+ * - If no verified, consented testimonials exist, or the database is unavailable,
+ *   queries return a safe empty list ([]).
  */
 
-export const staticTestimonials: Array<
-  Omit<Testimonial, "id" | "contentItemId" | "createdAt" | "updatedAt" | "verifiedById" | "verifiedAt" | "clientConsentRecordedAt" | "consentEvidenceUrl" | "publishedAt"> & { id: string }
-> = [
-  {
-    id: "test-01",
-    clientName: "Aarav Sharma",
-    clientRole: "Founder & CEO",
-    clientCompany: "FinPulse Technologies",
-    content:
-      "VOIDTECH transformed our payment gateway architecture. Sub-second latencies and zero downtime during high-volume spikes. Their technical rigor is unmatched.",
-    rating: 5,
-    avatarUrl: "/avatars/aarav.webp",
-    projectSlug: "finpulse-gateway",
-    verificationStatus: "VERIFIED" as TestimonialVerificationStatus,
-    clientConsentStatus: "GRANTED" as ClientConsentStatus,
-    orderIndex: 1,
-    isActive: true,
-  },
-  {
-    id: "test-02",
-    clientName: "Elena Rostova",
-    clientRole: "VP of Engineering",
-    clientCompany: "CloudScale Systems",
-    content:
-      "The distributed telemetry system engineered by VOIDTECH gave us real-time observability across 50+ microservices with zero performance overhead.",
-    rating: 5,
-    avatarUrl: "/avatars/elena.webp",
-    projectSlug: "cloudscale-telemetry",
-    verificationStatus: "VERIFIED" as TestimonialVerificationStatus,
-    clientConsentStatus: "GRANTED" as ClientConsentStatus,
-    orderIndex: 2,
-    isActive: true,
-  },
-  {
-    id: "test-03",
-    clientName: "Rohan Varma",
-    clientRole: "Director of Product",
-    clientCompany: "OmniHealth Labs",
-    content:
-      "From database indexing to frontend fluidity, VOIDTECH delivered ahead of schedule. Their attention to accessibility and clean code standards set a high benchmark.",
-    rating: 5,
-    avatarUrl: "/avatars/rohan.webp",
-    projectSlug: "omnihealth-portal",
-    verificationStatus: "VERIFIED" as TestimonialVerificationStatus,
-    clientConsentStatus: "GRANTED" as ClientConsentStatus,
-    orderIndex: 3,
-    isActive: true,
-  },
-];
-
-function mapStaticToTestimonial(data: (typeof staticTestimonials)[number]): Testimonial {
-  return {
-    id: data.id,
-    contentItemId: null,
-    clientName: data.clientName,
-    clientRole: data.clientRole,
-    clientCompany: data.clientCompany,
-    content: data.content,
-    rating: data.rating,
-    avatarUrl: data.avatarUrl || null,
-    projectSlug: data.projectSlug || null,
-    verificationStatus: data.verificationStatus,
-    verifiedById: null,
-    verifiedAt: new Date(),
-    clientConsentStatus: data.clientConsentStatus,
-    clientConsentRecordedAt: new Date(),
-    consentEvidenceUrl: "https://voidtechsolution.codedev.co.in/legal/consent-static",
-    orderIndex: data.orderIndex,
-    isActive: data.isActive,
-    publishedAt: new Date(),
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-}
-
 /**
- * Retrieves public testimonials.
- * Invariant: Must be active, VERIFIED by admin, and GRANTED client consent.
+ * Retrieves public testimonials that satisfy all legal and editorial criteria.
+ * Invariants enforced at the database level:
+ * 1. Must be marked isActive = true.
+ * 2. Must be verified by an authorized administrator (verificationStatus = 'VERIFIED').
+ * 3. Must have explicit client legal consent on record (clientConsentStatus = 'GRANTED').
+ * 4. Must be formally published (publishedAt is not null).
+ * 
+ * Safe Fallback: Returns empty list if database is unreachable or no records qualify.
  */
 export async function getActiveTestimonials(): Promise<Testimonial[]> {
   try {
@@ -102,22 +34,24 @@ export async function getActiveTestimonials(): Promise<Testimonial[]> {
         isActive: true,
         verificationStatus: "VERIFIED",
         clientConsentStatus: "GRANTED",
+        publishedAt: { not: null },
       },
       orderBy: { orderIndex: "asc" },
     });
 
-    if (testimonials.length > 0) {
-      return testimonials;
-    }
+    return testimonials;
   } catch (error) {
-    console.warn("[testimonials.repo] Database query failed, using static fallback:", error);
+    console.warn(
+      "[testimonials.repo] Database query failed, returning safe empty list:",
+      error
+    );
+    return [];
   }
-
-  return staticTestimonials.map(mapStaticToTestimonial);
 }
 
 /**
  * Retrieves all testimonials for administrative review.
+ * Returns an empty array if database is unreachable or unseeded.
  */
 export async function getAllTestimonialsAdmin(): Promise<Testimonial[]> {
   try {
@@ -131,13 +65,16 @@ export async function getAllTestimonialsAdmin(): Promise<Testimonial[]> {
       },
     });
   } catch (error) {
-    console.warn("[testimonials.repo] Admin query failed, using static fallback:", error);
-    return staticTestimonials.map(mapStaticToTestimonial);
+    console.warn(
+      "[testimonials.repo] Admin query failed, returning safe empty list:",
+      error
+    );
+    return [];
   }
 }
 
 /**
- * Verifies a testimonial (Audit step).
+ * Verifies a testimonial (Audit step by authorized administrator).
  */
 export async function verifyTestimonial(
   id: string,
@@ -154,7 +91,7 @@ export async function verifyTestimonial(
 }
 
 /**
- * Records confirmed client legal consent.
+ * Records confirmed client legal consent with proof reference.
  */
 export async function recordClientConsent(
   id: string,
