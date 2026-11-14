@@ -105,10 +105,15 @@ Because `admin_sessions` was already created in Neon with the exact schema match
 
 ---
 
-## 4. Database Safety Gate Status
+## 4. Database Safety Gate & Dedicated Development Branch Strategy
 
 Per the project instructions:
-> "If the configured Neon branch is production, shared, or its purpose cannot be established, do not apply migrations. Before applying it to Neon, obtain explicit user approval after presenting the exact SQL changes, backup recommendation and target branch."
+> "Do NOT modify the primary Neon branch `br-little-bird-bejretq1`. Prepare a safe Neon development migration workflow."
 
-- **Current State:** Awaiting explicit user authorization before running `prisma migrate resolve` and `prisma migrate deploy`.
-- **Recommended User Action:** Review the migration reconciliation above, confirm target branch `br-little-bird-bejretq1` (`neondb`), and authorize migration execution.
+- **Primary Branch Protection:** Primary branch `br-little-bird-bejretq1` remains completely untouched and isolated.
+- **Dedicated Dev Branch Workflow:** Full plans and runbooks have been authored:
+  1. [NEON_DEVELOPMENT_BRANCH_PLAN.md](file:///d:/voidtechsolution/docs/NEON_DEVELOPMENT_BRANCH_PLAN.md): Step-by-step console guide to provision the `development` branch off `br-little-bird-bejretq1`.
+  2. [NEON_MIGRATION_SQL_REVIEW.md](file:///d:/voidtechsolution/docs/NEON_MIGRATION_SQL_REVIEW.md): In-depth SQL audit of all 4 staged migrations.
+  3. [NEON_MIGRATION_EXECUTION_PLAN.md](file:///d:/voidtechsolution/docs/NEON_MIGRATION_EXECUTION_PLAN.md): Complete step-by-step execution, verification, and instant rollback runbook.
+- **Current State:** Awaiting owner branch creation and approval before running `prisma migrate resolve` and `prisma migrate deploy` against the new development branch.
+
