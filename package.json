@@ -17,8 +17,8 @@
     "db:validate": "prisma validate",
     "db:seed": "prisma db seed",
     "cf:build": "npx --yes @opennextjs/cloudflare@1.20.17 build",
-    "preview": "npx --yes @opennextjs/cloudflare@1.20.17 build && npx --yes @opennextjs/cloudflare@1.20.17 preview",
-    "deploy": "npx --yes @opennextjs/cloudflare@1.20.17 build && npx --yes wrangler@4.162.0 deploy"
+    "preview": "npm run cf:build && npx --yes wrangler@4.162.0 dev",
+    "deploy": "npx --yes wrangler@4.162.0 deploy"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
