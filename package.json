@@ -15,7 +15,10 @@
     "test:e2e": "playwright test",
     "prisma:generate": "prisma generate",
     "db:validate": "prisma validate",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "cf:build": "npx --yes @opennextjs/cloudflare@1.20.17 build",
+    "preview": "npx --yes @opennextjs/cloudflare@1.20.17 build && npx --yes @opennextjs/cloudflare@1.20.17 preview",
+    "deploy": "npx --yes @opennextjs/cloudflare@1.20.17 build && npx --yes @opennextjs/cloudflare@1.20.17 deploy"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
