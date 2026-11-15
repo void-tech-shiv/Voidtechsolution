@@ -195,13 +195,15 @@ describe("Neon Migration Verification & Integrity Closure Suite", () => {
   });
 
   // ----------------------------------------------------------------------------
-  // Finding 2: Test the Actual Migration SQL
+  // Finding A: Genuinely Isolated Legacy CRM Migration Fixture Test
   // ----------------------------------------------------------------------------
-  it("MIG-01: Applies actual migration SQL files to verify legacy status normalization and field preservation", async () => {
+  it("MIG-01: Genuinely migrates legacy CRM schema and status values in an isolated PostgreSQL fixture", async () => {
     const ts = Date.now();
+    const schemaName = `fixture_legacy_crm_${ts}`;
+
     const fixtureRecords = [
       {
-        id: `enq_test_new_${ts}`,
+        id: `enq_legacy_new_${ts}`,
         name: "Alice Inbound",
         email: `alice_${ts}@test.com`,
         phone: "+91 98765 00001",
@@ -212,9 +214,11 @@ describe("Neon Migration Verification & Integrity Closure Suite", () => {
         serviceCategory: "WEB_DEVELOPMENT",
         initialStatus: "NEW",
         expectedStatus: "NEW",
+        consentGiven: true,
+        internalNotes: "Triage notes for Alice",
       },
       {
-        id: `enq_test_review_${ts}`,
+        id: `enq_legacy_review_${ts}`,
         name: "Bob UnderReview",
         email: `bob_${ts}@test.com`,
         phone: "+91 98765 00002",
@@ -225,9 +229,11 @@ describe("Neon Migration Verification & Integrity Closure Suite", () => {
         serviceCategory: "MOBILE_DEVELOPMENT",
         initialStatus: "IN_REVIEW",
         expectedStatus: "CONTACTED",
+        consentGiven: true,
+        internalNotes: "Initial review conducted by sales team",
       },
       {
-        id: `enq_test_contacted_${ts}`,
+        id: `enq_legacy_contacted_${ts}`,
         name: "Carol Contacted",
         email: `carol_${ts}@test.com`,
         phone: "+91 98765 00003",
@@ -238,9 +244,11 @@ describe("Neon Migration Verification & Integrity Closure Suite", () => {
         serviceCategory: "API_BACKEND",
         initialStatus: "CONTACTED",
         expectedStatus: "CONTACTED",
+        consentGiven: false,
+        internalNotes: "Follow-up email dispatched",
       },
       {
-        id: `enq_test_converted_${ts}`,
+        id: `enq_legacy_converted_${ts}`,
         name: "Dave Converted",
         email: `dave_${ts}@test.com`,
         phone: "+91 98765 00004",
@@ -251,9 +259,11 @@ describe("Neon Migration Verification & Integrity Closure Suite", () => {
         serviceCategory: "ENTERPRISE_SYSTEMS",
         initialStatus: "CONVERTED",
         expectedStatus: "WON",
+        consentGiven: true,
+        internalNotes: "Contract signed, project onboarded",
       },
       {
-        id: `enq_test_archived_${ts}`,
+        id: `enq_legacy_archived_${ts}`,
         name: "Eve Archived",
         email: `eve_${ts}@test.com`,
         phone: "+91 98765 00005",
@@ -264,91 +274,236 @@ describe("Neon Migration Verification & Integrity Closure Suite", () => {
         serviceCategory: "DESIGN_CREATIVE",
         initialStatus: "ARCHIVED",
         expectedStatus: "ON_HOLD",
+        consentGiven: null,
+        internalNotes: "Dormant enquiry parked for future review",
       },
     ];
 
-    // Insert representative fixture records with rich fields
-    for (const rec of fixtureRecords) {
-      testIds.enquiryIds.push(rec.id);
-      // Insert with initial status (simulating pre-migration state)
-      // Since EnquiryStatus in local test DB already has extended values, insert using valid enum value or initial
-      const insertStatus = (rec.initialStatus === "IN_REVIEW" || rec.initialStatus === "CONVERTED" || rec.initialStatus === "ARCHIVED")
-        ? "NEW"
-        : rec.initialStatus;
+    try {
+      // 1. Create genuinely isolated test schema
+      await db.$executeRawUnsafe(`CREATE SCHEMA "${schemaName}";`);
+      await db.$executeRawUnsafe(`SET search_path = "${schemaName}", public;`);
+
+      // 2. Construct authentic original pre-CRM legacy schema (from 20261112000000_init)
+      await db.$executeRawUnsafe(`
+        CREATE TYPE "${schemaName}"."EnquiryStatus" AS ENUM ('NEW', 'IN_REVIEW', 'CONTACTED', 'CONVERTED', 'ARCHIVED');
+      `);
 
       await db.$executeRawUnsafe(`
-        INSERT INTO "enquiries" (
-          "id", "name", "email", "phone", "companyName", "budgetRange", 
-          "timeline", "message", "serviceCategory", "status", "createdAt", "updatedAt"
-        ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9::"ServiceCategory", $10::"EnquiryStatus", NOW(), NOW()
+        CREATE TABLE "${schemaName}"."admin_users" (
+          "id" TEXT PRIMARY KEY,
+          "email" TEXT UNIQUE NOT NULL,
+          "passwordHash" TEXT NOT NULL,
+          "name" TEXT NOT NULL,
+          "role" "UserRole" NOT NULL DEFAULT 'ADMIN',
+          "isActive" BOOLEAN NOT NULL DEFAULT true,
+          "lastLoginAt" TIMESTAMP(3),
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
-      `, rec.id, rec.name, rec.email, rec.phone, rec.companyName, rec.budgetRange, rec.timeline, rec.message, rec.serviceCategory, insertStatus);
-    }
+      `);
 
-    // Read the ACTUAL migration SQL from disk
-    const migPath1 = path.join(process.cwd(), "prisma/migrations/20261113000000_crm_lead_pipeline/migration.sql");
-    const migPath2 = path.join(process.cwd(), "prisma/migrations/20261113010000_crm_status_mapping_correction/migration.sql");
-    expect(fs.existsSync(migPath1)).toBe(true);
-    expect(fs.existsSync(migPath2)).toBe(true);
+      await db.$executeRawUnsafe(`
+        CREATE TABLE "${schemaName}"."enquiries" (
+          "id" TEXT PRIMARY KEY,
+          "name" TEXT NOT NULL,
+          "email" TEXT NOT NULL,
+          "phone" TEXT,
+          "companyName" TEXT,
+          "serviceCategory" "ServiceCategory" NOT NULL DEFAULT 'WEB_DEVELOPMENT',
+          "budgetRange" TEXT,
+          "timeline" TEXT,
+          "message" TEXT NOT NULL,
+          "selectedPackage" TEXT,
+          "additionalConfig" JSONB,
+          "referenceUrl" TEXT,
+          "consentGiven" BOOLEAN,
+          "status" "${schemaName}"."EnquiryStatus" NOT NULL DEFAULT 'NEW',
+          "internalNotes" TEXT,
+          "ipHash" TEXT,
+          "userAgent" TEXT,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
 
-    const migSql1 = fs.readFileSync(migPath1, "utf-8");
-    const migSql2 = fs.readFileSync(migPath2, "utf-8");
+      // 3. Insert genuine legacy records with authentic legacy enum values
+      for (const rec of fixtureRecords) {
+        await db.$executeRawUnsafe(`
+          INSERT INTO "${schemaName}"."enquiries" (
+            "id", "name", "email", "phone", "companyName", "budgetRange",
+            "timeline", "message", "serviceCategory", "status", "consentGiven", "internalNotes", "createdAt", "updatedAt"
+          ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8, $9::"ServiceCategory", $10::"${schemaName}"."EnquiryStatus", $11, $12, NOW(), NOW()
+          );
+        `, rec.id, rec.name, rec.email, rec.phone, rec.companyName, rec.budgetRange, rec.timeline, rec.message, rec.serviceCategory, rec.initialStatus, rec.consentGiven, rec.internalNotes);
+      }
 
-    // 1. First migration statements (DDL + note backfill):
-    const stmts1 = splitSqlStatements(migSql1);
-    expect(stmts1.length).toBeGreaterThanOrEqual(10);
+      // Verify that all 5 records are inserted with their exact initial legacy statuses
+      const preMigrationRows: any = await db.$queryRawUnsafe(`
+        SELECT "id", "status"::text as status FROM "${schemaName}"."enquiries" ORDER BY "id";
+      `);
+      expect(preMigrationRows).toHaveLength(5);
+      const preMap = new Map(preMigrationRows.map((r: any) => [r.id, r.status]));
+      for (const rec of fixtureRecords) {
+        expect(preMap.get(rec.id)).toBe(rec.initialStatus);
+      }
 
-    // 2. Second migration updates (all 4 status mapping queries):
-    const stmts2 = splitSqlStatements(migSql2);
-    const updateStmts2 = stmts2.filter(s => s.includes('UPDATE "enquiries"'));
-    expect(updateStmts2.length).toBe(4);
+      // 4. Read the ACTUAL migration SQL from disk
+      const migPath1 = path.join(process.cwd(), "prisma/migrations/20261113000000_crm_lead_pipeline/migration.sql");
+      const migPath2 = path.join(process.cwd(), "prisma/migrations/20261113010000_crm_status_mapping_correction/migration.sql");
+      expect(fs.existsSync(migPath1)).toBe(true);
+      expect(fs.existsSync(migPath2)).toBe(true);
 
-    for (const updateSql of updateStmts2) {
-      // Execute the actual correction migration SQL statement
-      await db.$executeRawUnsafe(updateSql);
-    }
+      const migSql1 = fs.readFileSync(migPath1, "utf-8");
+      const migSql2 = fs.readFileSync(migPath2, "utf-8");
 
-    // Assert that the migration statements ran without syntax or constraint errors
-    // Now verify specific transitions with the actual SQL clauses on targeted fixture IDs:
-    await db.$executeRawUnsafe(`UPDATE "enquiries" SET "status" = 'CONTACTED' WHERE "id" = $1;`, fixtureRecords[1]!.id);
-    await db.$executeRawUnsafe(`UPDATE "enquiries" SET "status" = 'WON' WHERE "id" = $1;`, fixtureRecords[3]!.id);
-    await db.$executeRawUnsafe(`UPDATE "enquiries" SET "status" = 'ON_HOLD' WHERE "id" = $1;`, fixtureRecords[4]!.id);
+      // 5. Execute Migration 1: DDL + note backfill (runs in search_path of schemaName)
+      const stmts1 = splitSqlStatements(migSql1);
+      expect(stmts1.length).toBeGreaterThanOrEqual(10);
 
-    // Verify all 5 records have the exact expected target status AND untouched original fields
-    for (const rec of fixtureRecords) {
-      const rows: any = await db.$queryRawUnsafe(`
+      for (let i = 0; i < stmts1.length; i++) {
+        const stmt = stmts1[i]!;
+        try {
+          await db.$executeRawUnsafe(stmt);
+        } catch (err: any) {
+          throw new Error(`[MIGRATION 1 EXECUTION FAILED] Statement #${i + 1} failed: ${err.message}\nSQL: ${stmt.slice(0, 100)}...`);
+        }
+      }
+
+      // 6. Execute Migration 2: Status mapping data migration
+      const stmts2 = splitSqlStatements(migSql2);
+      expect(stmts2.length).toBe(4);
+
+      for (let i = 0; i < stmts2.length; i++) {
+        const stmt = stmts2[i]!;
+        try {
+          await db.$executeRawUnsafe(stmt);
+        } catch (err: any) {
+          throw new Error(`[MIGRATION 2 EXECUTION FAILED] Statement #${i + 1} failed: ${err.message}\nSQL: ${stmt.slice(0, 100)}...`);
+        }
+      }
+
+      // 7. Verify all 5 records have their exact expected target statuses purely from migration SQL
+      const postMigrationRows: any = await db.$queryRawUnsafe(`
         SELECT 
-          "id", "name", "email", "phone", "companyName", "budgetRange", 
-          "timeline", "message", "serviceCategory"::text as category, "status"::text as status
-        FROM "enquiries" 
-        WHERE "id" = $1;
-      `, rec.id);
+          "id", "name", "email", "phone", "companyName", "budgetRange",
+          "timeline", "message", "serviceCategory"::text as category, "status"::text as status,
+          "consentGiven", "assignedAdminId", "estimatedValueInr", "source", "lastContactedAt", "nextFollowUpAt", "lostReason"
+        FROM "${schemaName}"."enquiries"
+        ORDER BY "id";
+      `);
 
-      expect(rows).toHaveLength(1);
-      const row = rows[0];
+      expect(postMigrationRows).toHaveLength(5);
+      const postMap = new Map(postMigrationRows.map((r: any) => [r.id, r]));
 
-      // Assert expected status
-      expect(row.status).toBe(rec.expectedStatus);
+      for (const rec of fixtureRecords) {
+        const row: any = postMap.get(rec.id);
+        expect(row).toBeDefined();
 
-      // Assert complete field preservation (Zero data loss / Zero corruption)
-      expect(row.name).toBe(rec.name);
-      expect(row.email).toBe(rec.email);
-      expect(row.phone).toBe(rec.phone);
-      expect(row.companyName).toBe(rec.companyName);
-      expect(row.budgetRange).toBe(rec.budgetRange);
-      expect(row.timeline).toBe(rec.timeline);
-      expect(row.message).toBe(rec.message);
-      expect(row.category).toBe(rec.serviceCategory);
+        // Assert that migration SQL (NOT manual updates) mapped the status correctly
+        expect(row.status).toBe(rec.expectedStatus);
+
+        // Assert 100% field preservation across all unrelated fields (zero data corruption)
+        expect(row.name).toBe(rec.name);
+        expect(row.email).toBe(rec.email);
+        expect(row.phone).toBe(rec.phone);
+        expect(row.companyName).toBe(rec.companyName);
+        expect(row.budgetRange).toBe(rec.budgetRange);
+        expect(row.timeline).toBe(rec.timeline);
+        expect(row.message).toBe(rec.message);
+        expect(row.category).toBe(rec.serviceCategory);
+        expect(row.consentGiven).toBe(rec.consentGiven);
+
+        // Assert CRM columns were provisioned with proper defaults
+        expect(row.source).toBe("WEBSITE_CONTACT_FORM");
+        expect(row.assignedAdminId).toBeNull();
+        expect(row.estimatedValueInr).toBeNull();
+      }
+
+      // 8. Verify child CRM tables exist in the fixture schema
+      const childTables: any = await db.$queryRawUnsafe(`
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = $1
+        ORDER BY table_name;
+      `, schemaName);
+      const tableNames = new Set(childTables.map((t: any) => t.table_name));
+
+      expect(tableNames.has("lead_notes")).toBe(true);
+      expect(tableNames.has("lead_follow_ups")).toBe(true);
+      expect(tableNames.has("lead_activities")).toBe(true);
+      expect(tableNames.has("lead_assignments")).toBe(true);
+      expect(tableNames.has("admin_notifications")).toBe(true);
+
+      // 9. Verify note backfill: All non-empty legacy internalNotes were backfilled into lead_notes
+      const backfilledNotes: any = await db.$queryRawUnsafe(`
+        SELECT "id", "enquiryId", "content"
+        FROM "${schemaName}"."lead_notes"
+        ORDER BY "enquiryId";
+      `);
+      expect(backfilledNotes.length).toBe(5);
+
+      // 10. Verify CLOSED update query behavior (Finding C verification):
+      // In PostgreSQL, 'CLOSED' was never an enum label in EnquiryStatus.
+      // Confirm that executing the CLOSED query updates exactly 0 rows:
+      const closedUpdateResult: any = await db.$executeRawUnsafe(
+        `UPDATE "${schemaName}"."enquiries" SET "status" = 'ON_HOLD' WHERE "status"::text = 'CLOSED';`
+      );
+      expect(closedUpdateResult).toBe(0);
+
+    } finally {
+      // 11. Strict Cleanup: Drop isolated schema and restore search_path
+      await db.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schemaName}" CASCADE;`).catch(() => {});
+      await db.$executeRawUnsafe(`SET search_path = public;`).catch(() => {});
     }
+  });
 
-    // Test the CLOSED external-import case:
-    // In PostgreSQL, 'CLOSED' is not a registered label in EnquiryStatus enum.
-    // The migration query `UPDATE "enquiries" SET "status" = 'ON_HOLD' WHERE "status"::text = 'CLOSED';`
-    // safely evaluates without throwing an enum cast exception.
-    await expect(
-      db.$executeRawUnsafe(`UPDATE "enquiries" SET "status" = 'ON_HOLD' WHERE "status"::text = 'CLOSED';`)
-    ).resolves.not.toThrow();
+  // ----------------------------------------------------------------------------
+  // Finding B: PostgreSQL Enum Catalog & Registration Verification
+  // ----------------------------------------------------------------------------
+  it("MIG-02: Confirms all CRM (EnquiryStatus) and CMS enum values are fully registered in PostgreSQL catalog", async () => {
+    // 1. Verify EnquiryStatus enum values in public schema
+    const crmEnums: any = await db.$queryRaw`
+      SELECT e.enumlabel
+      FROM pg_type t
+      JOIN pg_enum e ON t.oid = e.enumtypid
+      JOIN pg_namespace n ON n.oid = t.typnamespace
+      WHERE t.typname = 'EnquiryStatus' AND n.nspname = 'public'
+      ORDER BY e.enumsortorder;
+    `;
+    const crmLabels = crmEnums.map((r: any) => r.enumlabel);
+
+    const expectedCrmLabels = [
+      "NEW", "IN_REVIEW", "CONTACTED", "CONVERTED", "ARCHIVED",
+      "QUALIFIED", "PROPOSAL_SENT", "NEGOTIATION", "WON", "LOST", "ON_HOLD"
+    ];
+    for (const label of expectedCrmLabels) {
+      expect(crmLabels).toContain(label);
+    }
+    // Verify CLOSED is NOT in EnquiryStatus
+    expect(crmLabels).not.toContain("CLOSED");
+
+    // 2. Verify all 6 CMS custom enums exist in public schema
+    const cmsEnums: any = await db.$queryRaw`
+      SELECT t.typname
+      FROM pg_type t
+      JOIN pg_namespace n ON n.oid = t.typnamespace
+      WHERE n.nspname = 'public' AND t.typname IN (
+        'StorageProviderType', 'ClientConsentStatus', 'TestimonialVerificationStatus',
+        'RevisionLifecycleStatus', 'ContentPublicationStatus', 'ContentType'
+      )
+      ORDER BY t.typname;
+    `;
+    const cmsTypeNames = cmsEnums.map((r: any) => r.typname);
+    expect(cmsTypeNames).toEqual([
+      "ClientConsentStatus",
+      "ContentPublicationStatus",
+      "ContentType",
+      "RevisionLifecycleStatus",
+      "StorageProviderType",
+      "TestimonialVerificationStatus",
+    ]);
   });
 
   // ----------------------------------------------------------------------------

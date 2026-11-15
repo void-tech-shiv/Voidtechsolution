@@ -28,12 +28,8 @@ import {
   markNotificationAsRead,
   markAllNotificationsAsRead,
 } from "@/server/repositories/notifications.repo";
-import {
-  getEnquiryById,
-  updateEnquiryStatus,
-  getEnquiries,
-  getEnquiryStats,
-} from "@/server/repositories/enquiries.repo";
+import { getEnquiryById, updateEnquiryStatus, getEnquiries, getEnquiryStats } from "@/server/repositories/enquiries.repo";
+import { normalizeLegacyStatus } from "@/validations/crm";
 import { EnquiryStatus } from "@prisma/client";
 
 describe("Phase 9.1: CRM Lead Management & Pipeline Repositories", () => {
@@ -697,6 +693,53 @@ describe("Phase 9.1: CRM Lead Management & Pipeline Repositories", () => {
       const findCall = vi.mocked(prisma.enquiry.findMany).mock.calls[0]?.[0];
       expect(findCall?.where?.assignedAdminId).toBe("admin_filter_1");
       expect(findCall?.where?.followUps).toBeDefined();
+    });
+  });
+
+  // ============================================================================
+  // 7. LEGACY STATUS NORMALIZATION BOUNDARY (Finding C)
+  // ============================================================================
+  describe("LegacyStatusNormalization", () => {
+    it("normalizes IN_REVIEW to CONTACTED", () => {
+      expect(normalizeLegacyStatus("IN_REVIEW")).toBe("CONTACTED");
+      expect(normalizeLegacyStatus("in_review")).toBe("CONTACTED");
+      expect(normalizeLegacyStatus("  IN_REVIEW  ")).toBe("CONTACTED");
+    });
+
+    it("normalizes CONVERTED to WON", () => {
+      expect(normalizeLegacyStatus("CONVERTED")).toBe("WON");
+      expect(normalizeLegacyStatus("converted")).toBe("WON");
+    });
+
+    it("normalizes ARCHIVED to ON_HOLD", () => {
+      expect(normalizeLegacyStatus("ARCHIVED")).toBe("ON_HOLD");
+      expect(normalizeLegacyStatus("archived")).toBe("ON_HOLD");
+    });
+
+    it("normalizes CLOSED to ON_HOLD when no lostReason is provided", () => {
+      expect(normalizeLegacyStatus("CLOSED")).toBe("ON_HOLD");
+      expect(normalizeLegacyStatus("closed")).toBe("ON_HOLD");
+    });
+
+    it("normalizes CLOSED to LOST when a valid lostReason is provided", () => {
+      expect(normalizeLegacyStatus("CLOSED", { lostReason: "Client chose alternative vendor" })).toBe("LOST");
+      expect(normalizeLegacyStatus("closed", { lostReason: "Budget cancelled" })).toBe("LOST");
+    });
+
+    it("passes canonical CRM stages through without alteration", () => {
+      expect(normalizeLegacyStatus("NEW")).toBe("NEW");
+      expect(normalizeLegacyStatus("CONTACTED")).toBe("CONTACTED");
+      expect(normalizeLegacyStatus("QUALIFIED")).toBe("QUALIFIED");
+      expect(normalizeLegacyStatus("PROPOSAL_SENT")).toBe("PROPOSAL_SENT");
+      expect(normalizeLegacyStatus("NEGOTIATION")).toBe("NEGOTIATION");
+      expect(normalizeLegacyStatus("WON")).toBe("WON");
+      expect(normalizeLegacyStatus("LOST")).toBe("LOST");
+      expect(normalizeLegacyStatus("ON_HOLD")).toBe("ON_HOLD");
+    });
+
+    it("throws a descriptive error when status is unparseable or empty", () => {
+      expect(() => normalizeLegacyStatus("INVALID_STATUS")).toThrow("Invalid CRM status 'INVALID_STATUS'");
+      expect(() => normalizeLegacyStatus("")).toThrow("Status string must be provided");
     });
   });
 });

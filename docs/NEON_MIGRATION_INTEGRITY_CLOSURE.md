@@ -4,15 +4,18 @@
 **Project:** VOIDTECH SOLUTION ("Build. Launch. Grow Online.")  
 **Workspace:** `D:\voidtechsolution`  
 **Branch:** `session/phase-7-admin-auth`  
-**Current Baseline Commit:** `6a6363a14dc15496233da6eea98f974bded10044`  
+**Current Baseline Commit:** `caccf48`
 **Target Database Engine:** PostgreSQL 18.7 (Neon Serverless) & PostgreSQL 18.6 (Local Test Isolation)  
-**Safety Status:** **AUDIT & VERIFICATION COMPLETE — ZERO PRODUCTION NEON MODIFICATIONS PERFORMED**
+**Safety & Deployment Status:** **POST-DEPLOYMENT INTEGRITY CLOSURE AUDITED — ALL 5 MIGRATIONS VERIFIED**
 
 ---
 
 ## 1. Executive Summary
 
-This integrity audit resolves all five mandatory migration findings identified in the VOIDTECH migration package prior to its execution on a dedicated Neon development branch:
+This integrity audit resolves and documents all migration findings across the full lifecycle:
+1. **Pre-Deployment Audit:** Audited staged migrations, verified admin session reconciliation, hardened CMS repeatability, and classified rollback risks.
+2. **Authorized Deployment Execution:** Following explicit owner authorization of Option B, deployed migrations `20261113000000`, `20261113010000`, and `20261114000000` to primary Neon branch `br-little-bird-bejretq1` after resolving the historical failed migration entry.
+3. **Post-Deployment Verification Integrity Closure:** Rebuilt the legacy CRM migration test into a genuinely isolated PostgreSQL schema fixture with authentic legacy enum values, established the exact PostgreSQL 55P04 transaction boundaries under Prisma Migrate, corrected unsupported claims regarding `CLOSED` status conversion, and synchronized all documentation.
 
 1. **CRM Status Mapping Consistency:** Resolved the historical mapping conflict between `20261113000000_crm_lead_pipeline` (which prematurely mapped `IN_REVIEW` to `QUALIFIED`) and `20261113010000_crm_status_mapping_correction` (which attempted to map `IN_REVIEW` to `CONTACTED`). Established the approved business rule (`IN_REVIEW -> CONTACTED`), aligned the migration sequence, confirmed neither migration was ever applied to shared Neon Cloud, and validated with automated regression tests for all 5 legacy statuses.
 2. **CMS Migration Repeatability & Integrity:** Forensically audited every statement in `20261114000000_admin_cms_foundation`. Identified that bare `CREATE TYPE ... AS ENUM` and `ALTER TABLE ... ADD CONSTRAINT` statements crashed if executed against partially existing objects. Hardened all 6 enum creations with `DO $$ BEGIN ... EXCEPTION WHEN duplicate_object THEN NULL; END $$;` and all 15 foreign key constraints with `DROP CONSTRAINT IF EXISTS ... ADD CONSTRAINT ...`. Verified that all referential actions (`ON DELETE RESTRICT` vs `ON DELETE SET NULL`) exactly match `prisma/schema.prisma`.
@@ -210,25 +213,30 @@ Full details, risk classifications, and data-loss scenarios are documented in [d
 ## 6. Finding 5: Migration Transaction Assumptions & Engine Semantics
 
 ### 6.1 PostgreSQL Engine Enum Transaction Invariant (SQLSTATE 55P04)
-A critical PostgreSQL database engine invariant was empirically investigated on PostgreSQL 18:
+A critical PostgreSQL database engine invariant was investigated against PostgreSQL documentation and verified empirically:
 > **PostgreSQL Error 55P04:** `unsafe use of new value "..." of enum type "...". HINT: New enum values must be committed before they can be used.`
 
 In PostgreSQL:
 - An `ALTER TYPE ... ADD VALUE` statement updates system catalog `pg_enum`.
-- If an `ALTER TYPE ... ADD VALUE` statement and a subsequent statement referencing that new enum value (such as `UPDATE "enquiries" SET "status" = 'WON'`) are executed inside the **same transaction block**, PostgreSQL aborts the transaction with code `55P04`.
-- The new enum value **must be committed** to the catalog before it can be assigned to table rows or cast in queries.
+- In PostgreSQL 11 and earlier, `ALTER TYPE ... ADD VALUE` could not run inside a transaction block at all.
+- Starting in PostgreSQL 12 (including 14, 15, 16, 17, and 18), `ALTER TYPE ... ADD VALUE` is permitted inside a transaction block, **BUT with a fundamental engine constraint**: a newly added enum value cannot be referenced in expressions, updates, table defaults, or inserts within the **same uncommitted transaction block**.
+- If an `ALTER TYPE ... ADD VALUE` statement and a subsequent statement referencing that new enum value (such as `UPDATE "enquiries" SET "status" = 'WON'`) are executed inside the same transaction block, PostgreSQL's `check_safe_enum_use` routine in `enum.c` immediately aborts the transaction with code `55P04`.
+- The new enum value **must be committed** to the catalog before it can be assigned to table rows.
 
-### 6.2 Prisma Migrate Transactional Semantics
-When Prisma Migrate (`prisma migrate deploy`) executes migrations:
-1. **Standard Migrations (e.g. `20261114000000_admin_cms_foundation`):**
-   - Wrapped in a single transactional block (`BEGIN` ... `COMMIT`).
-   - If any statement fails, PostgreSQL automatically and completely rolls back the entire migration.
-   - Zero partial state is committed to disk.
-2. **Enum-Extending Migrations (e.g. `20261113000000_crm_lead_pipeline`):**
-   - Because `ALTER TYPE ... ADD VALUE` and row updates using those values cannot co-exist in an uncommitted transaction without triggering `55P04`, Prisma Migrate executes statements with autocommit or multiple transactions.
-   - **Failure & Recovery Behavior:** If an interruption occurs halfway through `20261113000000`, statements executed prior to the failure remain committed in the database.
-   - **Recovery Mechanism:** Because all statements in `20261113000000` (e.g., `ADD VALUE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`, `CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`) are 100% idempotent, re-running `prisma migrate deploy` safely resumes from the failure point without collision.
-   - On a dedicated Neon development branch, instant recovery is always available: delete the branch and recreate from parent `br-little-bird-bejretq1` (<10s).
+### 6.2 Prisma Migrate Transactional Semantics & Resolution
+1. **Prisma Migrate Default Behavior:**
+   - By default, Prisma Migrate schema-engine wraps each migration script (`migration.sql`) inside an isolated transaction block (`BEGIN` ... `COMMIT`).
+   - It does **not** execute statements with autocommit or split migration files across multiple transactions automatically.
+2. **The Original Neon Failure (2026-11-14 22:12:16 UTC):**
+   - The initial staged version of `20261113000000_crm_lead_pipeline/migration.sql` contained both `ALTER TYPE "EnquiryStatus" ADD VALUE 'WON'` and `UPDATE "enquiries" SET "status" = 'WON' WHERE "status"::text = 'CONVERTED'`.
+   - When Prisma Migrate executed this migration as a single transaction block on Neon, PostgreSQL rejected statement #22 with error `55P04`.
+   - Because the transaction aborted, PostgreSQL rolled back all statements in that migration, leaving `applied_steps_count = 0` and `finished_at = null` in `_prisma_migrations`, with zero tables or columns created.
+3. **The Architectural Resolution:**
+   - In `20261113000000_crm_lead_pipeline/migration.sql`, the DDL statements (`ALTER TYPE`, `ALTER TABLE`, `CREATE TABLE`, `CREATE INDEX`, note backfill) execute cleanly and Prisma commits Transaction 1.
+   - In `20261113010000_crm_status_mapping_correction/migration.sql`, executing in Transaction 2, all new enum values are already committed. The status update statements (`IN_REVIEW -> CONTACTED`, `CONVERTED -> WON`, `ARCHIVED -> ON_HOLD`, `CLOSED -> ON_HOLD`) execute without collision.
+4. **Applied Migration Immutability Requirement:**
+   - Prisma Migrate generates a SHA-256 checksum for each applied migration file and records it in `_prisma_migrations.checksum`.
+   - Modifying applied migration files on disk alters their checksum and causes `prisma migrate status` to fail with error `P3007`. Applied migration files must remain immutable.
 
 ---
 
@@ -244,19 +252,23 @@ When Prisma Migrate (`prisma migrate deploy`) executes migrations:
 - **Fail-Closed Execution:** Replaced all early returns with hard errors. If PostgreSQL is offline, `beforeAll` throws immediately, causing the test runner to fail visibly rather than skipping silently.
 - **Session Restoration Guard:** Test cleanup wraps trigger disabling in a `try ... finally` block guaranteeing that `SET session_replication_role = 'origin';` is always restored, even after assertion failure.
 
-### 7.2 Actual Migration SQL Execution (MIG-01)
-Rather than manually imitating SQL statements, `MIG-01` reads the actual on-disk migration files:
-- `prisma/migrations/20261113000000_crm_lead_pipeline/migration.sql`
-- `prisma/migrations/20261113010000_crm_status_mapping_correction/migration.sql`
-It parses and executes the real SQL statements against a representative 5-status fixture.
-- Confirmed resulting statuses:
+### 7.2 Genuinely Isolated Legacy Schema Fixture Test (MIG-01)
+`MIG-01` was completely rebuilt to eliminate artificial manual updates and prove genuine legacy CRM status migration:
+- **Isolated Schema Fixture:** Creates an ephemeral test schema (`fixture_legacy_crm_<timestamp>`) in the local test database with `search_path` set to that schema.
+- **Authentic Pre-CRM Schema:** Recreates the original 5-value `EnquiryStatus` enum (`NEW`, `IN_REVIEW`, `CONTACTED`, `CONVERTED`, `ARCHIVED`), original `admin_users`, and original `enquiries` table from `20261112000000_init`.
+- **Genuine Legacy Data Insertion:** Inserts 5 records using authentic legacy enum values (`NEW`, `IN_REVIEW`, `CONTACTED`, `CONVERTED`, `ARCHIVED`) with complete customer data.
+- **Actual Migration SQL Execution:** Reads and executes the real on-disk migration files:
+  1. `20261113000000_crm_lead_pipeline/migration.sql` (DDL + note backfill).
+  2. `20261113010000_crm_status_mapping_correction/migration.sql` (status mapping data migration).
+- **Pure Migration Verification (Zero Manual Overwrites):** Queries the transformed rows directly:
   - `NEW` $\longrightarrow$ `NEW` (untouched)
   - `IN_REVIEW` $\longrightarrow$ `CONTACTED` (aligned to approved business rules)
   - `CONTACTED` $\longrightarrow$ `CONTACTED` (untouched)
   - `CONVERTED` $\longrightarrow$ `WON` (successfully converted)
   - `ARCHIVED` $\longrightarrow$ `ON_HOLD` (recoverable hold)
-- Confirmed 100% field preservation: `name`, `email`, `phone`, `companyName`, `budgetRange`, `timeline`, `message`, `serviceCategory`, `consentGiven` were verified byte-for-byte identical.
-- Confirmed `CLOSED` external-import query evaluates safely without enum syntax errors.
+- **100% Field Preservation:** `name`, `email`, `phone`, `companyName`, `budgetRange`, `timeline`, `message`, `serviceCategory`, `consentGiven` verified byte-for-byte identical.
+- **CLOSED No-Op Verification:** Confirms that `UPDATE "enquiries" SET "status" = 'ON_HOLD' WHERE "status"::text = 'CLOSED';` updates exactly 0 rows because `CLOSED` was never an enum label.
+- **Schema Cleanup:** Guaranteed `DROP SCHEMA ... CASCADE` in a `finally` block even on assertion failure.
 
 ### 7.3 Full CMS Repeatability & Interrupted States (MIG-03 & MIG-09)
 - Read all 63 statements from `prisma/migrations/20261114000000_admin_cms_foundation/migration.sql`.

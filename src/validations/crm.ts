@@ -68,3 +68,42 @@ export const assignLeadSchema = z.object({
 });
 
 export type AssignLeadInput = z.infer<typeof assignLeadSchema>;
+
+/**
+ * Normalizes external, legacy, or historical status strings to canonical CRM EnquiryStatus.
+ *
+ * Business Mapping Invariants:
+ * - 'IN_REVIEW' -> 'CONTACTED' (initial review/contact initiated, not yet commercially qualified)
+ * - 'CONVERTED' -> 'WON' (client onboarded)
+ * - 'ARCHIVED'  -> 'ON_HOLD' (dormant / parked lead kept recoverable)
+ * - 'CLOSED'    -> 'ON_HOLD' (if closed without conversion reason) or 'LOST' (if lostReason provided)
+ *
+ * Note: 'CLOSED' was never a registered PostgreSQL enum value in the database.
+ * This normalization boundary operates strictly at the application boundary prior
+ * to database insertion for external integrations or historical input feeds.
+ */
+export function normalizeLegacyStatus(
+  rawStatus: string,
+  options?: { lostReason?: string }
+): (typeof CRM_STAGES)[number] {
+  if (!rawStatus || typeof rawStatus !== "string") {
+    throw new Error("Invalid status: Status string must be provided.");
+  }
+
+  const upper = rawStatus.trim().toUpperCase();
+
+  // Legacy mappings
+  if (upper === "IN_REVIEW") return "CONTACTED";
+  if (upper === "CONVERTED") return "WON";
+  if (upper === "ARCHIVED") return "ON_HOLD";
+  if (upper === "CLOSED") {
+    return options?.lostReason?.trim() ? "LOST" : "ON_HOLD";
+  }
+
+  // Canonical stages
+  if ((CRM_STAGES as readonly string[]).includes(upper)) {
+    return upper as (typeof CRM_STAGES)[number];
+  }
+
+  throw new Error(`Invalid CRM status '${rawStatus}': Cannot normalize to a recognized CRM stage.`);
+}
