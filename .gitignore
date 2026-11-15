@@ -54,3 +54,6 @@ next-env.d.ts
 # Vercel
 .vercel
 
+
+# OpenNext Cloudflare build output
+.open-next/
