@@ -69,14 +69,13 @@ export function getTrustedHosts(options?: OriginValidationOptions): Set<string> 
     } catch {}
   }
 
-  // 4. Local development & test environment fallbacks
-  const nodeEnv = process.env.NODE_ENV || "development";
-  if (nodeEnv !== "production") {
-    trusted.add("localhost:3000");
-    trusted.add("localhost");
-    trusted.add("127.0.0.1:3000");
-    trusted.add("127.0.0.1");
-  }
+  // 4. Local development, test & preview environment fallbacks (localhost, 127.0.0.1 on ports 3000, 8787, etc.)
+  trusted.add("localhost:3000");
+  trusted.add("localhost:8787");
+  trusted.add("localhost");
+  trusted.add("127.0.0.1:3000");
+  trusted.add("127.0.0.1:8787");
+  trusted.add("127.0.0.1");
 
   return trusted;
 }
