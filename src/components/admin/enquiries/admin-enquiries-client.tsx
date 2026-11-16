@@ -301,7 +301,7 @@ export function AdminEnquiriesClient({
                       </span>
                     </td>
 
-                    <td className="whitespace-nowrap px-6 py-4 text-neutral-500">
+                    <td className="whitespace-nowrap px-6 py-4 text-neutral-500" suppressHydrationWarning>
                       {new Date(item.createdAt).toLocaleDateString("en-IN", {
                         day: "numeric",
                         month: "short",

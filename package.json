@@ -5,7 +5,8 @@
   "description": "VOIDTECH SOLUTION — Professional Software Development Agency Platform",
   "scripts": {
     "dev": "node -e \"const fs=require('fs');if(fs.existsSync('.next/BUILD_ID')){fs.rmSync('.next',{recursive:true,force:true})}\" && next dev",
-    "build": "next build",
+    "build": "opennextjs-cloudflare build",
+    "build:next": "next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",

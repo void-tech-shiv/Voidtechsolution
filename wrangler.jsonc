@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "voidtech-solution",
+  "name": "voidtechsolution",
   "main": ".open-next/worker.js",
   "compatibility_date": "2024-09-23",
   "compatibility_flags": [
@@ -9,6 +9,18 @@
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "voidtechsolution"
+    }
+  ],
+  "images": {
+    "binding": "IMAGES"
+  },
+  "observability": {
+    "enabled": true
   },
   "vars": {
     "IS_CLOUDFLARE_WORKER": "true"
