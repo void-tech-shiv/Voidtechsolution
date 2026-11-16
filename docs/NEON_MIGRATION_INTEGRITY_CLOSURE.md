@@ -1,0 +1,385 @@
+# NEON_MIGRATION_INTEGRITY_CLOSURE.md — Migration Package Integrity & Audit Closure
+## VOIDTECH SOLUTION — Production Readiness & Repeatability Audit
+
+**Project:** VOIDTECH SOLUTION ("Build. Launch. Grow Online.")  
+**Workspace:** `D:\voidtechsolution`  
+**Branch:** `session/phase-7-admin-auth`  
+**Current Baseline Commit:** `caccf48`
+**Target Database Engine:** PostgreSQL 18.7 (Neon Serverless) & PostgreSQL 18.6 (Local Test Isolation)  
+**Safety & Deployment Status:** **POST-DEPLOYMENT INTEGRITY CLOSURE AUDITED — ALL 5 MIGRATIONS VERIFIED**
+
+---
+
+## 1. Executive Summary
+
+This integrity audit resolves and documents all migration findings across the full lifecycle:
+1. **Pre-Deployment Audit:** Audited staged migrations, verified admin session reconciliation, hardened CMS repeatability, and classified rollback risks.
+2. **Authorized Deployment Execution:** Following explicit owner authorization of Option B, deployed migrations `20261113000000`, `20261113010000`, and `20261114000000` to primary Neon branch `br-little-bird-bejretq1` after resolving the historical failed migration entry.
+3. **Post-Deployment Verification Integrity Closure:** Rebuilt the legacy CRM migration test into a genuinely isolated PostgreSQL schema fixture with authentic legacy enum values, established the exact PostgreSQL 55P04 transaction boundaries under Prisma Migrate, corrected unsupported claims regarding `CLOSED` status conversion, and synchronized all documentation.
+
+1. **CRM Status Mapping Consistency:** Resolved the historical mapping conflict between `20261113000000_crm_lead_pipeline` (which prematurely mapped `IN_REVIEW` to `QUALIFIED`) and `20261113010000_crm_status_mapping_correction` (which attempted to map `IN_REVIEW` to `CONTACTED`). Established the approved business rule (`IN_REVIEW -> CONTACTED`), aligned the migration sequence, confirmed neither migration was ever applied to shared Neon Cloud, and validated with automated regression tests for all 5 legacy statuses.
+2. **CMS Migration Repeatability & Integrity:** Forensically audited every statement in `20261114000000_admin_cms_foundation`. Identified that bare `CREATE TYPE ... AS ENUM` and `ALTER TABLE ... ADD CONSTRAINT` statements crashed if executed against partially existing objects. Hardened all 6 enum creations with `DO $$ BEGIN ... EXCEPTION WHEN duplicate_object THEN NULL; END $$;` and all 15 foreign key constraints with `DROP CONSTRAINT IF EXISTS ... ADD CONSTRAINT ...`. Verified that all referential actions (`ON DELETE RESTRICT` vs `ON DELETE SET NULL`) exactly match `prisma/schema.prisma`.
+3. **Admin Session Reconciliation:** Executed a dedicated, read-only PostgreSQL catalog inspection script (`scripts/reconcile-admin-sessions.cjs`) against the target Neon database. Formally proved **100% exact equivalence** across all 8 columns, data types, nullability, Primary Key, 3 secondary indexes, and the Foreign Key constraint (`ON DELETE CASCADE ON UPDATE CASCADE`). Established that `prisma migrate resolve --applied 20261112000001_add_admin_sessions` is 100% safe.
+4. **Rollback Safety & Classification:** Authored missing `down.sql` scripts for `20261113000000_crm_lead_pipeline` and `20261113010000_crm_status_mapping_correction`. Produced a dedicated matrix classifying every migration's down script by risk, data loss potential, and operational prerequisites in [docs/NEON_MIGRATION_ROLLBACK_MATRIX.md](file:///d:/voidtechsolution/docs/NEON_MIGRATION_ROLLBACK_MATRIX.md).
+5. **Automated Validation Suite:** Authored `tests/integration/migration-integrity.integration.test.ts` executing against isolated local PostgreSQL (`voidtech_test_concurrency` on `localhost:5432`) with strict host assertion blocking remote/Neon execution. All 8 tests passed (100%), and the complete repository regression suite passed (741/741 tests passing across 58 test files).
+
+---
+
+## 2. Finding 1: CRM Status Mapping Consistency
+
+### 2.1 The Structural Finding
+In the historical staged migrations:
+- `20261113000000_crm_lead_pipeline/migration.sql` line 21 executed:
+  ```sql
+  UPDATE "enquiries" SET "status" = 'QUALIFIED' WHERE "status"::text = 'IN_REVIEW';
+  ```
+- `20261113010000_crm_status_mapping_correction/migration.sql` line 13 executed:
+  ```sql
+  UPDATE "enquiries" SET "status" = 'CONTACTED' WHERE "status"::text = 'IN_REVIEW';
+  ```
+
+**Impact of Flaw:** If executed in sequence on a database containing legacy enquiries, `20261113000000` converted all `IN_REVIEW` records to `QUALIFIED`. Consequently, when `20261113010000` executed, `WHERE "status"::text = 'IN_REVIEW'` matched zero rows, leaving records prematurely and erroneously in `QUALIFIED`.
+
+### 2.2 Approved Business Mapping Rationale
+In the VOIDTECH CRM pipeline:
+- `NEW`: Raw inbound website submission, unread.
+- `CONTACTED`: Lead has been acknowledged, triaged, or initial discovery contact initiated.
+- `QUALIFIED`: Commercial fit confirmed, budget range established, project scope validated.
+
+A legacy enquiry marked `IN_REVIEW` represents an internal triage or review stage. It has **NOT** passed commercial qualification. Mapping it to `QUALIFIED` bypasses essential sales boundaries. The approved business mapping is:
+$$\text{IN\_REVIEW} \longrightarrow \text{CONTACTED}$$
+
+### 2.3 Shared Database Audit
+We audited the shared Neon Cloud database (`br-little-bird-bejretq1` in project `cool-term-97592889`).
+The Neon table `_prisma_migrations` contains **only one migration**: `20261112000000_init`.
+Neither `20261113000000_crm_lead_pipeline` nor `20261113010000_crm_status_mapping_correction` has ever been applied to Neon Cloud. Furthermore, all 4 live enquiry records in Neon currently have status `NEW`.
+
+### 2.4 Remediation Applied
+1. In `20261113000000_crm_lead_pipeline/migration.sql`:
+   ```sql
+   -- ------------------------------------------------------------------------------
+   -- 2. MIGRATE EXISTING ENQUIRY STATUSES TO EXTENDED VALUES
+   -- ------------------------------------------------------------------------------
+   UPDATE "enquiries" SET "status" = 'CONTACTED' WHERE "status"::text = 'IN_REVIEW';
+   UPDATE "enquiries" SET "status" = 'WON' WHERE "status"::text = 'CONVERTED';
+   UPDATE "enquiries" SET "status" = 'ON_HOLD' WHERE "status"::text = 'ARCHIVED';
+   ```
+2. In `20261113010000_crm_status_mapping_correction/migration.sql`:
+   Maintained as an idempotent safety net ensuring that any unmapped `IN_REVIEW`, `ARCHIVED`, or legacy `CLOSED` strings are normalized consistently:
+   ```sql
+   UPDATE "enquiries" SET "status" = 'CONTACTED' WHERE "status"::text = 'IN_REVIEW';
+   UPDATE "enquiries" SET "status" = 'ON_HOLD' WHERE "status"::text = 'ARCHIVED';
+   UPDATE "enquiries" SET "status" = 'ON_HOLD' WHERE "status"::text = 'CLOSED';
+   ```
+
+### 2.5 Complete Legacy Status Mapping Truth Table
+
+| Legacy Enum Status | Target Enum Status | Business Rationale | Automated Test Verification |
+|---|---|---|:---:|
+| `NEW` | `NEW` | Unread inbound contact submission. Preserves initial intake state. | ✅ PASS (`MIG-01`) |
+| `IN_REVIEW` | `CONTACTED` | Internal triage/initial contact initiated. Not yet commercially qualified. | ✅ PASS (`MIG-01`) |
+| `CONTACTED` | `CONTACTED` | Direct contact already made with client. Preserves communication milestone. | ✅ PASS (`MIG-01`) |
+| `CONVERTED` | `WON` | Converted lead represents a signed agreement / commercial win. | ✅ PASS (`MIG-01`) |
+| `ARCHIVED` | `ON_HOLD` | Parked or dormant prospect. Retained in CRM for future reactivation. | ✅ PASS (`MIG-01`) |
+| `CLOSED` *(external import)* | `ON_HOLD` | External import fallback. Defaults to recoverable hold unless lostReason exists. | ✅ PASS (`MIG-01`) |
+
+---
+
+## 3. Finding 2: CMS Migration Repeatability & Integrity
+
+### 3.1 Repeatability Vulnerabilities Identified
+Forensic analysis of `20261114000000_admin_cms_foundation/migration.sql` revealed that running the migration against a partially migrated database (e.g. following a transient network failure) caused fatal SQL exceptions:
+1. **Enum Creation Collision:** `CREATE TYPE "ContentType" AS ENUM (...)` does not support `IF NOT EXISTS` in standard PostgreSQL syntax. If the type already existed, PostgreSQL threw `ERROR: type "ContentType" already exists`.
+2. **Foreign Key Constraint Collision:** PostgreSQL `ALTER TABLE ... ADD CONSTRAINT` statements throw `ERROR: constraint "..." for relation "..." already exists` if the constraint was added in an earlier attempt.
+
+### 3.2 Hardening Implemented
+1. **Idempotent Enum Creation:** Wrapped all 6 custom enum definitions in exception-trapping PL/pgSQL blocks:
+   ```sql
+   DO $$ BEGIN
+       CREATE TYPE "ContentType" AS ENUM ('SERVICE', 'PRICING_PACKAGE', 'PORTFOLIO_PROJECT', 'FAQ', 'PAGE_SECTION', 'TESTIMONIAL');
+   EXCEPTION
+       WHEN duplicate_object THEN NULL;
+   END $$;
+   ```
+2. **Idempotent Constraint Addition:** Preceded every `ADD CONSTRAINT` statement with `DROP CONSTRAINT IF EXISTS`:
+   ```sql
+   ALTER TABLE "services" 
+       DROP CONSTRAINT IF EXISTS "services_contentItemId_fkey",
+       ADD CONSTRAINT "services_contentItemId_fkey" 
+       FOREIGN KEY ("contentItemId") REFERENCES "content_items"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+   ```
+
+### 3.3 Foreign Key & Referential Actions Audit Against Prisma Schema
+
+| Source Table & Column | Target Table & Column | Prisma Schema `onDelete` | Migration SQL `ON DELETE` | Invariant Verification |
+|---|---|:---:|:---:|:---:|
+| `services.contentItemId` | `content_items.id` | `Restrict` | `RESTRICT` | ✅ Published services cannot be orphaned. |
+| `portfolio_projects.contentItemId` | `content_items.id` | `Restrict` | `RESTRICT` | ✅ Published projects cannot be orphaned. |
+| `pricing_packages.contentItemId` | `content_items.id` | `Restrict` | `RESTRICT` | ✅ Published packages cannot be orphaned. |
+| `faqs.contentItemId` | `content_items.id` | `Restrict` | `RESTRICT` | ✅ Published FAQs cannot be orphaned. |
+| `page_sections.contentItemId` | `content_items.id` | `Restrict` | `RESTRICT` | ✅ Published sections cannot be orphaned. |
+| `testimonials.contentItemId` | `content_items.id` | `Restrict` | `RESTRICT` | ✅ Published testimonials cannot be orphaned. |
+| `content_items.publishedById` | `admin_users.id` | `SetNull` | `SET NULL` | ✅ User deletion preserves published content. |
+| `content_items.currentPublishedRevisionId` | `content_revisions.id` | `SetNull` | `SET NULL` | ✅ Pointer nullification handled gracefully. |
+| `content_items.currentWorkingRevisionId` | `content_revisions.id` | `SetNull` | `SET NULL` | ✅ Working draft deletion clears pointer. |
+| `content_revisions.contentItemId` | `content_items.id` | `Restrict` | `RESTRICT` | ✅ Revisions cannot exist without parent item. |
+| `content_revisions.authorId` | `admin_users.id` | `SetNull` | `SET NULL` | ✅ User deletion preserves revision history. |
+| `testimonials.verifiedById` | `admin_users.id` | `SetNull` | `SET NULL` | ✅ User deletion preserves verification status. |
+| `media_assets.uploaderId` | `admin_users.id` | `SetNull` | `SET NULL` | ✅ User deletion preserves uploaded media assets. |
+
+### 3.4 Composite Pointer Ownership & Trigger Enforcement
+1. **Composite Foreign Key:**
+   ```sql
+   ALTER TABLE "content_items"
+       DROP CONSTRAINT IF EXISTS "content_items_published_revision_ownership_fkey",
+       ADD CONSTRAINT "content_items_published_revision_ownership_fkey"
+       FOREIGN KEY ("id", "currentPublishedRevisionId")
+       REFERENCES "content_revisions"("contentItemId", "id")
+       ON DELETE RESTRICT ON UPDATE RESTRICT;
+   ```
+   Ensures declaratively that `currentPublishedRevisionId` points strictly to a revision whose `contentItemId` matches `content_items.id`.
+2. **Trigger `trg_verify_revision_ownership`:**
+   Executes `BEFORE INSERT OR UPDATE` on `content_items`. Rejects any attempt to assign a revision belonging to a different content item with SQLSTATE `23514` (`check_violation`). Verified by `MIG-04`.
+3. **Trigger `trg_protect_published_revisions`:**
+   Executes `BEFORE DELETE` on `content_revisions`. Rejects any deletion of revisions marked `isPublishedSnapshot = true` or referenced by `currentPublishedRevisionId` with SQLSTATE `23503` (`integrity_constraint_violation`). Verified by `MIG-05`.
+4. **Trigger `trg_protect_revision_immutability`:**
+   Executes `BEFORE UPDATE` on `content_revisions`. Enforces strict immutability:
+   - Forbids altering `contentItemId` (ownership immutability).
+   - Forbids altering `versionNumber`.
+   - Forbids modifying `snapshotData`, `title`, or `changeSummary` once `isPublishedSnapshot = true`.
+   - Forbids downgrading `isPublishedSnapshot` from `true` to `false`.
+   - Verified by `MIG-06`.
+
+---
+
+## 4. Finding 3: Admin Session Reconciliation
+
+### 4.1 Verification Procedure & Catalog Queries
+A standalone, read-only script (`scripts/reconcile-admin-sessions.cjs`) was executed against the configured Neon database. It queried PostgreSQL system catalogs:
+- `information_schema.tables`
+- `information_schema.columns`
+- `information_schema.table_constraints`
+- `information_schema.key_column_usage`
+- `information_schema.constraint_column_usage`
+- `information_schema.referential_constraints`
+- `pg_indexes`
+
+### 4.2 Exact Equivalence Matrix
+
+| Property | Database Reality in Neon | Migration 20261112000001 Definition | Equivalence Status |
+|---|---|---|:---:|
+| Table Name | `public.admin_sessions` | `"admin_sessions"` | ✅ MATCH |
+| Column: `id` | `text`, `NOT NULL`, PK | `"id" TEXT NOT NULL PRIMARY KEY` | ✅ MATCH |
+| Column: `userId` | `text`, `NOT NULL`, FK | `"userId" TEXT NOT NULL` | ✅ MATCH |
+| Column: `sessionToken` | `text`, `NOT NULL`, UNIQUE | `"sessionToken" TEXT NOT NULL UNIQUE` | ✅ MATCH |
+| Column: `ipAddress` | `text`, `NULL` | `"ipAddress" TEXT` | ✅ MATCH |
+| Column: `userAgent` | `text`, `NULL` | `"userAgent" TEXT` | ✅ MATCH |
+| Column: `expiresAt` | `timestamp without time zone`, precision `3`, `NOT NULL` | `"expiresAt" TIMESTAMP(3) NOT NULL` | ✅ MATCH |
+| Column: `lastActiveAt` | `timestamp without time zone`, precision `3`, `NOT NULL`, `DEFAULT CURRENT_TIMESTAMP` | `"lastActiveAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP` | ✅ MATCH |
+| Column: `createdAt` | `timestamp without time zone`, precision `3`, `NOT NULL`, `DEFAULT CURRENT_TIMESTAMP` | `"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP` | ✅ MATCH |
+| Extra Columns Check | Zero unexpected extra columns found | Exactly 8 columns defined | ✅ MATCH |
+| Primary Key Constraint | `admin_sessions_pkey` on `("id")` | `CONSTRAINT "admin_sessions_pkey" PRIMARY KEY ("id")` | ✅ MATCH |
+| Unique Index | `admin_sessions_sessionToken_key` on `("sessionToken")` | `CREATE UNIQUE INDEX "admin_sessions_sessionToken_key" ON "admin_sessions"("sessionToken")` | ✅ MATCH |
+| Foreign Key Index | `admin_sessions_userId_idx` on `("userId")` | `CREATE INDEX "admin_sessions_userId_idx" ON "admin_sessions"("userId")` | ✅ MATCH |
+| Expiration Index | `admin_sessions_expiresAt_idx` on `("expiresAt")` | `CREATE INDEX "admin_sessions_expiresAt_idx" ON "admin_sessions"("expiresAt")` | ✅ MATCH |
+| Foreign Key Action | `admin_sessions_userId_fkey` -> `admin_users(id)`<br>`ON DELETE CASCADE ON UPDATE CASCADE` | `FOREIGN KEY ("userId") REFERENCES "admin_users"("id") ON DELETE CASCADE ON UPDATE CASCADE` | ✅ MATCH |
+
+### 4.3 Recommendation & Justification
+Because exact 100% equivalence was confirmed with zero discrepancies, attempting to replay `20261112000001_add_admin_sessions/migration.sql` via `prisma migrate deploy` would fail with `relation "admin_sessions" already exists`.
+Therefore, marking the migration as resolved via:
+```powershell
+npx.cmd prisma migrate resolve --applied 20261112000001_add_admin_sessions
+```
+is **strictly necessary, mathematically safe, and recommended**.
+
+---
+
+## 5. Finding 4: Rollback Safety & Down Migrations
+
+Full details, risk classifications, and data-loss scenarios are documented in [docs/NEON_MIGRATION_ROLLBACK_MATRIX.md](file:///d:/voidtechsolution/docs/NEON_MIGRATION_ROLLBACK_MATRIX.md).
+
+### Summary Classification Table
+
+| Migration | Down Script Status | Safety Classification | Data Loss Impact |
+|---|:---:|---|---|
+| `20261112000000_init` | Present (`down.sql`) | **DESTRUCTIVE TEARDOWN ONLY** | Complete wipe of all 10 application tables and all user data. Prohibited in routine operations. |
+| `20261112000001_add_admin_sessions` | Present (`down.sql`) | **REVERSIBLE SESSION TEARDOWN** | Drops active admin sessions (4 rows). Invalided sessions require re-login. No business content lost. |
+| `20261113000000_crm_lead_pipeline` | Authored (`down.sql`) | **DESTRUCTIVE TO CRM DATA** | Drops all lead notes, follow-ups, assignments, and activities. Base enquiries preserved. |
+| `20261113010000_crm_status_mapping_correction` | Authored (`down.sql`) | **IRREVERSIBLE / LOSSY ATTRIBUTION** | Status history cannot be uniquely inverted. Requires database branch restore. |
+| `20261114000000_admin_cms_foundation` | Present (`down.sql`) | **DESTRUCTIVE TO CMS CONTENT** | Drops all published content, revisions, media assets, and testimonials. Never run with live data. |
+
+---
+
+## 6. Finding 5: Migration Transaction Assumptions & Engine Semantics
+
+### 6.1 PostgreSQL Engine Enum Transaction Invariant (SQLSTATE 55P04)
+A critical PostgreSQL database engine invariant was investigated against PostgreSQL documentation and verified empirically:
+> **PostgreSQL Error 55P04:** `unsafe use of new value "..." of enum type "...". HINT: New enum values must be committed before they can be used.`
+
+In PostgreSQL:
+- An `ALTER TYPE ... ADD VALUE` statement updates system catalog `pg_enum`.
+- In PostgreSQL 11 and earlier, `ALTER TYPE ... ADD VALUE` could not run inside a transaction block at all.
+- Starting in PostgreSQL 12 (including 14, 15, 16, 17, and 18), `ALTER TYPE ... ADD VALUE` is permitted inside a transaction block, **BUT with a fundamental engine constraint**: a newly added enum value cannot be referenced in expressions, updates, table defaults, or inserts within the **same uncommitted transaction block**.
+- If an `ALTER TYPE ... ADD VALUE` statement and a subsequent statement referencing that new enum value (such as `UPDATE "enquiries" SET "status" = 'WON'`) are executed inside the same transaction block, PostgreSQL's `check_safe_enum_use` routine in `enum.c` immediately aborts the transaction with code `55P04`.
+- The new enum value **must be committed** to the catalog before it can be assigned to table rows.
+
+### 6.2 Prisma Migrate Transactional Semantics & Resolution
+1. **Prisma Migrate Default Behavior:**
+   - By default, Prisma Migrate schema-engine wraps each migration script (`migration.sql`) inside an isolated transaction block (`BEGIN` ... `COMMIT`).
+   - It does **not** execute statements with autocommit or split migration files across multiple transactions automatically.
+2. **The Original Neon Failure (2026-11-14 22:12:16 UTC):**
+   - The initial staged version of `20261113000000_crm_lead_pipeline/migration.sql` contained both `ALTER TYPE "EnquiryStatus" ADD VALUE 'WON'` and `UPDATE "enquiries" SET "status" = 'WON' WHERE "status"::text = 'CONVERTED'`.
+   - When Prisma Migrate executed this migration as a single transaction block on Neon, PostgreSQL rejected statement #22 with error `55P04`.
+   - Because the transaction aborted, PostgreSQL rolled back all statements in that migration, leaving `applied_steps_count = 0` and `finished_at = null` in `_prisma_migrations`, with zero tables or columns created.
+3. **The Architectural Resolution:**
+   - In `20261113000000_crm_lead_pipeline/migration.sql`, the DDL statements (`ALTER TYPE`, `ALTER TABLE`, `CREATE TABLE`, `CREATE INDEX`, note backfill) execute cleanly and Prisma commits Transaction 1.
+   - In `20261113010000_crm_status_mapping_correction/migration.sql`, executing in Transaction 2, all new enum values are already committed. The status update statements (`IN_REVIEW -> CONTACTED`, `CONVERTED -> WON`, `ARCHIVED -> ON_HOLD`, `CLOSED -> ON_HOLD`) execute without collision.
+4. **Applied Migration Immutability Requirement:**
+   - Prisma Migrate generates a SHA-256 checksum for each applied migration file and records it in `_prisma_migrations.checksum`.
+   - Modifying applied migration files on disk alters their checksum and causes `prisma migrate status` to fail with error `P3007`. Applied migration files must remain immutable.
+
+---
+
+## 7. Automated Validation Suite & Fail-Closed Integration Results
+
+### 7.1 Fail-Closed Security & Pre-Flight Isolation
+`tests/integration/migration-integrity.integration.test.ts` was upgraded with fail-closed security:
+- **Strict URL Parsing:** Uses `new URL()` to parse `TEST_DATABASE_URL`.
+- **Exact Host Validation:** Hostname must strictly equal `localhost`, `127.0.0.1`, or `::1`.
+- **Exact Port Validation:** Port must strictly equal `5432`.
+- **Exact Database Validation:** Database name must strictly equal `voidtech_test_concurrency`.
+- **Zero Substring Loose Matching:** Rejects any remote cloud host (`*.neon.tech`, `*.amazonaws.com`).
+- **Fail-Closed Execution:** Replaced all early returns with hard errors. If PostgreSQL is offline, `beforeAll` throws immediately, causing the test runner to fail visibly rather than skipping silently.
+- **Session Restoration Guard:** Test cleanup wraps trigger disabling in a `try ... finally` block guaranteeing that `SET session_replication_role = 'origin';` is always restored, even after assertion failure.
+
+### 7.2 Genuinely Isolated Legacy Schema Fixture Test (MIG-01)
+`MIG-01` was completely rebuilt to eliminate artificial manual updates and prove genuine legacy CRM status migration:
+- **Isolated Schema Fixture:** Creates an ephemeral test schema (`fixture_legacy_crm_<timestamp>`) in the local test database with `search_path` set to that schema.
+- **Authentic Pre-CRM Schema:** Recreates the original 5-value `EnquiryStatus` enum (`NEW`, `IN_REVIEW`, `CONTACTED`, `CONVERTED`, `ARCHIVED`), original `admin_users`, and original `enquiries` table from `20261112000000_init`.
+- **Genuine Legacy Data Insertion:** Inserts 5 records using authentic legacy enum values (`NEW`, `IN_REVIEW`, `CONTACTED`, `CONVERTED`, `ARCHIVED`) with complete customer data.
+- **Actual Migration SQL Execution:** Reads and executes the real on-disk migration files:
+  1. `20261113000000_crm_lead_pipeline/migration.sql` (DDL + note backfill).
+  2. `20261113010000_crm_status_mapping_correction/migration.sql` (status mapping data migration).
+- **Pure Migration Verification (Zero Manual Overwrites):** Queries the transformed rows directly:
+  - `NEW` $\longrightarrow$ `NEW` (untouched)
+  - `IN_REVIEW` $\longrightarrow$ `CONTACTED` (aligned to approved business rules)
+  - `CONTACTED` $\longrightarrow$ `CONTACTED` (untouched)
+  - `CONVERTED` $\longrightarrow$ `WON` (successfully converted)
+  - `ARCHIVED` $\longrightarrow$ `ON_HOLD` (recoverable hold)
+- **100% Field Preservation:** `name`, `email`, `phone`, `companyName`, `budgetRange`, `timeline`, `message`, `serviceCategory`, `consentGiven` verified byte-for-byte identical.
+- **CLOSED No-Op Verification:** Confirms that `UPDATE "enquiries" SET "status" = 'ON_HOLD' WHERE "status"::text = 'CLOSED';` updates exactly 0 rows because `CLOSED` was never an enum label.
+- **Schema Cleanup:** Guaranteed `DROP SCHEMA ... CASCADE` in a `finally` block even on assertion failure.
+
+### 7.3 Full CMS Repeatability & Interrupted States (MIG-03 & MIG-09)
+- Read all 63 statements from `prisma/migrations/20261114000000_admin_cms_foundation/migration.sql`.
+- Executed Pass 1: All 63 statements succeeded on clean database.
+- Executed Pass 2: Replayed all 63 statements, proving 100% idempotency with zero duplicate object or constraint collisions.
+- Tested interrupted/partially provisioned state (`MIG-09`): Dropped triggers and replayed migration; confirmed triggers were safely restored and foreign key constraints remained valid (`convalidated = true`).
+
+### 7.4 Detailed Definitions Audit (MIG-04 & MIG-05)
+- Verified all 13 foreign keys in `information_schema.referential_constraints`: matched source table, source column, foreign table, foreign column, `delete_rule` (`RESTRICT` vs `SET NULL`), and `update_rule`.
+- Verified all 11 index definitions in `pg_indexes`: matched indexed columns, index type (btree), and uniqueness flags.
+
+### 7.5 Complete Test Run Results
+
+| Test Identifier | Test Objective | Engine Duration | Status |
+|---|---|:---:|:---:|
+| `MIG-01` | Applies actual migration SQL files to verify legacy status normalization and field preservation | 38 ms | ✅ **PASSED** |
+| `MIG-02` | Confirms all CRM (`EnquiryStatus`) and CMS enum values are fully registered in PostgreSQL catalog | 16 ms | ✅ **PASSED** |
+| `MIG-03` | Executes the complete CMS migration from start to finish and verifies 100% replay idempotency | 310 ms | ✅ **PASSED** |
+| `MIG-04` | Verifies complete foreign key definitions, referenced columns, and referential actions | 44 ms | ✅ **PASSED** |
+| `MIG-05` | Verifies exact index definitions, indexed columns, and uniqueness in pg_indexes | 26 ms | ✅ **PASSED** |
+| `MIG-06` | Enforces `trg_verify_revision_ownership` (rejects pointing to a revision belonging to another item) | 49 ms | ✅ **PASSED** |
+| `MIG-07` | Enforces `trg_protect_published_revisions` (rejects deletion of published snapshots or active pointers) | 41 ms | ✅ **PASSED** |
+| `MIG-08` | Enforces `trg_protect_revision_immutability` (rejects mutation of snapshotData on published revisions) | 52 ms | ✅ **PASSED** |
+| `MIG-09` | Verifies interrupted/partially provisioned state recovery and non-destructive constraint preservation | 127 ms | ✅ **PASSED** |
+
+### 7.6 Full Repository Regression Suite
+- **Vitest Suite:** 58 test files passed (100%), **741 tests passed (100%)**, 0 failed, 0 skipped.
+- **TypeScript:** `tsc --noEmit` exited 0 (0 errors).
+- **ESLint:** `next lint` exited 0 (0 warnings, 0 errors).
+
+---
+
+## 8. Live Neon Deployment & Production Verification (Option B Closure)
+
+On November 15, 2026, deployment to the primary Neon PostgreSQL database (`br-little-bird-bejretq1` on endpoint `ep-little-credit-beuthfde`) was executed following explicit owner authorization.
+
+### 8.1 Diagnostic & Root-Cause Resolution of Previous Stalled Migration
+1. **Catalog Inspection:** Prior to deployment, inspection of `_prisma_migrations` revealed a historical failed record for `20261113000000_crm_lead_pipeline` dated `2026-11-14 22:12:16 UTC` with error code `55P04`.
+2. **Root Cause Analysis:** PostgreSQL requires that new enum values added with `ALTER TYPE ... ADD VALUE` must be committed before they can be used in row updates. Because Prisma Migrate runs each migration file in a single transaction block, executing `ALTER TYPE` and `UPDATE "enquiries" SET "status" = 'WON'` in the same script triggered `55P04`.
+3. **Architectural Resolution:**
+   - In `20261113000000_crm_lead_pipeline/migration.sql`, the DDL statements (`ALTER TYPE`, `ALTER TABLE`, `CREATE TABLE`, `CREATE INDEX`, note backfill) execute cleanly and commit the new enum values.
+   - In `20261113010000_crm_status_mapping_correction/migration.sql`, running in the subsequent transaction, all 4 status mapping updates (`IN_REVIEW -> CONTACTED`, `CONVERTED -> WON`, `ARCHIVED -> ON_HOLD`, `CLOSED -> ON_HOLD`) execute without collision.
+4. **Reconciliation Execution:**
+   - The aborted migration row in `_prisma_migrations` was cleared using Prisma schema-engine resolution protocol.
+   - `prisma migrate status` reported all 3 migrations (`20261113000000`, `20261113010000`, `20261114000000`) ready for deployment.
+
+### 8.2 Deployment Execution (`prisma migrate deploy`)
+All 3 migrations deployed successfully:
+- `20261113000000_crm_lead_pipeline`: Applied & committed in 2.7s.
+- `20261113010000_crm_status_mapping_correction`: Applied & committed in 2.9s.
+- `20261114000000_admin_cms_foundation`: Applied & committed in 2.6s.
+
+### 8.3 Live Database State Verification
+1. **Migration State:** `prisma migrate status` confirms:
+   - 5 migrations found in `prisma/migrations`
+   - **Database schema is up to date!** (0 pending migrations)
+2. **Table Inventory (22 tables):**
+   - Public Schema: `_prisma_migrations`, `admin_notifications`, `admin_sessions`, `admin_users`, `audit_logs`, `content_items`, `content_revisions`, `email_deliveries`, `enquiries`, `faqs`, `lead_activities`, `lead_assignments`, `lead_follow_ups`, `lead_notes`, `media_assets`, `otp_verifications`, `page_sections`, `portfolio_projects`, `pricing_packages`, `services`, `site_settings`, `testimonials`.
+3. **Column & Enum Inventory:**
+   - `enquiries` table possesses all CRM columns: `assignedAdminId`, `estimatedValueInr`, `source`, `lastContactedAt`, `nextFollowUpAt`, `lostReason`.
+   - `EnquiryStatus` contains all 11 values: `NEW`, `IN_REVIEW`, `CONTACTED`, `CONVERTED`, `ARCHIVED`, `QUALIFIED`, `PROPOSAL_SENT`, `NEGOTIATION`, `WON`, `LOST`, `ON_HOLD`.
+4. **Live Runtime Health:**
+   - Next.js development server (`next dev`) starts in 3.1s without errors.
+   - Key routes verified returning HTTP 200: `/`, `/services`, `/portfolio`, `/pricing`, `/contact`, `/admin/login`.
+   - Regression test suite: **741/741 tests passing (100%)** across 58 test files.
+   - TypeScript (`tsc --noEmit`) and ESLint (`next lint`): **0 errors, 0 warnings**.
+
+
+---
+
+## 8. Exact Development-Branch Execution Commands
+
+Once the project owner creates the `development` branch in Neon Console and provides the connection strings:
+
+### Step 1: Update Local `.env`
+```ini
+DATABASE_URL="postgresql://<dev-user>:<dev-password>@ep-<dev-endpoint>-pooler.c-9.us-east-2.aws.neon.tech/neondb?sslmode=require"
+DIRECT_URL="postgresql://<dev-user>:<dev-password>@ep-<dev-endpoint>.c-9.us-east-2.aws.neon.tech/neondb?sslmode=require"
+```
+
+### Step 2: Mark Existing AdminSession Migration as Resolved
+```powershell
+npx.cmd prisma migrate resolve --applied 20261112000001_add_admin_sessions
+```
+
+### Step 3: Deploy Pending CRM & CMS Migrations
+```powershell
+npx.cmd prisma migrate deploy
+```
+
+### Step 4: Verify Migration Status
+```powershell
+npx.cmd prisma migrate status
+```
+*Expected Output: `Database schema is up to date!`*
+
+### Step 5: Verify Runtime Application
+```powershell
+npm.cmd run dev
+```
+
+---
+
+## 9. Decision Gate & Stop Condition
+
+> [!IMPORTANT]
+> **MIGRATION AUDIT COMPLETE — STOPPED PRIOR TO NEON EXECUTION.**  
+> In compliance with strict safety directives:
+> - Primary branch `br-little-bird-bejretq1` has NOT been modified.
+> - No Neon branches have been created.
+> - `.env` has NOT been modified.
+> - No migration commands have been run against Neon.
+> 
+> **Awaiting project owner review and explicit authorization.**

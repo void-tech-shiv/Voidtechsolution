@@ -5,9 +5,14 @@ import type { EnquiryInput } from "@/types";
 export interface GetEnquiriesParams {
   status?: EnquiryStatus;
   category?: ServiceCategory;
+  assignedAdminId?: string;
   search?: string;
+  hasOverdueFollowUp?: boolean;
   page?: number;
   limit?: number;
+  includeRelations?: boolean;
+  sortBy?: "createdAt" | "updatedAt" | "name" | "status";
+  sortOrder?: "asc" | "desc";
 }
 
 export interface PaginatedEnquiries {
@@ -16,6 +21,14 @@ export interface PaginatedEnquiries {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+export class ConcurrencyConflictError extends Error {
+  readonly code = "CONFLICT_DETECTED";
+  constructor(message = "Concurrency conflict: Enquiry was modified by another administrator.") {
+    super(message);
+    this.name = "ConcurrencyConflictError";
+  }
 }
 
 /**
@@ -37,6 +50,10 @@ export async function createEnquiry(
         budgetRange: input.budgetRange || null,
         timeline: input.timeline || null,
         message: input.message,
+        selectedPackage: input.selectedPackage || null,
+        additionalConfig: input.additionalConfig || undefined,
+        referenceUrl: input.referenceUrl || null,
+        consentGiven: input.consentGiven !== undefined ? input.consentGiven : null,
         status: "NEW",
         ipHash: meta?.ipHash || null,
         userAgent: meta?.userAgent || null,
@@ -55,7 +72,18 @@ export async function createEnquiry(
 export async function getEnquiries(
   params: GetEnquiriesParams = {}
 ): Promise<PaginatedEnquiries> {
-  const { status, category, search, page = 1, limit = 20 } = params;
+  const {
+    status,
+    category,
+    assignedAdminId,
+    search,
+    hasOverdueFollowUp,
+    page = 1,
+    limit = 20,
+    includeRelations = false,
+    sortBy = "createdAt",
+    sortOrder = "desc",
+  } = params;
   const skip = (page - 1) * limit;
 
   const where: Prisma.EnquiryWhereInput = {};
@@ -68,6 +96,19 @@ export async function getEnquiries(
     where.serviceCategory = category;
   }
 
+  if (assignedAdminId) {
+    where.assignedAdminId = assignedAdminId;
+  }
+
+  if (hasOverdueFollowUp) {
+    where.followUps = {
+      some: {
+        isCompleted: false,
+        dueAt: { lt: new Date() },
+      },
+    };
+  }
+
   if (search && search.trim() !== "") {
     where.OR = [
       { name: { contains: search, mode: "insensitive" } },
@@ -77,11 +118,29 @@ export async function getEnquiries(
     ];
   }
 
+  const include = includeRelations
+    ? {
+        assignedAdmin: {
+          select: { id: true, name: true, email: true, role: true, isActive: true },
+        },
+        notes: {
+          orderBy: { createdAt: "desc" as const },
+          take: 5,
+        },
+        followUps: {
+          where: { isCompleted: false },
+          orderBy: { dueAt: "asc" as const },
+          take: 3,
+        },
+      }
+    : undefined;
+
   try {
     const [items, total] = await Promise.all([
       prisma.enquiry.findMany({
         where,
-        orderBy: { createdAt: "desc" },
+        include,
+        orderBy: { [sortBy]: sortOrder },
         skip,
         take: limit,
       }),
@@ -108,12 +167,40 @@ export async function getEnquiries(
 }
 
 /**
- * Retrieves a single enquiry by its unique ID.
+ * Retrieves a single enquiry by its unique ID with optional relation hydration.
  */
-export async function getEnquiryById(id: string): Promise<Enquiry | null> {
+export async function getEnquiryById(
+  id: string,
+  includeRelations = false
+): Promise<Enquiry | null> {
   try {
+    const include = includeRelations
+      ? {
+          assignedAdmin: {
+            select: { id: true, name: true, email: true, role: true, isActive: true },
+          },
+          notes: {
+            orderBy: [{ isPinned: "desc" as const }, { createdAt: "desc" as const }],
+          },
+          followUps: {
+            orderBy: [{ isCompleted: "asc" as const }, { dueAt: "asc" as const }],
+          },
+          activities: {
+            orderBy: { createdAt: "desc" as const },
+            take: 50,
+          },
+          assignments: {
+            include: {
+              admin: { select: { id: true, name: true, email: true, role: true } },
+            },
+            orderBy: { assignedAt: "desc" as const },
+          },
+        }
+      : undefined;
+
     return await prisma.enquiry.findUnique({
       where: { id },
+      include,
     });
   } catch (error) {
     console.warn(`[enquiries.repo] getEnquiryById failed for id '${id}':`, error);
@@ -121,19 +208,77 @@ export async function getEnquiryById(id: string): Promise<Enquiry | null> {
   }
 }
 
+export interface UpdateEnquiryStatusOptions {
+  internalNotes?: string;
+  lostReason?: string;
+  estimatedValueInr?: number;
+  expectedUpdatedAt?: Date;
+}
+
 /**
- * Updates an enquiry status and optionally updates internal notes.
+ * Updates an enquiry status with optional concurrency checking and metadata.
  * Write operation strictly throws descriptive errors on failure.
  */
 export async function updateEnquiryStatus(
   id: string,
   status: EnquiryStatus,
-  internalNotes?: string
+  optionsOrNotes?: string | UpdateEnquiryStatusOptions
 ): Promise<Enquiry> {
+  const options: UpdateEnquiryStatusOptions =
+    typeof optionsOrNotes === "string"
+      ? { internalNotes: optionsOrNotes }
+      : optionsOrNotes || {};
+
   const data: Prisma.EnquiryUpdateInput = { status };
 
-  if (internalNotes !== undefined) {
-    data.internalNotes = internalNotes;
+  // Business Invariant: LOST status strictly requires a documented non-empty lostReason
+  if (status === "LOST") {
+    const reason = options.lostReason?.trim();
+    if (!reason) {
+      throw new Error("A non-empty lostReason is mandatory when transitioning an enquiry to LOST status.");
+    }
+    data.lostReason = reason;
+  } else if (options.lostReason !== undefined) {
+    data.lostReason = options.lostReason?.trim() || null;
+  }
+
+  if (options.internalNotes !== undefined) {
+    data.internalNotes = options.internalNotes;
+  }
+  if (options.estimatedValueInr !== undefined) {
+    data.estimatedValueInr = options.estimatedValueInr;
+  }
+
+  // Optimistic Concurrency Control (OCC): Atomic database-level conditional update
+  if (options.expectedUpdatedAt) {
+    try {
+      const result = await prisma.enquiry.updateMany({
+        where: {
+          id,
+          updatedAt: options.expectedUpdatedAt,
+        },
+        data,
+      });
+
+      if (result.count === 0) {
+        const existing = await prisma.enquiry.findUnique({ where: { id } });
+        if (!existing) {
+          throw new Error(`Enquiry with id '${id}' not found`);
+        }
+        throw new ConcurrencyConflictError(
+          "Concurrency conflict: Enquiry was modified by another administrator."
+        );
+      }
+
+      return (await prisma.enquiry.findUnique({ where: { id } }))!;
+    } catch (error) {
+      if (error instanceof ConcurrencyConflictError) {
+        throw error;
+      }
+      const msg = error instanceof Error ? error.message : "Unknown error";
+      console.error("[enquiries.repo] updateEnquiryStatus (OCC) failed:", msg);
+      throw new Error(`Failed to update status for enquiry '${id}': ${msg}`);
+    }
   }
 
   try {
@@ -203,10 +348,13 @@ export async function deleteEnquiry(id: string): Promise<Enquiry> {
 export async function getEnquiryStats(): Promise<Record<EnquiryStatus, number>> {
   const defaultStats: Record<EnquiryStatus, number> = {
     NEW: 0,
-    IN_REVIEW: 0,
     CONTACTED: 0,
-    CONVERTED: 0,
-    ARCHIVED: 0,
+    QUALIFIED: 0,
+    PROPOSAL_SENT: 0,
+    NEGOTIATION: 0,
+    WON: 0,
+    LOST: 0,
+    ON_HOLD: 0,
   };
 
   try {

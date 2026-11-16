@@ -2,9 +2,7 @@ import type { Config } from "tailwindcss";
 
 const config: Config = {
   content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   darkMode: "class",
   theme: {
@@ -52,23 +50,25 @@ const config: Config = {
         display: ["var(--font-sans)", "system-ui", "sans-serif"],
       },
       boxShadow: {
-        "glow-xs": "0 0 10px -2px rgba(139, 92, 246, 0.2)",
-        "glow-sm": "0 0 16px -3px rgba(139, 92, 246, 0.28)",
-        "glow-md": "0 0 28px -4px rgba(139, 92, 246, 0.38)",
-        "glow-lg": "0 0 44px -6px rgba(139, 92, 246, 0.48)",
-        "glow-neon": "0 0 55px -6px rgba(168, 85, 247, 0.55)",
+        "glow-xs": "0 0 10px -2px rgba(168, 85, 247, 0.25)",
+        "glow-sm": "0 0 16px -3px rgba(168, 85, 247, 0.35)",
+        "glow-md": "0 0 28px -4px rgba(168, 85, 247, 0.45)",
+        "glow-lg": "0 0 44px -6px rgba(168, 85, 247, 0.55)",
+        "glow-neon": "0 0 55px -6px rgba(192, 132, 252, 0.65)",
         "glass-inner": "inset 0 1px 1px 0 rgba(255, 255, 255, 0.08)",
         "glass-elevated": "0 10px 30px -10px rgba(0, 0, 0, 0.6), inset 0 1px 1px 0 rgba(255, 255, 255, 0.12)",
       },
       backgroundImage: {
-        "void-glow-radial": "radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.18) 0%, transparent 65%)",
-        "void-glow-bottom": "radial-gradient(circle at 50% 100%, rgba(124, 58, 237, 0.12) 0%, transparent 60%)",
-        "void-card-gradient": "linear-gradient(180deg, rgba(24, 24, 34, 0.75) 0%, rgba(10, 10, 15, 0.9) 100%)",
-        "void-accent-gradient": "linear-gradient(135deg, #7c3aed 0%, #8b5cf6 50%, #a855f7 100%)",
+        "void-glow-radial": "radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.18) 0%, transparent 65%)",
+        "void-glow-bottom": "radial-gradient(circle at 50% 100%, rgba(139, 92, 246, 0.14) 0%, transparent 60%)",
+        "void-card-gradient": "linear-gradient(180deg, rgba(16, 13, 27, 0.85) 0%, rgba(10, 9, 18, 0.95) 100%)",
+        "void-accent-gradient": "linear-gradient(135deg, #7C3AED 0%, #8B5CF6 50%, #C084FC 100%)",
       },
       animation: {
         "pulse-subtle": "pulseSubtle 4s ease-in-out infinite",
         "glow-breathe": "glowBreathe 5s ease-in-out infinite",
+        "float-slow": "floatSlow 6s ease-in-out infinite",
+        "float-slow-reverse": "floatSlowReverse 8s ease-in-out infinite",
       },
       keyframes: {
         pulseSubtle: {
@@ -76,8 +76,16 @@ const config: Config = {
           "50%": { opacity: "0.82" },
         },
         glowBreathe: {
-          "0%, 100%": { filter: "drop-shadow(0 0 14px rgba(139, 92, 246, 0.25))" },
-          "50%": { filter: "drop-shadow(0 0 28px rgba(139, 92, 246, 0.5))" },
+          "0%, 100%": { filter: "drop-shadow(0 0 14px rgba(168, 85, 247, 0.35))" },
+          "50%": { filter: "drop-shadow(0 0 28px rgba(168, 85, 247, 0.6))" },
+        },
+        floatSlow: {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-8px)" },
+        },
+        floatSlowReverse: {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(8px)" },
         },
       },
     },

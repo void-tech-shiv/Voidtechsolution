@@ -61,23 +61,29 @@ updated: 2026-11-11T23:54:45+05:30
 ---
 
 ### Phase 4: Public Marketing Pages — Home, Services & Dynamic Showcase (Milestone 3)
-**Status:** ⬜ Not Started
-**Objective:** Implement the high-converting homepage (Hero, dynamic particle/glow background, value propositions, client logos, testimonials) and dynamic `/services` listing with individual detail pages for all 18 services.
+**Status:** ✅ Complete
+**Objective:** Implement the complete responsive homepage with all 9 strategic sections (Hero, Brand Intro, 18-Service Catalog with filtering, Why Us, 7-Stage Process, Concept Lab, 10 INR Pricing Tiers, Accessible FAQ Accordion, Closing Conversion Banner).
 **Dependencies:** Phase 3
+**Plans:**
+- [x] Plan 4.1: Homepage 9 Strategic Sections, Accessible Accordion, Repository Integration & Test Suite
 
 ---
 
 ### Phase 5: Public Marketing Pages — About, Portfolio & Case Studies (Milestone 3)
-**Status:** ⬜ Not Started
-**Objective:** Construct `/about` agency story, engineering philosophy, and the `/portfolio` showcase with interactive filtering by category, live preview links, and detailed case study pages.
+**Status:** ✅ Complete
+**Objective:** Construct `/about` agency story, engineering philosophy, 6 values, 6-stage approach, 7-domain tech stack matrix, `/portfolio` discovery page with client-side category filtering and search, and dynamic `/portfolio/[slug]` case study pages with architectural blueprints and simulated benchmarks.
 **Dependencies:** Phase 4
+**Plans:**
+- [x] Plan 5.1: About Page, Portfolio Discovery & Dynamic Case Studies Layouts
 
 ---
 
 ### Phase 6: Public Marketing Pages — Pricing Calculator, Contact & Enquiry Flow (Milestone 4)
-**Status:** ⬜ Not Started
+**Status:** ✅ Complete
 **Objective:** Build `/pricing` with interactive tier selector, bespoke project estimation calculator, and full `/contact` multi-step enquiry form with Zod validation, rate limiting, and email dispatch hooks.
 **Dependencies:** Phase 5
+**Plans:**
+- [x] Plan 06-01: Pricing Catalog, Estimation Calculator & Multi-Step Enquiry Flow (Executed & Verified)
 
 ---
 

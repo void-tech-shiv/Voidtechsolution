@@ -41,7 +41,7 @@ export function renderPasswordResetEmail(props: PasswordResetTemplateProps): {
     </div>
 
     <div style="margin: 28px 0 0 0; padding: 14px 18px; background-color: #1a1625; border-left: 3px solid #8b5cf6; border-radius: 4px; font-size: 13px; color: #c4b5fd;">
-      <strong>Note:</strong> This link expires in ${expiry} minutes. If you did not request a password reset, no action is required; your account password remains unchanged.
+      <strong>Note:</strong> This link expires in ${expiry} minutes. If you did not initiate this action, please contact VOIDTECH SOLUTION support at <a href="mailto:voidtechsolutionsupport@gmail.com" style="color: #c4b5fd; text-decoration: underline;">voidtechsolutionsupport@gmail.com</a>.
     </div>
   `;
 
@@ -54,7 +54,7 @@ ${props.resetUrl}
 
 This reset link is valid for ${expiry} minutes only.
 
-If you did not request this password reset, please ignore this email or notify security@voidtechsolution.com.`;
+If you did not initiate this action, please contact VOIDTECH SOLUTION support at voidtechsolutionsupport@gmail.com.`;
 
   const html = renderBaseEmailLayout({
     title: "Password Reset Request",

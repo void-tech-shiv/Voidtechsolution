@@ -11,6 +11,8 @@ function mapStaticToPricingModel(
 ): PricingPackage {
   return {
     id: `pkg-${index + 1}`,
+    contentItemId: null,
+    publishedAt: null,
     slug: def.slug,
     name: def.name,
     category: def.category as ServiceCategory,

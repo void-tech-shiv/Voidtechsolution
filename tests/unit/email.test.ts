@@ -83,16 +83,18 @@ describe("Phase 3: Email Templates Visual Identity & Content Integrity", () => {
     expect(text).toContain(resetUrl);
   });
 
-  it("renders enquiry confirmation email with SLA guarantee", () => {
+  it("renders enquiry confirmation email with responsive review notice", () => {
     const { subject, html, text } = renderEnquiryConfirmationEmail({
       recipientName: "Kavita Sharma",
       serviceTitle: "Enterprise ERP & CRM Development",
       enquiryId: "enq_test_123456",
     });
 
-    expect(subject).toContain("Enquiry Received");
+    expect(subject).toContain("We've Received Your Project Enquiry");
     expect(html).toContain("Enterprise ERP & CRM Development");
-    expect(html).toContain("24 business hours");
+    expect(html).toContain("as soon as possible");
+    expect(html).not.toContain("24 business hours");
+    expect(html).toContain("voidtechsolutionsupport@gmail.com");
     expect(text).toContain("Kavita Sharma");
   });
 
@@ -109,7 +111,7 @@ describe("Phase 3: Email Templates Visual Identity & Content Integrity", () => {
       message: "We need custom inventory tracking and barcode scanning.",
     });
 
-    expect(subject).toContain("[NEW LEAD]");
+    expect(subject).toContain("New Project Enquiry");
     expect(subject).toContain("Rohan Varma");
     expect(html).toContain("rohan@enterprise.in");
     expect(html).toContain("+91 9876543210");
@@ -131,6 +133,8 @@ describe("Phase 3: Email Templates Visual Identity & Content Integrity", () => {
     expect(html).toContain("IN_REVIEW");
     expect(html).toContain("Lead architect assigned");
     expect(text).toContain("IN_REVIEW");
+    expect(text).toContain("voidtechsolutionsupport@gmail.com");
+    expect(text).not.toContain("contact@voidtechsolution.com");
   });
 
   it("renders security notification email for account events", () => {
@@ -146,6 +150,87 @@ describe("Phase 3: Email Templates Visual Identity & Content Integrity", () => {
     expect(html).toContain("NEW_ADMIN_SESSION_AUTHORIZED");
     expect(html).toContain("103.21.244.0");
     expect(text).toContain("NEW_ADMIN_SESSION_AUTHORIZED");
+  });
+
+  describe("Customer-Facing Email Templates: Unverified Email Address Guard", () => {
+    const unverifiedAddresses = [
+      "security@voidtechsolution.com",
+      "contact@voidtechsolution.com",
+      "support@voidtechsolution.com",
+      "hello@voidtechsolution.com",
+      "info@voidtechsolution.com",
+    ];
+
+    const customerFacingTemplates = [
+      {
+        name: "Enquiry Confirmation",
+        render: () =>
+          renderEnquiryConfirmationEmail({
+            recipientName: "Test Lead",
+            serviceTitle: "Web Application Development",
+            enquiryId: "enq_guard_001",
+          }),
+      },
+      {
+        name: "Enquiry Status Update",
+        render: () =>
+          renderEnquiryStatusUpdateEmail({
+            recipientName: "Test Lead",
+            enquiryId: "enq_guard_002",
+            oldStatus: "NEW",
+            newStatus: "IN_REVIEW",
+          }),
+      },
+      {
+        name: "OTP Verification",
+        render: () =>
+          renderOtpVerificationEmail({
+            code: "654321",
+            recipientName: "Test User",
+            purpose: "Login Verification",
+          }),
+      },
+      {
+        name: "Password Reset",
+        render: () =>
+          renderPasswordResetEmail({
+            resetUrl: "https://voidtechsolution.com/auth/reset?token=test",
+            recipientName: "Test User",
+          }),
+      },
+      {
+        name: "Security Notification",
+        render: () =>
+          renderSecurityNotificationEmail({
+            recipientName: "Test User",
+            eventType: "SUSPICIOUS_LOGIN_ATTEMPT",
+          }),
+      },
+    ];
+
+    customerFacingTemplates.forEach(({ name, render }) => {
+      it(`enforces verified support email and rejects unverified addresses in ${name}`, () => {
+        const { html, text } = render();
+
+        // 1. Verified official support email must be present in both HTML and plain-text
+        expect(html).toContain("voidtechsolutionsupport@gmail.com");
+        expect(text).toContain("voidtechsolutionsupport@gmail.com");
+
+        // 2. Standardized security footer message must be present in both HTML and plain-text
+        expect(html).toContain(
+          "If you did not initiate this action, please contact VOIDTECH SOLUTION support at"
+        );
+        expect(text).toContain(
+          "If you did not initiate this action, please contact VOIDTECH SOLUTION support at voidtechsolutionsupport@gmail.com."
+        );
+
+        // 3. Zero unverified public email addresses in HTML or plain-text
+        for (const unverified of unverifiedAddresses) {
+          expect(html).not.toContain(unverified);
+          expect(text).not.toContain(unverified);
+        }
+      });
+    });
   });
 });
 

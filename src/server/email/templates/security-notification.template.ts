@@ -57,7 +57,7 @@ export function renderSecurityNotificationEmail(props: SecurityNotificationTempl
     </table>
 
     <div style="margin: 24px 0 0 0; padding: 14px 18px; background-color: #1f1315; border-left: 3px solid #ef4444; border-radius: 4px; font-size: 13px; color: #fca5a5;">
-      <strong>Action Required:</strong> If you did not recognize or initiate this activity, please revoke your active sessions immediately and contact our security operations center at <a href="mailto:security@voidtechsolution.com" style="color: #f87171; text-decoration: underline;">security@voidtechsolution.com</a>.
+      <strong>Action Required:</strong> If you did not initiate this action, please contact VOIDTECH SOLUTION support at <a href="mailto:voidtechsolutionsupport@gmail.com" style="color: #f87171; text-decoration: underline;">voidtechsolutionsupport@gmail.com</a>.
     </div>
   `;
 
@@ -72,7 +72,7 @@ Timestamp:    ${time}
 Origin IP:    ${props.ipAddress || "Unknown"}
 User Agent:   ${props.userAgent || "Unknown"}
 ${props.actionTaken ? `Action Taken: ${props.actionTaken}\n` : ""}
-If this was not you, please contact security@voidtechsolution.com immediately.`;
+If you did not initiate this action, please contact VOIDTECH SOLUTION support at voidtechsolutionsupport@gmail.com.`;
 
   const html = renderBaseEmailLayout({
     title: `Security Alert: ${props.eventType}`,

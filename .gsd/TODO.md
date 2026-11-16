@@ -52,10 +52,80 @@
 - [x] Author `tests/unit/env.test.ts` (9 tests, expanding test suite to 82 tests passing)
 - [x] Enforce strict stop condition: Phase 4 NOT started, awaiting user authorization
 
+## Phase 4: Public Marketing Website — Homepage & Services (Completed & Verified)
+- [x] Create accessible WAI-ARIA Accordion primitive (`src/components/ui/accordion.tsx`)
+- [x] Create dynamic service icon mapper (`src/components/sections/service-icon.tsx`)
+- [x] Build interactive client-side category filter & search (`src/components/sections/services-filter.tsx`)
+- [x] Build interactive FAQ accordion with graceful empty state (`src/components/sections/faq-accordion.tsx`)
+- [x] Build direct project consultation inquiry component (`src/components/sections/quick-inquiry.tsx`)
+- [x] Implement complete 9-section responsive homepage (`src/app/page.tsx`):
+  - [x] Section 1: Hero ("Turning Ideas Into Powerful Digital Products.")
+  - [x] Section 2: Brand Introduction & Principles
+  - [x] Section 3: Full-Spectrum Services Showcase (18 offerings, category tabs, tech tags, starting INR prices)
+  - [x] Section 4: Why Partner With VoidTech (6 practical differentiators)
+  - [x] Section 5: The 7-Stage Development Journey
+  - [x] Section 6: Internal Engineering Prototypes (Concept Lab with visible CONCEPT labels)
+  - [x] Section 7: Predictable Investment Tiers (10 approved INR packages, ₹999 to ₹59,999+)
+  - [x] Section 8: Frequently Asked Questions (accessible accordion)
+  - [x] Section 9: Closing Conversion Banner (direct email consultation)
+- [x] Author comprehensive unit & integration test suite (`tests/unit/homepage.test.tsx`, 14 tests)
+- [x] Run full quality verification: `tsc --noEmit` (0 errors), `next lint` (0 errors), `vitest run` (96 tests passed), `next build` (clean)
+- [x] Synchronize repository documentation (`README.md`, `docs/PROJECT_STATUS.md`, `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, `docs/CHANGELOG.md`)
+- [x] Update GSD state and planning artifacts
+- [x] Enforce strict stop condition: Phase 5 NOT started, awaiting user authorization
+
+## Phase 5: About Page, Portfolio & Detailed Project Case Studies (Completed & Verified)
+- [x] Author Phase 5 GSD planning artifacts (`.gsd/phases/05-about-portfolio/DISCUSS.md`, `05-01-PLAN.md`)
+- [x] Expand `PortfolioRepo` fallback prototypes across 5 technical domains (`algorithmic-liquidity-engine`, `autonomous-ai-ops-agent`, `distributed-telemetry-data-mesh`, `decentralized-identity-vault`, `edge-iot-fleet-monitor`)
+- [x] Update `mainNav` in `src/config/site.ts` to link to `/about` and `/portfolio` directly
+- [x] Implement dedicated About page (`src/app/about/page.tsx`) with 7 strategic sections:
+  - [x] Section 1: Hero ("Engineering Ideas Into Digital Reality.", copy, CTAs)
+  - [x] Section 2: Who We Are (authentic studio narrative, zero fake stats)
+  - [x] Section 3: Mission & Vision (exact approved statements)
+  - [x] Section 4: 6 Core Value Pillars
+  - [x] Section 5: 6-Stage Engineering Approach
+  - [x] Section 6: Categorized 7-domain Technology Stack Matrix
+  - [x] Section 7: Closing Collaboration CTA
+- [x] Implement dedicated Portfolio listing page (`src/app/portfolio/page.tsx`):
+  - [x] Hero ("Selected Work & Engineering Concepts.")
+  - [x] Server-side data retrieval via `PortfolioRepo.getAllProjects()`
+  - [x] Interactive client component `PortfolioFilter` (`src/components/sections/portfolio-filter.tsx`)
+  - [x] Category pills filter & live keyword search
+  - [x] Explicit `CONCEPT` badges and simulated benchmark tags
+  - [x] Accessible empty state with filter reset action
+- [x] Implement dynamic project case study route (`src/app/portfolio/[slug]/page.tsx`):
+  - [x] Next.js 15 async `params` resolution (`await params`)
+  - [x] `generateStaticParams()` and `generateMetadata()`
+  - [x] `notFound()` for unknown slugs
+  - [x] 11 strategic sections (Breadcrumbs, Hero, Challenge, Solution, Architecture Blueprint, Benchmarks, Tech Stack, Code Access, Related Concepts, CTA)
+- [x] Author comprehensive test suite (`tests/unit/about-portfolio.test.tsx`, 16 tests)
+- [x] Run full quality gate: `tsc --noEmit` (0 errors), `next lint` (0 errors), `vitest run` (112 tests passed across 8 suites), `next build` (clean compilation)
+- [x] Author `.gsd/phases/05-about-portfolio/05-01-SUMMARY.md` and `VERIFICATION.md`
+- [x] Synchronize documentation (`PROJECT_STATUS.md`, `ARCHITECTURE.md`, `TESTING.md`, `CHANGELOG.md`, `README.md`)
+- [x] Enforce strict stop condition: Phase 6 NOT started, awaiting user authorization
+
+## Phase 6: Public Marketing Pages — Pricing Calculator, Contact & Enquiry Flow (Completed & Verified)
+- [x] Author Phase 6 GSD planning artifacts (`.gsd/phases/06-pricing-contact/DISCUSS.md`, `06-01-PLAN.md`)
+- [x] Author database migration proposal (`.gsd/phases/06-pricing-contact/MIGRATION_PROPOSAL.md`) without live execution
+- [x] Update `prisma/schema.prisma` with optional non-breaking fields and generate client (`npx prisma generate`)
+- [x] Update `src/types/index.ts` and `EnquiriesRepo` to persist new fields
+- [x] Implement token-bucket rate limiter and SHA-256 duplicate submission fingerprinting (`src/server/security/rate-limiter.ts`)
+- [x] Implement dedicated transactional email templates and enquiry mailer (`src/server/email/enquiry-mailer.ts`)
+- [x] Implement Server Action `submitEnquiryAction` (`src/server/actions/enquiry.actions.ts`) with honeypot bot trap
+- [x] Implement REST API Route Handler `POST /api/enquiries` (`src/app/api/enquiries/route.ts`)
+- [x] Implement interactive `PricingCalculator` (`src/components/sections/pricing-calculator.tsx`) with real-time recalculation
+- [x] Implement interactive `PricingTable` (`src/components/sections/pricing-table.tsx`) with category filters
+- [x] Implement dedicated Pricing page (`src/app/pricing/page.tsx`) with all 10 approved tiers, calculator, and 4 guarantees
+- [x] Implement multi-step `ContactEnquiryForm` (`src/components/sections/contact-enquiry-form.tsx`) with URL pre-fill and data preservation
+- [x] Implement dedicated Contact page (`src/app/contact/page.tsx`) with remote-first availability standards and responsive scoping review
+- [x] Update `mainNav` in `src/config/site.ts` to link to `/pricing` and `/contact`
+- [x] Author comprehensive test suite (`tests/unit/pricing-contact.test.tsx`, 18 tests)
+- [x] Run full quality gate: `tsc --noEmit` (0 errors), `next lint` (0 errors), `vitest run` (130 tests passed across 9 suites), `next build` (clean compilation)
+- [x] Author `.gsd/phases/06-pricing-contact/06-01-SUMMARY.md` and `VERIFICATION.md`
+- [x] Synchronize documentation (`PROJECT_STATUS.md`, `ARCHITECTURE.md`, `API_DOCUMENTATION.md`, `DATABASE_DESIGN.md`, `EMAIL_SYSTEM.md`, `SECURITY.md`, `TESTING.md`, `CHANGELOG.md`, `README.md`)
+- [x] Enforce strict stop condition: Phase 7 NOT started, awaiting user authorization
+
 ## Future Phases (Pending Milestone Approvals)
-- [ ] Phase 4: Public Marketing Pages — Home, Services & Dynamic Showcase
-- [ ] Phase 5: Public Marketing Pages — About, Portfolio & Case Studies
-- [ ] Phase 6: Public Marketing Pages — Pricing Calculator, Contact & Enquiry Flow
 - [ ] Phase 7: Secure Admin authentication & session management
 - [ ] Phase 8: Admin dashboard shell & analytics overview
 - [ ] Phase 9: Admin enquiry management & pipeline Kanban

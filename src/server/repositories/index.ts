@@ -7,3 +7,14 @@ export * as PricingRepo from "./pricing.repo";
 export * as FaqRepo from "./faq.repo";
 export * as AuditRepo from "./audit.repo";
 export * as DeliveryRepo from "./delivery.repo";
+export * as LeadNotesRepo from "./lead-notes.repo";
+export * as LeadFollowUpsRepo from "./lead-followups.repo";
+export * as LeadActivitiesRepo from "./lead-activities.repo";
+export * as LeadAssignmentsRepo from "./lead-assignments.repo";
+export * as NotificationsRepo from "./notifications.repo";
+export * as PageSectionsRepo from "./page-sections.repo";
+export * as TestimonialsRepo from "./testimonials.repo";
+export * as CmsContentItemRepo from "./cms/content-item.repo";
+
+export * as CmsContentRevisionRepo from "./cms/content-revision.repo";
+export * as CmsRepoErrors from "./cms/cms-repository.errors";

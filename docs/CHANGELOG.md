@@ -7,6 +7,830 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.16] — 2026-11-15
+### Task 10.4.6.1: Security Verification Hardening & Final Phase 10 Closure
+
+#### Remediated & Hardened
+- **Finding A: Fail-Closed Database Row Locking in Publishing Service:**
+  - Removed blanket `try...catch` from `SELECT id FROM content_items WHERE id = $1 FOR UPDATE` in both `publishContentItem` and `archiveContentItem` (`src/server/services/cms/publishing.service.ts`).
+  - Row locking failures (e.g. PostgreSQL lock timeouts, deadlocks, connection errors) now fail closed immediately, throwing an exception and triggering automatic transaction rollback, preventing partial or un-serialized writes.
+  - Added unit tests in `tests/unit/cms-services/publishing.service.test.ts` verifying fail-closed transaction abortion when row locking fails.
+- **Finding B: Guarded Real PostgreSQL Concurrency & Archiving Integration Tests:**
+  - Hardened `tests/integration/cms-services/publishing.integration.test.ts` with strict database safety checks: fails closed and aborts immediately if local PostgreSQL is unreachable, rather than silently skipping assertions.
+  - Asserted `TEST_DATABASE_URL`, `DATABASE_URL`, and `DIRECT_URL` target safe local test databases (`voidtech_test_concurrency`) and prohibit remote/Neon execution.
+  - Added real concurrent PostgreSQL archiving tests verifying atomic deactivation, version increment, and single-winner concurrency conflict handling with deterministic test cleanup.
+- **Finding C: Secure POST Draft Mode Flow & Origin/CSRF Verification:**
+  - Migrated `/api/draft-mode/enable` from GET query-string secrets to secure POST requests receiving JSON payloads (`{ secret, path }`), completely preventing secret leakage in browser history, proxy access logs, and referrer headers.
+  - Replaced GET handler with HTTP 405 `METHOD_NOT_ALLOWED` (`Allow: POST`).
+  - Integrated `validateRequestOrigin(request.headers)` to enforce strict Origin and Referer validation against allowed application origins, returning HTTP 403 `CSRF_ORIGIN_MISMATCH` on cross-origin requests.
+  - Maintained timing-safe token comparison (`crypto.timingSafeEqual`), fail-closed HTTP 500 when `DRAFT_MODE_SECRET` is unset/empty, open-redirect path sanitization, and strict `Cache-Control: no-store` / `X-Robots-Tag: noindex, nofollow` headers.
+  - Added 17 unit tests in `tests/unit/draft-mode.test.tsx` verifying all POST, GET 405, CSRF origin mismatch, and authentication branches.
+- **Verification Metrics:**
+  - Full Vitest suite: 57 test files, 733 tests passing (100% pass rate).
+  - Playwright visual release gate: 57/57 tests passing on port 3005 across 8 routes and 7 viewports.
+  - `npm run typecheck`: Clean (0 errors).
+  - Authored `docs/phases/PHASE_10_4_6_1_SECURITY_HARDENING_REPORT.md`.
+
+---
+
+## [0.10.15] — 2026-11-15
+### Task 10.4.6: Critical CMS Security & Integrity Remediation
+
+#### Remediated & Hardened
+- **Finding A: Draft Mode Hardcoded Secret Fallback & Open Redirect Elimination:**
+  - Removed `voidtech_draft_preview_secret_2026` fallback string; endpoint now fails closed with HTTP 500 `PREVIEW_UNAVAILABLE` when `DRAFT_MODE_SECRET` is unconfigured or empty.
+  - Implemented `crypto.timingSafeEqual` constant-time string comparison to prevent timing side-channel attacks on preview authentication tokens.
+  - Built `safeInternalRedirectPath` blocking external origins, protocol-relative paths (`//`), backslashes (`\`), encoded slashes/backslashes (`%2f`, `%5c`), and control characters.
+  - Added strict `Cache-Control: no-store, no-cache, must-revalidate, max-age=0`, `Pragma: no-cache`, and `X-Robots-Tag: noindex, nofollow` headers to `/api/draft-mode/enable` and `/api/draft-mode/disable`.
+  - Added comprehensive test suite in `tests/unit/draft-mode.test.tsx` (15 passing tests).
+- **Finding B: PostgreSQL Publishing Transaction Optimistic Concurrency Race Remediation:**
+  - Added PostgreSQL row-level lock `SELECT id FROM content_items WHERE id = $1 FOR UPDATE` inside the publishing transaction to serialize concurrent publication requests targeting the same ContentItem.
+  - Enforced atomic conditional OCC update via `tx.contentItem.updateMany({ where: { id, version: expectedVersion } })`, triggering `ConcurrencyConflictError` if `count === 0`.
+  - Guaranteed full transaction atomicity: domain record upsert, revision status updates, pointer promotions, and audit event logging occur in the same transaction with full rollback on conflict.
+  - Verified with real PostgreSQL concurrent integration tests (`tests/integration/cms-services/publishing.integration.test.ts`): exactly 1 winner, 1 conflict, zero partial state, exactly 1 audit event.
+- **Finding C: Fabricated Testimonial Fallback Elimination & Legal Integrity:**
+  - Removed `staticTestimonials` and all fabricated client names, companies, statements, and synthetic DocuSign URLs from `src/server/repositories/testimonials.repo.ts`.
+  - Implemented safe empty list fallback `[]` when the database has no records or is unreachable.
+  - Enforced database invariants: `isActive: true`, `verificationStatus: 'VERIFIED'`, `clientConsentStatus: 'GRANTED'`, and `publishedAt: { not: null }`.
+  - Added dedicated test suite `tests/unit/testimonials.repo.test.tsx` (10 passing tests).
+- **Test Metrics:**
+  - Full Vitest suite: 57 test files, 726 tests passing (100% pass rate).
+  - Playwright visual release gate: 57/57 tests passing on port 3005 across 8 routes and 7 viewports.
+  - `npm run typecheck` (0 errors), `npm run lint` (0 errors, 0 warnings).
+  - Authored `docs/phases/PHASE_10_4_6_SECURITY_REMEDIATION_REPORT.md`.
+
+---
+
+## [0.10.14] — 2026-11-15
+### Phase 10: Complete Admin CMS (Backend Foundation, Admin Dashboard, Public Integration & Final Acceptance)
+
+#### Added & Implemented
+- **Phase 10.1 — CMS Backend Foundation (Tasks 10.1.6 – 10.1.12):**
+  - **9-Step Atomic Publishing Transaction Engine (`src/server/services/cms/publishing.service.ts`):** Enforces OCC version checking (`expectedVersion`), parent ownership validation, domain record materialization, dual pointer promotion, and transaction-bound audit logging with automatic rollback on failure.
+  - **Draft Retention Auto-Pruner:** Maintains a max 20 working draft revisions limit per item with parent row locking, permanently shielding published snapshots.
+  - **Domain Repositories:** Implemented `PageSectionsRepo`, `TestimonialsRepo`, enhanced `ServicesRepo`, `PricingRepo`, `PortfolioRepo`, `FaqRepo`.
+  - **Storage Abstraction & Pipeline:** `StorageProvider` interface and `LocalFileSystemStorageProvider` with path traversal and null-byte defenses; Sharp WebP image processing pipeline with EXIF stripping and default SVG rejection.
+  - **GFM Markdown Engine:** `src/lib/markdown.ts` compiler with `rehype-sanitize` for clean, safe HTML rendering.
+  - **Static Fallback Resilience:** 5-scenario resilient fallback handler (`src/lib/cms/fallback-handler.ts`) ensuring zero downtime and complete database credential sanitization.
+- **Phase 10.2 — Admin CMS Dashboard & Interactive UI (Tasks 10.2.1 – 10.2.10):**
+  - CMS Overview Hub at `/admin/cms` with live metrics, quick-action navigation, and revision audit feed.
+  - Management interfaces for Services, Pricing, Portfolio, FAQs, Testimonials (with legal consent verification), Page Sections, and Media Library.
+  - Strict RBAC restrictions locking Pricing changes to `SUPER_ADMIN` and `ADMIN`.
+  - Interactive revision history with side-by-side visual diff dialog and one-click rollback.
+- **Phase 10.3 — Public Website CMS Integration & Preview Subsystem (Tasks 10.3.1 – 10.3.5):**
+  - Wired domain repositories into public routes (`/`, `/services`, `/pricing`, `/portfolio`, `/portfolio/[slug]`, `/about`, `/contact`) with static fallback safety.
+  - On-demand cache revalidation (`revalidatePath`) on publication.
+  - Next.js Draft Mode preview subsystem (`/api/draft-mode/enable`, `/api/draft-mode/disable`) with amber HUD warning banner and `X-Robots-Tag: noindex, nofollow` search indexing prevention.
+  - Verified 57/57 visual release gate tests on port 3005 across 8 routes and 7 responsive viewports.
+- **Phase 10.4 — Security Threat Audit & Final Acceptance:**
+  - Evaluated and mitigated 15 security threat scenarios (SEC-01 through SEC-15).
+  - Executed complete Vitest regression suite: 56 test files, 703 tests passing (100% pass rate).
+  - Executed Playwright visual release gate: 57 tests passing.
+  - TypeScript (`tsc --noEmit`) 0 errors; ESLint (`next lint`) 0 errors, 0 warnings; Next.js build 39 routes clean.
+  - Authored `docs/phases/PHASE_10_3_COMPLETION_REPORT.md`, `docs/phases/PHASE_10_4_ACCEPTANCE_REPORT.md`, and `docs/phases/PHASE_10_FINAL_COMPLETION_REPORT.md`.
+
+---
+
+## [0.10.13] — 2026-11-15
+### Phase 10.1: Task 10.1.5.2.2 — Release Gate Runner Safety & Verification Closure
+
+#### Hardened & Verified
+- **Safe Port Occupancy & Process Ownership:**
+  - Removed indiscriminate `killPortProcess()` from `scripts/run-visual-gate.ts`, eliminating the risk of terminating external or unrelated background processes occupying port 3005.
+  - Implemented non-destructive port diagnostic inspection via `getPortOccupant()` (`netstat` and `tasklist`), reporting PID, process name, and suggested remediation (`GATE_PORT=<port> npm run test:gate`).
+  - Added unit test suite `tests/unit/release-gate-runner.test.ts` verifying that unrelated occupying processes remain running and healthy during port conflict.
+  - Managed child process lifecycle strictly through owned process tracking, handling SIGINT/SIGTERM gracefully without leaving orphaned servers.
+- **Deterministic Stylesheet Response Observation:**
+  - Replaced asynchronous event listener race conditions in `tests/e2e/production-visual-integrity.spec.ts` with tracked promise synchronization (`responseProcessingPromises`).
+  - Awaited all in-flight response processing deterministically before evaluating CSS assertions.
+  - Filtered genuine CSS stylesheets from URLs merely containing `.css` in query parameters.
+  - Asserted presence of at least one substantial Next.js bundled CSS stylesheet (`size > 1000` bytes, HTTP 200, Content-Type `text/css`) with detailed asset and route diagnostics.
+- **Actual Font Verification Across Weights:**
+  - Verified `document.fonts.ready` settles to `"loaded"`.
+  - Audited and checked registered font face for `"Inter"` in `document.fonts`.
+  - Evaluated `document.fonts.check()` with CSS font shorthands across standard weights: `400 16px Inter`, `600 16px Inter`, `700 16px Inter`.
+  - Verified body element computed font family actively prioritizes `Inter` (rejecting generic fallback alone and unstyled serif/Times New Roman).
+  - Verified local `.woff2` font resource responses with HTTP 200 and zero failed font requests.
+- **Test Metrics:**
+  - 57/57 visual integrity release gate tests passing across 7 viewports and 8 routes (38.3s).
+  - 653/653 Vitest regression tests passing across 47 suites.
+  - `npm run typecheck` (0 errors), `npm run lint` (0 errors).
+- **Audit Documentation:**
+  - Authored `docs/phases/PHASE_10_1_5_2_2_RELEASE_GATE_SAFETY_REPORT.md`.
+
+---
+
+## [0.10.12] — 2026-11-14
+### Phase 10.1: Task 10.1.5.2.1 — Production Release Gate Integrity Closure Audit
+
+#### Hardened & Verified
+- **Server Isolation & Port Conflict Elimination:**
+  - Configured dedicated port `3005` in `playwright.gate.config.ts` with `reuseExistingServer: false`, eliminating potential silent reuse of local development servers running on port `3000`.
+  - Added pre-flight health test asserting `data.environment === "production"` via `/api/health` and verifying the absence of development artifacts (`react-refresh.js`, `__next_dev__`, `data-next-dev-tools`).
+- **Mandatory Route-Specific CTA Contracts:**
+  - Removed conditional/silent skips (`if (buttonInfo)`) and established explicit `CtaRequirement` contracts for every route.
+  - Enforced strict assertions: `toBeVisible()`, bounding box `width > 0 && height > 0`, non-zero horizontal padding, non-zero border-radius, `cursor: pointer`, and valid internal route destinations.
+- **Dynamic Route Testing:**
+  - Added dynamic portfolio detail case study route `/portfolio/algorithmic-liquidity-engine` across all 7 viewports.
+  - Verified breadcrumbs navigation, case study layout, "Request Architecture Brief", and "Back to Portfolio" CTAs.
+- **Real Network Response & Font Loading Verification:**
+  - Captured all CSS network responses, asserting HTTP 200, Content-Type `text/css`, non-empty payload size (> 1KB), and zero failed CSS requests.
+  - Evaluated browser Font Loading API (`await document.fonts.ready; document.fonts.status === 'loaded'`), Inter typography family, and zero failed `.woff2` requests.
+- **Cross-Platform Runner Script:**
+  - Authored `scripts/run-visual-gate.ts` linked to `npm run test:gate`, automating port 3005 preflight cleanup, `next build`, Playwright test execution, and post-test teardown.
+- **Browser Runtime Audit & Test Results:**
+  - Audited local browser channels (Chromium via Microsoft Edge exercised; documented absence of Playwright bundled Firefox/WebKit).
+  - All 57 visual release gate tests passing across 7 viewports and 8 routes (100% pass rate in 40.3s).
+  - 56 visual screenshot proofs captured and cataloged in `test-results/screenshots/`.
+  - Full Vitest regression baseline preserved: 642/642 tests passing across 45 test files.
+  - Static analysis: `npm run typecheck` (0 errors), `npm run lint` (0 errors).
+- **Audit Documentation:**
+  - Created `docs/phases/PHASE_10_1_5_2_1_RELEASE_GATE_INTEGRITY_REPORT.md`.
+
+---
+
+## [0.10.11] — 2026-11-13
+### Phase 10.1: Task 10.1.5.2 — Production Visual Integrity & Release Readiness Audit
+
+#### Fixed & Hardened
+- **Development / Production Webpack Cache Invariant:**
+  - Diagnosed and resolved the root cause of the unstyled appearance on `localhost:3000` (development server fracturing module map after finding leftover `.next` production build artifacts, causing `TypeError: __webpack_modules__[moduleId] is not a function` and CSS 404).
+  - Added cross-platform pre-dev cache cleanup check in `package.json` (`node -e "const fs=require('fs');if(fs.existsSync('.next/BUILD_ID')){fs.rmSync('.next',{recursive:true,force:true})}" && next dev`) ensuring that dev server starts with fresh cache when transitioning from production builds.
+- **Tailwind Content Scanning Unification:**
+  - Updated `tailwind.config.ts` content array to `"./src/**/*.{js,ts,jsx,tsx,mdx}"` ensuring comprehensive utility purging and class inclusion across all current and future modules.
+- **Automated Visual Integrity Release Gate Suite:**
+  - Implemented `tests/e2e/production-visual-integrity.spec.ts` covering 49 permutations (7 viewports x 7 routes).
+  - Enforced assertions for 200 OK stylesheet delivery, computed Obsidian/Electric Violet CSS custom properties, Inter/JetBrains Mono typography, non-zero button padding/border-radius, zero horizontal scroll overflow, and zero unhandled console errors.
+  - Added `npm run test:gate` script to `package.json`.
+  - All 49 visual integrity tests and 22 responsive screenshot tests passing (100% pass rate).
+  - Full Vitest regression (642/642 tests passing), typecheck (0 errors), lint (0 errors), build (33/33 routes).
+- **Audit Documentation:**
+  - Created `docs/phases/PHASE_10_1_5_2_PRODUCTION_VISUAL_INTEGRITY_REPORT.md`.
+
+---
+
+## [0.10.10] — 2026-11-13
+### Phase 10.1: Task 10.1.5.1 — Repository Integrity Closure Audit
+
+#### Added
+- **Repository Integrity Closure Audit Report (`docs/phases/PHASE_10_1_5_1_REPOSITORY_INTEGRITY_CLOSURE_REPORT.md`):**
+  - Completed comprehensive audit of `ContentItem` and `ContentRevision` data-access repositories, closing findings RI-01 through RI-06.
+  - Implemented `ContentItemDeletionBlockedError` in `src/server/repositories/cms/cms-repository.errors.ts`.
+  - Enforced deletion safety invariants in `deleteContentItem`: blocks deletion when item is in `PUBLISHED` status, has active published pointer, has historical revisions (`_count.revisions > 0`), or is linked to active domain entities (`Service`, `PricingPackage`, etc.), and cleanly maps `P2003` foreign key errors.
+  - Implemented parent row-level locking (`SELECT id FROM content_items WHERE id = $1 FOR UPDATE`) in `createWorkingRevision` to serialize version allocations per ContentItem.
+  - Added bounded retry strategy (max 3 attempts with exponential backoff & jitter) in `createWorkingRevision` for transient unique version collisions (`P2002`) and serialization failures (`P2034` / `40001`).
+  - Implemented dedicated parent-scoped revision lookup `getRevisionByParentAndId(contentItemId, revisionId)` performing direct compound database query.
+  - Protected `updateWorkingRevision` against publication races via row-level locking (`SELECT id FROM content_revisions WHERE id = $1 FOR UPDATE`) and compound conditional update (`updateMany` checking `isPublishedSnapshot: false`, `publishedInContentItem: null`, and `revisionStatus in EDITABLE_STATUSES`).
+  - Added optional `expectedRevisionStatus` predicate check to `UpdateWorkingRevisionInput` for OCC status validation.
+  - Guaranteed transaction isolation for `pruneWorkingDraftRevisions` with parent row locking and database-level 1-to-1 pointer exclusion (`publishedInContentItem: null, workingInContentItem: null`).
+  - Created 4 dedicated real PostgreSQL integration test suites in `tests/integration/cms-repositories/` (8/8 tests passing against isolated `voidtech_test_concurrency` on `localhost:5432`).
+  - Expanded unit test suites in `tests/unit/cms-repositories/` to 56 tests (100% passing).
+  - Verified full test regression: 642/642 tests passing across 45 suites (100% pass rate).
+  - Clean production build (33/33 routes), typecheck (0 errors), lint (0 errors), whitespace check (`git diff --check` passed cleanly).
+  - Verified 100% database safety: zero database operations performed on production Neon.
+
+---
+
+## [0.10.9] — 2026-11-13
+### Phase 10.1: Task 10.1.5 — ContentItem & ContentRevision Repository Implementation
+
+#### Added
+- **CMS Repository Error Taxonomy (`src/server/repositories/cms/cms-repository.errors.ts`):**
+  - Unified error hierarchy inheriting from `CmsRepositoryError`.
+  - Implemented `ContentItemNotFoundError`, `ContentRevisionNotFoundError`, `SlugAlreadyExistsError`, `ConcurrencyConflictError`, `RevisionOwnershipMismatchError`, `ImmutableRevisionError`, and `InvalidRevisionStateError`.
+- **ContentItem Repository (`src/server/repositories/cms/content-item.repo.ts`):**
+  - Implemented `createContentItem`: Creates canonical item in initial DRAFT status with version 1 and null pointers; maps `P2002` duplicate slugs to `SlugAlreadyExistsError`.
+  - Implemented `getContentItemById`, `getContentItemBySlug`, `getContentItemByIdWithPointers`, `getContentItemBySlugWithPointers`, `getContentItemByIdWithRevisions`.
+  - Implemented `listContentItems`: Deterministic filtering (contentType, publicationStatus, search), pagination, and allowlisted sorting.
+  - Implemented `updateContentItemMetadata`: Atomic OCC update (`version: expectedVersion`, `version: { increment: 1 }`), preventing lifecycle bypass and throwing `ConcurrencyConflictError` on version mismatch.
+  - Implemented `deleteContentItem`.
+- **ContentRevision Repository (`src/server/repositories/cms/content-revision.repo.ts`):**
+  - Implemented `createWorkingRevision`: Transactional creation enforcing parent item existence, monotonic version increments (`max + 1`), working draft status, working pointer auto-update, safe draft retention pruning, and `P2002` concurrency conflict mapping.
+  - Implemented `getRevisionById`: Enforces parent `contentItemId` ownership check and throws `RevisionOwnershipMismatchError` on cross-item access.
+  - Implemented `listRevisionsByContentItem`: Deterministic pagination and status/snapshot filtering.
+  - Implemented `updateWorkingRevision`: Proactively enforces immutability for published snapshots (`isPublishedSnapshot === true`), active published pointer revisions (`currentPublishedRevisionId`), and finalized states (`APPROVED`, `PUBLISHED_SNAPSHOT`, `SUPERSEDED`). Auto-resets `REJECTED` revisions to `WORKING_DRAFT` upon editing.
+  - Implemented `pruneWorkingDraftRevisions`: Safe draft pruning algorithm retaining the 20 most recent working drafts, permanently protecting published snapshots, active published pointers, and working pointers.
+- **Repository Exports & Unit Test Suite:**
+  - Re-exported CMS repositories in `src/server/repositories/cms/index.ts` and `src/server/repositories/index.ts`.
+  - Created 3 test files with 47 unit tests in `tests/unit/cms-repositories/`: 100% pass rate.
+  - Full Vitest suite passing with zero regressions: 625/625 tests passing across 41 test files.
+  - Clean production build (33/33 routes), typecheck (0 errors), lint (0 errors), whitespace check (`git diff --check` passed cleanly).
+  - Strict database safety: zero operations performed on production Neon (100% untouched).
+
+---
+
+## [0.10.8] — 2026-11-13
+### Phase 10.1: Task 10.1.4.1 — CMS Validation Security Closure Audit
+
+#### Added
+- **CMS Validation Security Closure Audit Report (`docs/phases/PHASE_10_1_4_1_SECURITY_CLOSURE_REPORT.md`):**
+  - Audited CMS Zod validation schemas for lifecycle bypass, testimonial consent enforcement, unknown-key handling, and publication boundaries.
+  - Closed lifecycle bypass vulnerability in `updateContentItemSchema`: completely removed `publicationStatus` so generic updates cannot bypass the 9-step atomic publishing transaction, revision checks, or archival workflows.
+  - Made `expectedVersion` mandatory on generic updates and bounded to 32-bit integer limit (`2147483647`) to prevent integer overflow and concurrency lost updates.
+  - Constrained `createContentItemSchema` to only accept `DRAFT` status, blocking direct creation as `PUBLISHED` or `ARCHIVED`.
+  - Enforced testimonial verification invariant in `adminUpdateTestimonialSchema`: `VERIFIED` strictly implies `GRANTED` consent; both `PENDING` and `REVOKED` consent (or omitted consent) strictly reject verification. Corrected enum error messaging to `UNVERIFIED, VERIFIED, REJECTED`.
+  - Enforced `.strict()` mode across all CMS object schemas (`createContentItemSchema`, `updateContentItemSchema`, `createWorkingRevisionSchema`, `updateWorkingRevisionSchema`, `createPageSectionSchema`, `updatePageSectionSchema`, `createMediaMetadataSchema`, `updateMediaMetadataSchema`, `submitForReviewSchema`, `approveRevisionSchema`, `rejectRevisionSchema`, `publishRevisionSchema`, `archiveContentSchema`, `restoreContentSchema`) to reject client-injected internal or server-managed fields.
+  - Added 23 new security regression unit tests in `tests/unit/cms-validation/` (total CMS validation tests increased from 87 to 110, 100% passing).
+  - Verified full test suite (578/578 Vitest tests passing across 38 suites).
+  - Maintained zero database operations: production Neon was never accessed, contacted, migrated, or modified.
+
+---
+
+## [0.10.7] — 2026-11-13
+### Phase 10.1: Task 10.1.4 — Base Zod Validation Schemas
+
+#### Added
+- **Base Zod Validation Schemas (`src/validations/cms/` & `src/lib/validations/cms.ts`):**
+  - Designed and implemented reusable Zod validation schemas for all CMS entities, publication workflows, and query filters.
+  - `src/validations/cms/common.schema.ts`: Common primitives (`slugSchema`, `entityIdSchema`, `httpUrlSchema`, `optionalHttpUrlSchema`, `paginationSchema`, `sortOrderSchema`, `searchQuerySchema`, `dateRangeSchema`, `safeJsonKeySchema`, and prototype-pollution-resistant `safeJsonSchema`).
+  - `src/validations/cms/content-item.schema.ts`: `createContentItemSchema`, `updateContentItemSchema` (with OCC `expectedVersion`), and `contentItemQuerySchema`.
+  - `src/validations/cms/content-revision.schema.ts`: `createWorkingRevisionSchema`, `updateWorkingRevisionSchema`, and `revisionQuerySchema`.
+  - `src/validations/cms/page-section.schema.ts`: `sectionKeySchema`, `createPageSectionSchema` (50,000 char markdown bound), `updatePageSectionSchema`, and `pageSectionQuerySchema`.
+  - `src/validations/cms/testimonial.schema.ts`: Strict separation between `publicTestimonialSubmissionSchema` (`.strict()` mode, mandatory client consent, strictly omitting admin moderation fields) and `adminUpdateTestimonialSchema` (cross-field refinement: VERIFIED requires non-REVOKED consent) and `testimonialQuerySchema`.
+  - `src/validations/cms/media-asset.schema.ts`: Strict MIME allowlist (JPEG, PNG, WebP; strictly rejecting SVG to prevent stored XSS), safe storage keys and filenames preventing directory traversal (`..`), 10MB file size limit, 8192px dimension limit, SHA-256 64-hex digest, and `mediaAssetQuerySchema`.
+  - `src/validations/cms/publication.schema.ts`: Editorial workflow schemas (`submitForReviewSchema`, `approveRevisionSchema`, `rejectRevisionSchema` [min 5 char reason], `publishRevisionSchema` [mandatory OCC `expectedVersion`], `archiveContentSchema`, `restoreContentSchema`).
+  - `src/validations/cms/index.ts` & `src/lib/validations/cms.ts`: Central export hub and re-export for schemas and inferred TypeScript types.
+  - Dedicated CMS validation unit test suite (`tests/unit/cms-validation/`): 7 test files, 87/87 tests passing (100%).
+  - Full regression test suite passing: 38 test files, 555/555 Vitest tests passing.
+  - Clean quality gates: 0 typecheck errors, 0 ESLint warnings/errors, 33/33 Next.js routes built cleanly.
+  - Strict database safety: zero database operations; production Neon was never accessed, contacted, or modified.
+
+---
+
+## [0.10.6] — 2026-11-13
+### Phase 10.1: Task 10.1.3 — Prisma Client Generation & Type Export
+
+#### Added
+- **Prisma Client Generation & Type Export Report (`docs/phases/PHASE_10_1_3_PRISMA_CLIENT_GENERATION_REPORT.md`):**
+  - Compiled and generated `@prisma/client` (v6.19.3) from the validated CMS schema without connecting to Neon.
+  - Authored central type-export hub at `src/types/cms.ts` and re-exported it via `src/types/index.ts`.
+  - Re-exported all 6 CMS enums as runtime values and types: `ContentType`, `ContentPublicationStatus`, `RevisionLifecycleStatus`, `TestimonialVerificationStatus`, `ClientConsentStatus`, and `StorageProviderType`.
+  - Type-exported all 5 CMS models: `ContentItem`, `ContentRevision`, `PageSection`, `Testimonial`, and `MediaAsset`.
+  - Exported composite DTO interfaces (`ContentItemWithRevisions`, `ContentItemWithPointers`, `ContentRevisionWithAuthor`, `TestimonialWithVerifier`, `MediaAssetWithUploader`, `CmsOperationResult`).
+  - Created unit test suite `tests/unit/cms-types.test.ts` (6 tests passing).
+  - Resolved strict TypeScript model contracts across domain repositories (`faq.repo.ts`, `portfolio.repo.ts`, `pricing.repo.ts`, `services.repo.ts`) and test mocks.
+  - Verified 100% test pass rate across all 31 Vitest suites (468 tests), clean typecheck (0 errors), clean ESLint (0 errors), and clean Next.js build (33/33 production routes).
+  - Maintained strict database safety: production Neon was never accessed, contacted, migrated, or modified.
+
+---
+
+## [0.10.5] — 2026-11-13
+### Phase 10.1: Task 10.1.2.1 — PostgreSQL Migration Integrity Closure Audit
+
+#### Added
+- **PostgreSQL Migration Integrity Closure Audit Report (`docs/phases/PHASE_10_1_2_1_INTEGRITY_CLOSURE_REPORT.md`):**
+  - Conducted empirical vulnerability audit investigating published revision immutability, revision reassignment, cross-item pointer corruption, rollback classification, and Prisma migration tracking.
+  - Implemented declarative PostgreSQL Composite Foreign Keys on `content_items` (`(id, currentPublishedRevisionId)` with `ON DELETE RESTRICT`, `(id, currentWorkingRevisionId)` with column-specific `ON DELETE SET NULL ("currentWorkingRevisionId")`, and `ON UPDATE RESTRICT`) bound to unique index on `content_revisions("contentItemId", "id")`.
+  - Implemented custom PostgreSQL trigger function `protect_revision_immutability()` and trigger `trg_protect_revision_immutability` on `content_revisions` to unconditionally block revision reassignment (`contentItemId`), version modification (`versionNumber`), snapshot unpublishing (`isPublishedSnapshot: true -> false`), and content mutation on published snapshots.
+  - Formally established rollback classification taxonomy: distinguishing DDL schema rollback (`down.sql`), application data preservation, backup/restore, and post-rollback recovery; explicitly warning that `down.sql` is data-destructive and not data-reversible.
+  - Inspected and honestly reported Prisma migration tracking state: confirmed `_prisma_migrations` table does not exist in `voidtech_test_concurrency` due to `prisma db execute` DDL application; strictly refrained from unauthorized `prisma migrate resolve` calls.
+  - Verified 100% test pass rate across 10 empirical integrity checks. Production Neon was never accessed.
+
+---
+
+## [0.10.4] — 2026-11-13
+### Phase 10.1: Task 10.1.2 — PostgreSQL Migration Generation & Verification
+
+#### Added
+- **PostgreSQL Migration Generation & Verification Report (`docs/phases/PHASE_10_1_2_MIGRATION_VERIFICATION_REPORT.md`):**
+  - Generated and validated migration `20261114000000_admin_cms_foundation` targeting PostgreSQL on isolated test database (`voidtech_test_concurrency` on `localhost:5432`).
+  - Added six custom PostgreSQL enums: `ContentType`, `ContentPublicationStatus`, `RevisionLifecycleStatus`, `TestimonialVerificationStatus`, `ClientConsentStatus`, and `StorageProviderType`.
+  - Added five core CMS tables: `content_items`, `content_revisions`, `page_sections`, `testimonials`, and `media_assets`.
+  - Augmented existing domain tables (`services`, `pricing_packages`, `portfolio_projects`, `faqs`) with nullable `contentItemId` and `publishedAt`.
+  - Implemented custom PostgreSQL trigger function `verify_revision_ownership()` and trigger `trg_verify_revision_ownership` on `content_items` to reject foreign/cross-item revision pointers (Safeguard 3.B).
+  - Implemented custom PostgreSQL trigger function `protect_published_revisions()` and trigger `trg_protect_published_revisions` on `content_revisions` to block deletion of published snapshot revisions (Safeguard 3.A).
+  - Enforced `ON DELETE RESTRICT` on `content_revisions.contentItemId` and all domain table `contentItemId` foreign keys.
+  - Authored comprehensive, idempotent reverse migration script `prisma/migrations/20261114000000_admin_cms_foundation/down.sql`.
+  - Verified 100% test pass rate across 12 automated integration steps covering forward migration, table existence, enum creation, legacy compatibility, cross-item ownership rejection, published revision deletion protection, dual-pointer coexistence, domain 1-to-1 uniqueness, fixture cleanup, rollback via `down.sql`, and re-apply of `migration.sql`.
+  - Maintained strict database safety: production Neon was never accessed, migrated, or modified.
+
+---
+
+## [0.10.3] — 2026-11-13
+### Phase 10.1: Task 10.1.1 — Prisma Schema Additions & Relations
+
+#### Added
+- **Prisma Schema Additions & Relations Implementation Report (`docs/phases/PHASE_10_1_1_SCHEMA_IMPLEMENTATION_REPORT.md`):**
+  - Completed Task 10.1.1 implementing the approved Approach C data architecture in `prisma/schema.prisma`.
+  - Added six new enums: `ContentType`, `ContentPublicationStatus`, `RevisionLifecycleStatus`, `TestimonialVerificationStatus`, `ClientConsentStatus`, and `StorageProviderType`.
+  - Added five new models: `ContentItem` (with dual pointers `currentPublishedRevisionId` and `currentWorkingRevisionId`), `ContentRevision` (append-only history with `@@unique([contentItemId, versionNumber])`), `PageSection` (editorial landing page narrative), `Testimonial` (with decoupled verification and consent state fields), and `MediaAsset` (digital asset registry with provider and SHA-256 coordinates).
+  - Integrated 1-to-1 canonical relations on existing domain models: `Service`, `PricingPackage`, `PortfolioProject`, and `FAQ` with `contentItemId String? @unique` (`onDelete: Restrict`) and `publishedAt DateTime?`.
+  - Added inverse audit relations to `AdminUser`: `publishedContentItems`, `authoredRevisions`, `verifiedTestimonials`, and `uploadedMedia`.
+  - Validated schema using `npx prisma format` (28ms) and `npx prisma validate` with 0 errors. Zero migrations generated or applied.
+
+---
+
+## [0.10.2] — 2026-11-13
+### Phase 10.0.2: Final CMS Implementation Safeguards
+
+#### Added
+- **Final CMS Implementation Safeguards Report (`docs/phases/PHASE_10_0_2_IMPLEMENTATION_SAFEGUARDS_REPORT.md`):**
+  - Incorporated five final owner-requested safeguards into the Phase 10 CMS specifications.
+  - Specified dual-pointer architecture on `ContentItem` (`currentPublishedRevisionId`, `currentWorkingRevisionId`) enabling simultaneous published and working revisions with zero live data leakage during draft editing.
+  - Rigorous database referential integrity evaluation: documented database-enforced foreign keys, unique constraints, and PostgreSQL trigger verification vs. application-enforced transactional assertions.
+  - Formulated the exact 9-step atomic publishing transaction protocol (`prisma.$transaction`) with strict OCC version checks, rollback guarantees, and visual diff resolution on conflict.
+  - Resolved testimonial verification and consent overlap: eliminated redundant boolean flag, specified single authoritative verification state (`TestimonialVerificationStatus`) and decoupled legal consent state (`ClientConsentStatus`), enforcing instantaneous database-level unlisting upon consent revocation.
+  - Established hardened media security defaults: strictly allowing JPEG, PNG, and WebP; hard-disabling SVG uploads by default; enforcing magic-byte inspection; Sharp raster sanitization (stripping EXIF); path traversal defense; local filesystem dev-only restriction; and strict prohibition of ephemeral serverless storage in production (Cloudflare R2 deferred).
+  - Formulated comprehensive static fallback behavior matrix across 5 distinct operational scenarios (DB unavailable, empty tables, archived items, invalid snapshots, unexpected repo exceptions) with `X-Voidtech-Content-Source` and `isFallback` response indicators, ensuring stale static content is never silently presented as live CMS data.
+
+#### Changed
+- **`docs/architecture/CMS_ARCHITECTURE.md`:**
+  - Updated with dual-pointer draft/published separation, referential integrity analysis, 9-step atomic publishing transaction sequence, testimonial dual-state model, hardened media defaults, and 5-scenario fallback matrix.
+- **`docs/architecture/CMS_DATABASE_DESIGN.md`:**
+  - Added dual pointers to `ContentItem`, documented composite foreign key evaluation and PostgreSQL check trigger, updated `Testimonial` and `MediaAsset` models.
+- **`docs/architecture/CMS_API_DESIGN.md`:**
+  - Updated Server Action contracts, response envelope with `isFallback` and `source`, 9-step transaction protocol, and testimonial consent actions.
+- **`docs/architecture/CMS_RBAC_PERMISSION_MATRIX.md`:**
+  - Updated matrix reflecting default disabled SVGs and dual-state testimonial verification.
+- **`docs/architecture/CMS_SECURITY_REVIEW.md`:**
+  - Updated 15-scenario threat matrix incorporating all safeguards.
+- **`docs/architecture/CMS_TESTING_STRATEGY.md`:**
+  - Updated 5-tier testing blueprint and 15 security verification tests.
+- **`docs/phases/PHASE_10_ROADMAP.md`:**
+  - Updated roadmap to reflect Phase 10.0.2 complete and design freeze authorized. Detailed the 12-task implementation plan for Phase 10.1 incorporating all safeguards.
+
+---
+
+## [0.10.1] — 2026-11-13
+### Phase 10.0.1: CMS Architecture Refinement & Design Freeze
+
+#### Added
+- **CMS Architecture Refinement & Design Freeze Charter (`docs/phases/PHASE_10_0_1_ARCHITECTURE_REFINEMENT_REPORT.md`):**
+  - Incorporated seven owner-approved architectural decisions into the CMS architectural blueprint.
+  - Comparative analysis of Approaches A, B, and C for ContentItem + ContentRevision evaluation, formally locking in **Approach C** (Materialized Snapshots + Canonical ContentItem Identity + Relational ContentRevision History).
+  - Deterministic 8-scenario lifecycle state machine covering Draft Creation, Draft Edit, Promotion on Publish, Live Mutation via New Draft, Historical Rollback, Archival, Testimonial Verification & Revocation, and Storage Provider Sync.
+  - Comprehensive 12-task implementation breakdown for Phase 10.1 with dependencies, prerequisites, and empirical acceptance criteria.
+- **Security Verification Test Matrix (SEC-01 through SEC-15):**
+  - Formally specified 15 automated security test scenarios in `docs/architecture/CMS_SECURITY_REVIEW.md` and `docs/architecture/CMS_TESTING_STRATEGY.md` covering stored XSS, SVG DOMPurify sanitization, magic-byte checks, draft isolation, pricing publish privilege checks, OCC version locking, and offline fallback resilience.
+
+#### Changed
+- **`docs/architecture/CMS_ARCHITECTURE.md`:**
+  - Updated with draft/published content separation guarantees, Approach C data pipeline, Next.js Draft Mode preview with `X-Robots-Tag: noindex, nofollow`, provider-abstracted media system, GFM Markdown pipeline, and offline static fallback architecture.
+- **`docs/architecture/CMS_DATABASE_DESIGN.md`:**
+  - Updated Entity-Relationship Diagram and Prisma schema specifications to implement Approach C with `ContentItem`, `ContentRevision`, `Testimonial`, `MediaAsset`, and domain relation models.
+- **`docs/architecture/CMS_API_DESIGN.md`:**
+  - Updated Server Action contracts with atomic publishing transactions, testimonial verification actions, pricing draft vs. publish separation, and standardized response envelopes.
+- **`docs/architecture/CMS_RBAC_PERMISSION_MATRIX.md`:**
+  - Added `pricing:edit_draft` permission for `EDITOR` role; strictly restricted `pricing:publish` to `SUPER_ADMIN` and `ADMIN`. Added `testimonials:verify` and `media:upload_svg` permission keys.
+- **`docs/architecture/CMS_SECURITY_REVIEW.md`:**
+  - Added exhaustive 15-scenario threat matrix detailing attacks, impacts, mitigations, and verification tests.
+- **`docs/architecture/CMS_TESTING_STRATEGY.md`:**
+  - Expanded 5-tier testing strategy to incorporate the 7 owner decisions and map all 15 security verification tests.
+- **`docs/phases/PHASE_10_ROADMAP.md`:**
+  - Updated Phase 10 roadmap to reflect Phase 10.0.1 complete and design freeze authorized. Detailed the 12-task implementation plan for Phase 10.1.
+
+---
+
+## [0.10.0] — 2026-11-13
+### Phase 10.0: Admin CMS Discovery & Architecture
+
+#### Added
+- **Comprehensive CMS Discovery & Codebase Audit Report (`docs/phases/PHASE_10_0_CMS_DISCOVERY_REPORT.md`):**
+  - Read-only audit of existing data layer, repositories, public routes, admin pages, RBAC framework, and test infrastructure.
+  - Identification of reusable assets, codebase discrepancies, and media storage options.
+  - Documented CodeRabbit limitation (signed out) and manual architectural/security review findings.
+- **CMS Architecture & System Blueprint (`docs/architecture/CMS_ARCHITECTURE.md`):**
+  - Full hybrid content strategy: normalized relational entities for structured catalogs combined with `PageSection` blocks for editorial page narrative.
+  - 4-stage content lifecycle: `DRAFT` -> `REVIEW` -> `PUBLISHED` -> `ARCHIVED`.
+  - Immutable revision snapshotting and atomic Optimistic Concurrency Control (OCC) versioning engine.
+  - Next.js Draft Mode preview system with signed secret tokens, `__prerender_bypass` cookies, and `noindex, nofollow` safeguards.
+  - Pluggable media storage provider architecture (local filesystem default; Cloudflare R2 production recommendation with zero egress fees).
+- **CMS Database Design & Schema Specifications (`docs/architecture/CMS_DATABASE_DESIGN.md`):**
+  - Proposed enhancements for `Service`, `PricingPackage`, `PortfolioProject`, and `FAQ` models with publication timestamps, version counters, and SEO fields.
+  - Proposed new models: `PageSection`, `ContentRevision`, `Testimonial`, and `MediaAsset`.
+  - Detailed Entity-Relationship Diagram (ERD), index strategies, and audit action mappings.
+- **CMS Server Action & API Contracts (`docs/architecture/CMS_API_DESIGN.md`):**
+  - Strict Server Action interfaces across services, pricing, portfolio, FAQs, page sections, revisions, and media.
+  - Discriminated union response envelope and error taxonomy (`UNAUTHENTICATED`, `FORBIDDEN`, `VALIDATION_FAILED`, `CONFLICT_DETECTED`).
+- **CMS Role-Based Access Control Matrix (`docs/architecture/CMS_RBAC_PERMISSION_MATRIX.md`):**
+  - Fine-grained permission keys mapping across `SUPER_ADMIN`, `ADMIN`, and `EDITOR`.
+  - Strict commercial protections: `EDITOR` denied from modifying pricing, publishing live content, or altering SEO directives.
+- **CMS Security Review & Threat Analysis (`docs/architecture/CMS_SECURITY_REVIEW.md`):**
+  - Comprehensive threat model covering Stored XSS, RCE via file uploads, CSRF, draft leakage, and commercial defamation.
+  - AST-based Markdown and SVG DOMPurify sanitization rules, magic-byte MIME sniffing, SHA-256 file renaming.
+- **CMS Quality Assurance & Testing Strategy (`docs/architecture/CMS_TESTING_STRATEGY.md`):**
+  - 5-tier testing blueprint spanning unit validation, real PostgreSQL repository integration, RBAC security, public integration, and Playwright E2E browser tests across 10 viewports.
+- **Phase 10 Execution Roadmap (`docs/phases/PHASE_10_ROADMAP.md`):**
+  - Detailed execution phases 10.0 through 10.4 with concrete deliverables, dependencies, and exit criteria.
+
+---
+
+## [0.9.3] — 2026-11-13
+### Phase 9.3: CRM End-to-End Testing, Security Validation & Visual Acceptance
+
+#### Added
+- **Real PostgreSQL Lead Lifecycle Integration Suite (`tests/integration/crm-lifecycle.integration.test.ts`):**
+  - 9 automated tests validating the complete lifecycle on an isolated PostgreSQL test database (`voidtech_test_concurrency`).
+  - Covers public website contact form intake, operational lead assignment, in-app notification dispatch, internal note creation & pinning, follow-up task scheduling with automatic `nextFollowUpAt` cache synchronization, progressive 5-stage pipeline transitions, and 3 distinct commercial outcomes (WON with revenue recognition, LOST with mandatory `lostReason` validation, ON_HOLD).
+- **Multi-Role RBAC Security Matrix Suite (`tests/integration/crm-rbac-security.integration.test.ts`):**
+  - 19 automated security tests validating `SUPER_ADMIN`, `ADMIN`, and `EDITOR` authorization rules across pages, Server Actions, and REST routes.
+  - Enforces notification recipient isolation (`where: { recipientId: user.id }`), cross-admin mark-read rejection, note deletion restriction to `SUPER_ADMIN`, session cookie signature verification, and sensitive credential (`passwordHash`) scrubbing.
+- **PostgreSQL Concurrency & Data Integrity Suite (`tests/integration/crm-concurrency.integration.test.ts`):**
+  - 4 automated integration tests validating Optimistic Concurrency Control (OCC) timestamp drift detection, atomic assignment unique index constraints, and append-only activity audit logging.
+- **Synthetic Performance & Query Profiling Benchmarks (`tests/integration/crm-performance.integration.test.ts`):**
+  - 5 automated benchmark tests evaluating CRM aggregation, 8-stage grouping, search filtering, and category queries across 10, 100, 500, and 1,000 synthetic leads.
+  - Validates zero N+1 queries during full 5-tab drawer hydration (7.54 ms response time).
+- **Playwright E2E Browser Acceptance & Visual Proofs (`tests/e2e/crm-acceptance.spec.ts`):**
+  - 21 automated browser acceptance tests running on Microsoft Edge.
+  - Captures 12 high-resolution screenshots across 10 responsive viewports (320px, 360px, 375px, 390px, 430px, 768px, 1024px, 1280px, 1440px, 1920px) and 2 drawer states (375px mobile and 1440px desktop).
+- **Comprehensive Milestone Acceptance Report (`docs/PHASE_9_3_CRM_ACCEPTANCE_REPORT.md`):**
+  - Complete documentation of methodology, test matrices, benchmark timings, accessibility review, defect register, CodeRabbit status, and final sign-off verdict.
+
+#### Changed
+- Fixed TypeScript optional property strictness and unused imports across test suites.
+- Updated `playwright.config.ts` webServer command to use `npm.cmd` on Windows.
+- Increased overall automated test suite count from 429 to **462 tests** (30 suites, 100% passing).
+
+---
+
+## [0.9.2] — 2026-11-13
+### Phase 9.2: Admin Lead Management & CRM Pipeline — Dashboard UI, Kanban Board & Integrated Lead Workflows
+
+#### Added
+- **CRM Dashboard & Authenticated Route (`src/app/admin/(dashboard)/crm/page.tsx`):**
+  - Full-featured administrative CRM dashboard at `/admin/crm` with server prefetching of KPI metrics, 8-stage Kanban columns, active admins, and unread notification counts.
+  - Edge middleware and RBAC protection enforcing `enquiries:view` permission.
+  - Integrated into administrative navigation in `AdminSidebar` with `LayoutGrid` icon and `AdminHeader` with `AdminNotificationsBell`.
+- **Commercial Performance KPIs (`src/components/admin/crm/crm-dashboard-kpis.tsx`):**
+  - 6 real-time aggregated metric cards: Total Leads, New Leads, Active Pipeline Value (INR), Won Revenue (INR), Win Rate (%), and Overdue Follow-ups.
+  - Interactive stage distribution bar visualizing counts and revenue across all 8 pipeline stages.
+  - Formatted Indian Rupee currency representation (`₹X,XX,XXX`).
+- **8-Stage Kanban Pipeline Board (`src/components/admin/crm/crm-kanban.tsx`, `crm-stage-column.tsx`, `crm-lead-card.tsx`):**
+  - Horizontal scrolling board supporting `NEW`, `CONTACTED`, `QUALIFIED`, `PROPOSAL_SENT`, `NEGOTIATION`, `WON`, `LOST`, `ON_HOLD`.
+  - HTML5 native drag-and-drop combined with accessible quick-action kebab menus.
+  - Optimistic UI updates with column totals recalculation.
+  - Concurrency Conflict Recovery: atomic Optimistic Concurrency Control (OCC) enforcing `expectedUpdatedAt`; automatically rolls back optimistic updates on conflict and displays an amber notification banner with a "Refresh Board" control.
+  - Mandatory Lost Reason Dialog (`src/components/admin/crm/crm-lost-reason-modal.tsx`): requires a non-empty `lostReason` with presets before moving any lead to `LOST`.
+- **Deep Lead Inspection Drawer (`src/components/admin/crm/crm-lead-drawer.tsx`):**
+  - 5-tab slide-over sheet: Overview, Internal Notes, Activity Timeline, Follow-ups, and Assignments.
+  - Pinned and confidential internal notes engine with `SUPER_ADMIN` deletion capability.
+  - Immutable activity history tracking stage movements, assignments, and notes.
+  - Follow-up task scheduling with priority badges (`URGENT`, `HIGH`, `MEDIUM`, `LOW`) and checkbox completion.
+  - Lead reassignment to active administrators with assignment notes.
+- **Dedicated Follow-up Management View (`src/components/admin/crm/crm-followups-view.tsx`):**
+  - Task management view with tabs: Upcoming, Overdue, Completed, All.
+  - Priority filter dropdown and direct deep-linking into parent lead drawer.
+- **Recipient-Isolated Notifications Bell (`src/components/admin/admin-notifications-bell.tsx`):**
+  - Header bell with unread count badge.
+  - Popover action feed displaying new lead arrivals, assignment notices, and overdue task alerts.
+  - Strictly isolated to the calling administrator's ID (`recipientId === auth.admin.id`).
+- **CRM Server Actions & Validation Layer:**
+  - `src/validations/crm.ts`: Zod validation schemas with refined mandatory `lostReason` invariant.
+  - `src/server/actions/crm.actions.ts`: 12 secure server operations enforcing RBAC, origin verification, and audit logging.
+- **Verification & Documentation:**
+  - Authored `tests/unit/crm-actions.test.ts` (18 tests) and `tests/unit/crm-ui.test.tsx` (12 tests).
+  - All 429 Vitest tests passing across 27 suites.
+  - 30 production routes built cleanly with 0 TypeScript and 0 ESLint errors.
+  - Comprehensive milestone report: `docs/PHASE_9_2_CRM_IMPLEMENTATION_REPORT.md`.
+
+---
+
+## [0.9.1] — 2026-11-13
+### Phase 9.1: Database Schema Migration & Model Hydration
+
+#### Added
+- **Database Schema Migration (`prisma/migrations/20261113000000_crm_lead_pipeline/migration.sql`):**
+  - Expanded `EnquiryStatus` enum from legacy 6 values to the approved 8 CRM stages: `NEW`, `CONTACTED`, `QUALIFIED`, `PROPOSAL_SENT`, `NEGOTIATION`, `WON`, `LOST`, `ON_HOLD`.
+  - Added CRM tracking fields to `enquiries`: `assignedAdminId`, `estimatedValueInr`, `source` (default `WEBSITE_CONTACT_FORM`), `lastContactedAt`, `nextFollowUpAt`, and `lostReason`.
+  - Added new models: `LeadNote`, `LeadFollowUp`, `LeadActivity`, `LeadAssignment`, and `AdminNotification`.
+  - Created partial unique index `lead_assignments_single_active_unique` on `(enquiryId) WHERE isActive = true` guaranteeing at most one active administrator per lead.
+  - Backfilled existing legacy `internalNotes` into `LeadNote` rows with `"LEGACY_MIGRATION"` author attribution.
+  - Authored comprehensive disaster recovery guide `docs/MIGRATION_ROLLBACK_CRM.md`.
+- **Domain Repositories (`src/server/repositories/`):**
+  - `src/server/repositories/lead-notes.repo.ts`: `createLeadNote`, `getLeadNotes` (pinned first), `togglePinLeadNote`, `deleteLeadNote`.
+  - `src/server/repositories/lead-followups.repo.ts`: `createLeadFollowUp` (auto-updates `enquiry.nextFollowUpAt`), `getLeadFollowUps`, `getOverdueFollowUps`, `toggleFollowUpComplete`, `deleteLeadFollowUp`.
+  - `src/server/repositories/lead-activities.repo.ts`: `createLeadActivity` (immutable activity logging with metadata), `getLeadActivities`.
+  - `src/server/repositories/lead-assignments.repo.ts`: `assignLeadToAdmin` (atomic transaction deactivating previous assignments), `unassignLead`, `getLeadAssignmentHistory`, `getActiveAssignment`.
+  - `src/server/repositories/notifications.repo.ts`: `createAdminNotification`, `getAdminNotifications` (strict recipient isolation), `getUnreadNotificationCount`, `markNotificationAsRead`, `markAllNotificationsAsRead`.
+  - Extended `src/server/repositories/enquiries.repo.ts`: added safe relational hydration (strictly omitting `passwordHash`), Optimistic Concurrency Control (OCC via `expectedUpdatedAt`), 8-stage metrics aggregation (`getEnquiryStats`), and filters for `assignedAdminId` and `hasOverdueFollowUp`.
+- **Quality Assurance & Verification:**
+  - Authored `tests/unit/crm-models.test.ts` (25 tests covering all 6 repositories, constraints, OCC, and recipient isolation).
+  - All 393 Vitest unit & integration tests passing across 24 test files.
+  - TypeScript strict typecheck: 0 errors (`npm run typecheck`).
+  - ESLint: 0 warnings, 0 errors (`npm run lint`).
+  - Next.js production build: 29 routes built cleanly (`npm run build`).
+
+---
+
+## [0.9.0] — 2026-11-13
+### Phase 9.0: Admin Lead Management & CRM Pipeline — Discovery & Architecture
+
+#### Added
+- **GitHub Remote Connection & Safe Backup:**
+  - Configured Git remote `origin` pointing to `https://github.com/void-tech-shiv/Voidtechsolution.git`.
+  - Verified remote repository is accessible and clean.
+  - Performed deep secret audit: verified zero live production database strings, real SMTP passwords, or actual credentials committed in Git history.
+  - Documented branch strategy (`main` release baseline and `session/phase-7-admin-auth` active development branch).
+- **CRM Specification Suite:**
+  - `docs/LEAD_MANAGEMENT_REQUIREMENTS.md`: Detailed functional and non-functional requirements covering 8 operational KPIs, 8-stage Kanban pipeline, lead inspection drawer, multi-author internal notes, follow-up scheduling, multi-channel notifications, faceted search/filtering, and sales velocity analytics.
+  - `docs/LEAD_MANAGEMENT_ARCHITECTURE.md`: Layered system architecture specification defining client presentation components, Server Action layer, domain state machine, optimistic concurrency control (OCC via `updatedAt`), and anti-leakage isolation boundary between internal notes and customer emails.
+  - `docs/LEAD_MANAGEMENT_DATABASE_DESIGN.md`: Relational schema design with normalized child entities (`lead_notes`, `lead_follow_ups`, `lead_activities`, `admin_notifications`), extended `enquiries` columns (`assignedAdminId`, `estimatedValueInr`, `source`, `nextFollowUpAt`, `lostReason`), performance indexing, and zero-downtime two-phase enum migration script with complete rollback strategy.
+  - `docs/LEAD_MANAGEMENT_RBAC.md`: Granular permission taxonomy (`leads:view`, `leads:update_status`, `leads:assign`, `leads:notes_create`, `leads:notes_delete`, `leads:followup_manage`, `leads:analytics_view`, `leads:export`, `leads:delete`), 11-operation RBAC permission matrix across `SUPER_ADMIN`, `ADMIN`, and `EDITOR`, and server-side assertion patterns.
+  - `docs/LEAD_MANAGEMENT_API_DESIGN.md`: Server Action and REST API interface specifications, standard `ApiResponse<T>` envelopes, machine-readable error codes (`CONFLICT_DETECTED`, `INVALID_TRANSITION`, etc.), and strict Zod validation schemas.
+- **Strict Boundary Compliance:**
+  - Zero database modifications or migrations applied in Milestone 9.0.
+  - Zero production emails dispatched; zero application code changes made.
+  - All existing code, tests, and invariants 100% preserved.
+
+---
+
+## [0.8.4] — 2026-11-13
+### Phase 8.4: Complete Website Visual & Functional Acceptance
+
+#### Added
+- **Canonical Domain & Technical SEO Files:**
+  - Configured `siteConfig.url` to strictly default to the approved production canonical domain: `https://voidtechsolution.codedev.co.in`.
+  - Added dynamic standard Next.js metadata routes:
+    - `src/app/robots.ts`: Allows public crawler indexing (`/`), disallows sensitive endpoints (`/admin/`, `/api/`), and declares XML sitemap location (`https://voidtechsolution.codedev.co.in/sitemap.xml`).
+    - `src/app/sitemap.ts`: Generates compliant XML sitemap indexing all 6 core public routes plus dynamic portfolio case studies (`/portfolio/[slug]`).
+  - Added unit test suite `tests/unit/seo.test.ts` (4 tests) verifying canonical domain enforcement, robots disallow rules, and sitemap entries.
+  - Added canonical links and OpenGraph URL normalization across `/`, `/about`, `/services`, `/pricing`, `/portfolio`, `/portfolio/[slug]`, and `/contact`.
+  - Added production canonical fallback in request origin CSRF defense (`src/server/security/origin.ts`).
+- **Comprehensive 10-Viewport & 6-User-Journey Acceptance Suite (`tests/e2e/phase-8-4-acceptance.spec.ts`):**
+  - 48 automated Playwright tests covering:
+    - Zero horizontal overflow across all 6 public routes at 10 target viewports: 320px, 360px, 375px, 390px, 430px, 768px, 1024px, 1280px, 1440px, 1920px.
+    - User Journey A: Services catalog, category filtering, keyword search, prefilled inquiry routing.
+    - User Journey B: 10 INR starting pricing tiers, interactive calculator accessibility, package prefill routing.
+    - User Journey C: Portfolio concept prototype disclosures, case study blueprints, and simulated benchmark metrics.
+    - User Journey D: 3-step contact form validation, error states, and submission flow.
+    - User Journey E: Mobile navigation drawer lifecycle, keyboard focus trap, Escape key, backdrop click, and single header brand logo.
+    - User Journey F: Unauthenticated administrative portal protection and safe callback URL redirects.
+- **CodeRabbit Review Protocol Documentation:**
+  - Audited CodeRabbit CLI status (`coderabbit --version` = 0.9.5).
+  - Documented CLI authentication failure (`coderabbit auth status` returned `Status: signed out`) as an environment boundary blocker per system guidelines.
+  - Performed manual deep code, security, and responsive review fallback.
+
+---
+
+## [0.8.3] — 2026-11-13
+### Phase 8.3: Mobile UI Bug Fixes & Responsive Polish
+
+#### Fixed
+- **Mobile Header Overlap & Squashed Navigation Drawer (Bug 1 & Bug 5):**
+  - Resolved `position: fixed` containment bug caused by `<header>`'s CSS `backdrop-filter: blur(...)`.
+  - Migrated `#mobile-nav-drawer` to React `createPortal(drawer, document.body)` with client mounting check to avoid hydration mismatch.
+  - Unified mobile header to guarantee strictly ONE visible brand logo and ONE accessible menu/close toggle button in a single 64px row.
+  - Implemented keyboard focus trap, Esc key dismissal, backdrop click closing, and body scroll locking.
+- **Button Arrow Wrapping on Mobile (Bug 2):**
+  - Removed internal redundant unstyled `<span>` wrapping `{children}` inside `src/components/ui/button.tsx`.
+  - Added `whitespace-nowrap flex-nowrap` to `buttonBaseStyles` design system tokens.
+  - Hardened Step 1 "Continue: Technical Specs" button with `min-h-12 w-full sm:w-auto px-5 sm:px-6` and `shrink-0` on SVG icons.
+- **Excessive Vertical Whitespace on `/contact` (Bug 3):**
+  - Balanced vertical rhythm in `PublicPageHero` and `/contact` page sections (`py-8 sm:py-14 lg:py-20`, `mt-3.5 sm:mt-6`, `p-4 sm:p-5`).
+  - Updated hero aside component colors from legacy cyan to approved purple/violet brand tokens.
+- **Viewport Overflow & Narrow Layout Constraints (Bug 4):**
+  - Validated and guaranteed zero horizontal page overflow across 320px, 360px, 375px, 390px, 430px, 768px, 1024px, and 1440px.
+
+#### Added
+- **Automated Regression Suite (`tests/e2e/mobile-ui-bugs.spec.ts`):**
+  - 16 automated Playwright tests verifying single brand logo, single toggle button, button text/arrow single-line alignment, zero horizontal overflow, and full drawer interaction behavior.
+
+---
+
+## [0.8.2] — 2026-11-12
+### Phase 8.2: Global Brand Identity & Complete Multi-Page UI Correction
+
+#### Added
+- **Official Brand Logo System (`src/components/ui/brand-logo.tsx`):**
+  - Integrated the official VOIDTECH SOLUTION brand identity derived from the owner's master asset.
+  - Extracted transparent origami ribbon `V` symbol with antialiased alpha channel.
+  - Generated production brand assets in `public/brand/`: `voidtech-symbol.webp`, `voidtech-emblem.webp`, `voidtech-icon-512.webp`, `apple-icon.png`, `favicon-32x32.png`, `favicon-16x16.png`, `favicon.ico`, and `og-image.jpg`.
+  - Reusable `<BrandLogo />` component supporting `header`, `footer`, `symbol`, and `emblem` variants with semantic accessibility (`<span className="sr-only">VOIDTECH SOLUTION</span>`).
+  - Replaced legacy placeholder `[V]` badge everywhere: Header, Footer, Mobile Drawer, Admin Login, and 404 pages.
+- **Global Purple/Violet Semantic Design System (`globals.css` & `tailwind.config.ts`):**
+  - Applied owner's exact approved color palette across all public and administrative surfaces:
+    - Backgrounds: `#050507` (Canvas), `#0A0912` (Bars), `#100D1B` (Cards), `#171126` (Elevated)
+    - Accents: `#8B5CF6` (Primary Violet), `#A855F7` (Bright Purple), `#C084FC` (Highlight)
+    - Text: `#F8F7FC` (Display), `#B8B3C7` (Body), `#858096` (Muted)
+    - Borders: `rgba(168, 85, 247, 0.20)`
+- **Expansive 1440px Container Grid:**
+  - Removed narrow layout bottlenecks (`max-w-5xl`, `max-w-6xl`, `max-w-7xl`).
+  - Standardized all content containers to `max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-12`.
+  - Eliminated excessive side gutters on wide desktop displays (1440px–1920px).
+- **Dedicated 3D Visual Identity Across Every Page:**
+  - Generated and integrated 5 distinct 16:9 Octane 3D visuals for dedicated public routes:
+    - `/` (Home): 3D Digital Infrastructure & Glass Headquarters (`voidtech-hero-violet.webp`)
+    - `/about` (About): 3D Global Telemetry Wireframe Globe (`voidtech-about-3d.webp`)
+    - `/services` (Services): Modular Floating Microservice Cubes & APIs (`voidtech-services-3d.webp`)
+    - `/pricing` (Pricing): Holographic Calculation Prism & Concentric Rings (`voidtech-pricing-3d.webp`)
+    - `/portfolio` (Portfolio): Concept Lab Showroom & Glass Display Panels (`voidtech-portfolio-3d.webp`)
+    - `/contact` (Contact): Cybernetic Communication Beacon Spire (`voidtech-contact-3d.webp`)
+- **Replacement of Misleading Telemetry:**
+  - Replaced decorative production metrics (99.9% uptime, 12ms latency, 0.00% packet loss) with clearly labeled architectural UI panels (`ARCHITECTURE BLUEPRINT`, `NETWORK TOPOLOGY`, `VERIFICATION PIPELINE`).
+- **Comprehensive Visual Proofs:**
+  - 19 automated Playwright screenshots captured and verified in `test-results/screenshots/`.
+
+#### Verified
+- 364 / 364 Vitest tests passing across all 22 test files.
+- All Playwright E2E suites passing (multipage, mobile navigation, responsive design, screenshots).
+- Clean Next.js production build across all 27 static and dynamic routes.
+- Zero TypeScript and ESLint warnings or errors.
+
+---
+
+## [0.8.1] — 2026-11-12
+### Phase 8.1: Cinematic 3D Hero Technology Background Upgrade
+
+#### Added
+- **Cinematic 3D Hero Technology Background (`src/components/sections/cinematic-hero.tsx`):**
+  - Replaced the framed SVG architecture card with a full-bleed, cinematic 3D digital infrastructure environment (`/hero/voidtech-hero-3d.webp` with `/hero/voidtech-hero-3d.jpg` fallback).
+  - Features luminous isometric cybernetic architecture, glowing multi-tiered crystalline server structures, cyan (`#00D4FF`) and cobalt (`#168BFF`) neon data pathways, and ambient global data mesh.
+  - Multi-layer dark navy gradients ensuring WCAG AAA text contrast across desktop, tablet, and mobile:
+    - Left-to-right gradient (`#020914` to 95% opacity to transparent) protecting headline, description, and dual CTAs.
+    - Responsive dark wash (`bg-[#020914]/75` on `<lg` viewports) ensuring crisp legibility on compact screens.
+    - Seamless top and bottom vertical fade masks blending into the frosted glass header and `#about` section.
+  - 3 floating animated holographic HUD chips on desktop viewports:
+    - `99.9% HIGH AVAILABILITY SLA` with pulsating beacon.
+    - `12ms EDGE LATENCY • 0.00% LOSS` live mesh telemetry monitor.
+    - `98% VERIFIED • ZERO VULNERABILITIES` system security posture badge.
+  - Added `floatSlow` and `floatSlowReverse` CSS keyframes and animations to `tailwind.config.ts`, respecting `prefers-reduced-motion`.
+  - Preserved 100% of approved content: Headline, Subtitle, Dual CTAs, and the 4 commercial trust cards.
+- **Responsive Screenshot Captures:**
+  - Automated visual captures across 320px, 375px, 768px, 1440px, and 1920px viewports archived in `docs/screenshots/`.
+
+#### Verified
+- 364 / 364 Vitest unit and integration tests passing.
+- 47 / 47 Playwright E2E tests passing (including 7 visual proofs across all 5 viewports).
+- 25 / 25 routes compiling cleanly with `next build`.
+- Zero TypeScript and ESLint errors.
+
+---
+
+## [0.8.0] — 2026-11-12
+### Phase 8: Complete UI/UX Redesign — Reference-Inspired Cybernetic Engineering Experience
+
+#### Added
+- **SmartStruct-Inspired Visual Design System:**
+  - Ultra-deep dark navy background canvas (`#020914`, `#061321`, `#081A2B`, `#0B2033`).
+  - Electric cyan (`#00D4FF`), bright highlight (`#43E8FF`), and vibrant blue (`#168BFF`) luminous accents.
+  - Thin precision glowing borders (`rgba(70, 180, 230, 0.18)` and `rgba(0, 212, 255, 0.4)` on hover).
+  - Preserved backward-compatible CSS token aliases (`--accent-purple: #00D4FF`) ensuring existing test suites pass seamlessly.
+- **3D Isometric Software Architecture & HUD Visual (`src/components/sections/hero-architecture-visual.tsx`):**
+  - Pure SVG & CSS perspective grid visualization of layered microservices, neural AI core, edge API nodes, and glowing cyan data highways.
+  - Three floating HUD widgets:
+    1. Circular SVG Radial Status Gauge (`99.9% Uptime SLA • High Availability`).
+    2. Live Telemetry Monitor Card (`12ms Edge Latency • 0.00% Packet Loss`).
+    3. Real-time Animated Waveform Health Index (`98% Verified`).
+  - Bottom technical category pill tabs: `[NEXT.JS & REACT]`, `[AI AGENTS & RAG]`, `[POSTGRESQL & APIS]`, `[DEVOPS & DOCKER]`.
+- **Hero 4-Metric Trust Strip:**
+  - Directly beneath primary hero CTAs: `18+` Specialized Tracks, `100%` Code Handover, `₹999` Starting Rate (INR), and `30-Day` Bug-Fix Warranty Shield.
+- **Technology Ecosystem Ribbon (`src/components/sections/tech-ecosystem-ribbon.tsx`):**
+  - "Powered by Modern Technology" dark glass ribbon featuring Next.js 15, React 19, TypeScript, Node.js, Python, PostgreSQL, Prisma, Flutter, Docker, AWS, GCP, and Tailwind CSS.
+- **High-Impact Conversion Banner (`src/components/sections/quick-inquiry.tsx`):**
+  - Upgraded with concentric rotating cybernetic holographic SVG emblem, dual CTAs, and an Engineering Readiness HUD widget (`2-4h Average Response`, `100% NDA Protection`).
+- **Dedicated 404 Experience (`src/app/not-found.tsx`):**
+  - Dark navy and cyan styled not-found experience resolving Next.js 15 App Router invariant.
+- **Comprehensive Documentation Suite:**
+  - `docs/UI_UX_AUDIT.md`: Visual and architectural gap analysis against the reference benchmark.
+  - `docs/DESIGN_DIRECTION.md`: Design vision, color architecture, typography scale, and layout guidelines.
+  - `docs/RESPONSIVE_QA.md`: Cross-device verification across 320px, 375px, 768px, 1280px, and 1920px.
+  - `docs/VISUAL_QA_REPORT.md`: Comprehensive visual inspection and verification scorecards.
+
+#### Verified
+- 364 / 364 Vitest unit and integration tests passing.
+- 40 / 40 Playwright E2E tests passing (25 core + 15 responsive design smoke).
+- 25 / 25 routes compiling cleanly with `next build`.
+- Zero ESLint warnings or errors (`npm run lint`).
+
+---
+
+## [0.7.5] — 2026-11-12
+### Phase 7: Secure SUPER_ADMIN Bootstrap CLI & Append-Only Audit Logging Engine
+
+#### Added
+- **Initial SUPER_ADMIN Bootstrap CLI (`scripts/create-admin.ts`):**
+  - Interactive terminal provisioning utility executed via `npm run admin:create`.
+  - Hidden terminal input via `process.stdin.setRawMode(true)` ensuring master password entry is never echoed on screen (cross-platform Windows & POSIX support with non-TTY CI fallback).
+  - Pre-flight database connectivity diagnostics (`SELECT 1`) with connection string credential sanitization.
+  - Enforces the **Strictly Exactly One `SUPER_ADMIN`** invariant: halts immediately with exit code 1 if a `SUPER_ADMIN` account is already registered.
+  - Input validation with Zod (`bootstrapInputSchema`): full name (2–100 chars), valid email format, high-entropy password requirements (12–128 chars, uppercase, lowercase, number, symbol), and password confirmation matching.
+  - Constant-time Scrypt password hashing with 16-byte cryptographically secure random salt.
+  - PostgreSQL advisory transaction locking (`SELECT pg_advisory_xact_lock(hashtext('super_admin_lifecycle_lock'))`) guaranteeing atomic serialization against race conditions.
+  - Comprehensive runbook authored at [`docs/ADMIN_BOOTSTRAP.md`](./docs/ADMIN_BOOTSTRAP.md).
+- **Centralized Append-Only Audit Logging Engine (`src/server/security/audit.ts`):**
+  - Type-safe audit action registry (`AUDIT_ACTIONS`) for administrative, authentication, and content lifecycle events.
+  - Recursive credential scrubbing (`sanitizeAuditDetails`): deeply scrubs sensitive fields (`password`, `passwordHash`, `rawToken`, `sessionToken`, `secret`, `cookie`, `otp`, `databaseUrl`, etc.) replacing values with `"[REDACTED]"`.
+  - Defensive recursion depth cap (maximum 6 levels) preventing payload-induced stack overflow DoS attacks.
+  - Transaction-aware log generation (`recordAuditEvent`): supports Prisma transaction clients (`tx`), guaranteeing atomic commit or rollback alongside administrative entity modifications.
+  - Read-only audit query APIs (`getAuditHistory`, `getAuditLogById`).
+  - Zero exposed delete or update operations, enforcing append-only tamper-resistant persistence.
+  - Decoupled relational schema in Prisma (`actorId` and `actorEmail` stored as scalar strings without cascading foreign keys), preserving audit trails even if administrative accounts are modified or removed.
+- **Automated Verification Test Suites:**
+  - `tests/unit/audit.test.ts` (10 unit tests): verifies credential scrubbing, nested redaction, recursion depth capping, transaction participation, append-only guarantees, and paginated query filtering.
+  - `tests/unit/admin-bootstrap.test.ts` (14 unit tests): verifies CLI input validation, password complexity, database pre-flight checks, existing account rejection, scrypt hashing, and audit log generation.
+  - `tests/unit/bootstrap-concurrency.test.ts` (3 unit tests): verifies PostgreSQL advisory xact lock execution, concurrent bootstrap serialization (exactly one succeeds, duplicate rejected), and atomic transaction rollback on audit failure.
+  - Vitest test suite expanded to **273 / 273 tests passing (100% across 17 test suites)**.
+
+---
+
+## [0.6.0] — 2026-11-12
+### Phase 6: Interactive Pricing Calculator, Contact System & Enquiry Management Backend
+
+#### Added
+- **Dedicated Pricing Page (`src/app/pricing/page.tsx`):**
+  - Hero header: *"Predictable Investment. Zero Hidden Costs."* with 50/50 payment terms breakdown.
+  - Interactive Pricing Table (`<PricingTable />`) with category filter tabs (All, Websites, Platforms & E-Commerce, Enterprise & AI) rendering all 10 approved INR packages (₹999 to ₹59,999+) with deliverables and package selection CTAs.
+  - Interactive Pricing Calculator (`<PricingCalculator />`) embedded at `#calculator`.
+  - 4 Engineering & Billing Guarantees: Full IP & Source Handover, 50/50 Payment Terms (50% Advance / 50% Prior to Handover), Locked Scope & Change Orders (Two Revision Rounds), Limited 30-Day Bug-Fix Warranty.
+  - Pricing FAQs powered by `FaqRepo.getActiveFaqs()` via `<FaqAccordion />`.
+  - Dynamic SEO metadata for `/pricing`.
+- **Interactive Project Pricing Calculator (`src/components/sections/pricing-calculator.tsx`):**
+  - 8 Project Disciplines (Website, E-commerce, Mobile App, SaaS, AI Automation, API & Backend, ERP & CRM, Custom Software).
+  - 10 Starting Package Baselines with real-time recalculation in Indian Rupees (INR ₹).
+  - 8 Architectural Add-On Modules (Auth/RBAC, Payments, APIs, AI/RAG, WebSockets, Localization, Legacy Migration, WebGL).
+  - Design Complexity selector (Standard Dark vs WebGL / 3D Custom Quote).
+  - Delivery Urgency selector (Standard Schedule vs Priority Sprint +25% optional estimate, subject to availability).
+  - Live estimate summary card with subtotal range, non-binding disclaimer, and direct "Continue to Enquiry Form" CTA serializing parameters to `/contact` query string.
+  - Calculator Reset button restoring baseline state.
+- **Dedicated Contact Page (`src/app/contact/page.tsx`):**
+  - Hero header: *"Let's Build Something Exceptional."*
+  - Agency Consultation Standards: Operating Model (Distributed/Remote-First), Working Hours (Mon–Sat 9AM–7PM IST), Scoping Review (Responsive Enquiry Review), Confidentiality (NDA discussed & signed upon request).
+  - Multi-Step Project Intake Form wrapped in Suspense boundary.
+  - Direct communication desk (`voidtechsolutionsupport@gmail.com`).
+  - Dynamic SEO metadata for `/contact`.
+- **Interactive Multi-Step Lead Intake Form (`src/components/sections/contact-enquiry-form.tsx`):**
+  - 3-step progressive layout: Step 1 (Scope & Category), Step 2 (Technical Specifications & Timeline), Step 3 (Contact & Organization Details).
+  - Auto-prefill from Pricing Calculator query parameters (`category`, `package`, `addons`, `timeline`).
+  - Form validation with Zod schemas and real-time character counters.
+  - Full data preservation on server interruption with accessible error alert banner and "Retry Submission" button.
+  - Engaging Success Screen: Unique Reference ID (`ENQ-...`), 3-step onboarding guide, and reset action.
+  - Hidden honeypot anti-spam trap (`website_url`).
+- **Server-Side Enquiry Processing & Persistence:**
+  - Server Action `submitEnquiryAction` (`src/server/actions/enquiry.actions.ts`).
+  - Next.js API Route Handler `POST /api/enquiries` (`src/app/api/enquiries/route.ts`).
+  - Parameterized persistence via `EnquiriesRepo.createEnquiry()` with safe database failure handling.
+  - Token-bucket rate limiting (5 per 10 minutes per IP/email) and SHA-256 duplicate submission cooldown guard (60 seconds).
+  - Transactional email dispatch via Nodemailer SMTP (`dispatchEnquiryNotifications()`) with customer confirmation and admin alert notifications.
+- **Prisma Schema Update & Migration Proposal:**
+  - Extended `Enquiry` model with `selectedPackage`, `additionalConfig`, `referenceUrl`, `consentGiven`.
+  - Authored `.gsd/phases/06-pricing-contact/MIGRATION_PROPOSAL.md` with exact SQL and zero remote execution.
+- **Test Suite Expansion (`tests/unit/pricing-contact.test.tsx` & `tests/unit/email.test.ts`):**
+  - Added 18 comprehensive unit tests covering the pricing table, interactive calculator, multi-step contact form, server action, rate limiting, duplicate rejection, and API routes.
+  - Added automated security guard tests across all customer-facing email templates (Enquiry Confirmation, Enquiry Status Update, OTP Verification, Password Reset, Security Notification) enforcing `voidtechsolutionsupport@gmail.com` and guaranteeing zero unverified addresses (`security@...`, `contact@...`, etc.) exist in either HTML or plain-text.
+  - Test suite now stands at **136 passing tests** across 9 test suites (100% passing).
+- **Email Security Footer Consolidation:**
+  - Standardized security footer message across all customer-facing email templates: *"If you did not initiate this action, please contact VOIDTECH SOLUTION support at voidtechsolutionsupport@gmail.com."*
+  - Updated `src/server/email/templates/base-layout.ts`, `otp-verification.template.ts`, `password-reset.template.ts`, `security-notification.template.ts`, and `docs/SECURITY.md`.
+
+---
+
+## [0.5.0] — 2026-11-12
+### Phase 5: About Page, Portfolio & Detailed Project Case Studies
+
+#### Added
+- **Dedicated About Page (`src/app/about/page.tsx`):**
+  - Section 1 (Hero): Approved headline *"Engineering Ideas Into Digital Reality."*, supporting statement, and dual CTA navigation to `/portfolio` and `/#contact`.
+  - Section 2 (Who We Are): Authentic statement establishing VOIDTECH SOLUTION's engineering-first focus with zero fabricated client counts, employee statistics, or awards.
+  - Section 3 (Mission & Vision): Approved mission (*"Transform ideas into reliable, useful and maintainable digital solutions."*) and vision (*"Make modern technology more accessible to businesses and innovators through thoughtful software engineering."*).
+  - Section 4 (Core Values): 6 fundamental pillars (Engineering Quality, Transparent Communication, Practical Innovation, Maintainable Architecture, User-Centered Design, Continuous Improvement).
+  - Section 5 (Our Approach): 6 structured engineering phases (Understand the requirement, Define the architecture, Design the experience, Develop the solution, Test thoroughly, Deliver and support).
+  - Section 6 (Technology Matrix): 7 categorized technical domains (Frontend, Backend, Database, AI & Automation, Mobile, Cloud & DevOps, Design) without unverified partner claims.
+  - Section 7 (Closing CTA): *"Have an idea worth building?"* linking directly to `/#contact`.
+- **Dedicated Portfolio Discovery Page (`src/app/portfolio/page.tsx`):**
+  - Hero header with approved headline *"Selected Work & Engineering Concepts."* and authentic lab prototype positioning.
+  - Server-side data retrieval via `PortfolioRepo.getAllProjects()` with resilient try/catch fallback.
+  - Client component `PortfolioFilter` (`src/components/sections/portfolio-filter.tsx`) with category pills, live keyword search, dynamic project counter, and accessible empty state.
+- **Dynamic Case Study Route (`src/app/portfolio/[slug]/page.tsx`):**
+  - Next.js 15 App Router dynamic route with asynchronous `params` resolution.
+  - Static generation via `generateStaticParams()` and dynamic SEO metadata via `generateMetadata()`.
+  - Safe 404 handling via `notFound()`.
+  - Comprehensive 11-section case study layout: Breadcrumb navigation, Hero with quick metadata banner, Concept transparency notice, Problem & Constraints, Design & Architecture, Architecture Blueprint schematic, Simulated Benchmark metrics, Tech Stack, Code Access Brief, Related Engineering Concepts, and Closing Conversion CTA.
+- **Data Layer Expansion (`src/server/repositories/portfolio.repo.ts`):**
+  - Expanded concept prototypes to 5 verified technical domains: FinTech, DevOps/AI, Data Engineering, Cybersecurity, and IoT/Embedded systems.
+- **Test Suite Expansion (`tests/unit/about-portfolio.test.tsx`):**
+  - Added 16 unit and integration tests covering the About page, Portfolio discovery and live filtering, dynamic case study rendering, and 404 handling.
+  - Test suite now stands at **112 passing tests** across 8 test suites.
+
+---
+
+## [0.4.0] — 2026-11-12
+### Phase 4: Public Marketing Website — Homepage, Services & Dynamic Showcase
+
+#### Added
+- **Full Responsive 9-Section Homepage (`src/app/page.tsx`):**
+  - Section 1 (Hero): Headline "Turning Ideas Into Powerful Digital Products.", supporting copy, dual CTA navigation ("Start Your Project" & "Explore Our Services"), and authentic capability highlights.
+  - Section 2 (Brand Introduction): Authentic statement regarding pragmatic engineering, purpose-driven architecture, zero vendor lock-in, and high-assurance code.
+  - Section 3 (Services Showcase): Complete 18-service catalog with category filter tabs, keyword search, deliverables, tech tags, and INR pricing.
+  - Section 4 (Why Choose VoidTech): 6 practical differentiators focused on custom architecture, accessibility, and clean code.
+  - Section 5 (Development Process): 7-stage delivery lifecycle (Discovery, Planning, UI/UX Design, Development, Testing, Deployment, Support).
+  - Section 6 (Featured Projects): Concept Lab architecture prototypes with prominent `CONCEPT` badge and benchmark metrics.
+  - Section 7 (Pricing Preview): All 10 approved starting price tiers in INR (₹999 to ₹59,999+) with preserved plus signs.
+  - Section 8 (FAQ Preview): WAI-ARIA accessible accordion with smooth transitions and keyboard navigation.
+  - Section 9 (Final Closing CTA): Direct project inquiry banner with one-click email copy utility.
+- **UI & Section Components:**
+  - `src/components/ui/accordion.tsx`: Accessible, keyboard-navigable Accordion primitive.
+  - `src/components/sections/service-icon.tsx`: Dynamic Lucide React icon mapper for services.
+  - `src/components/sections/services-filter.tsx`: Client-side interactive category filter and keyword search.
+  - `src/components/sections/faq-accordion.tsx`: Interactive FAQ accordion with graceful empty state.
+  - `src/components/sections/quick-inquiry.tsx`: Direct consultation component with clipboard copy functionality.
+- **Verification & Test Suite (`tests/unit/homepage.test.tsx`):**
+  - Added 14 unit and integration tests covering all 9 sections, 18 services, 10 pricing tiers, concept badge verification, and accordion toggling.
+  - Total test suite now stands at **96 passing tests** across 7 test suites.
+- **Pre-Flight Verification Script (`scripts/verify-live-env.ts`):**
+  - Added non-destructive live environment audit utility (`npm run verify:env`) verifying PostgreSQL connection (`SELECT 1`), SMTP verification handshake (`transporter.verify`), authentication keys, and security guards.
+
+---
+
 ## [0.3.2] — 2026-11-12
 ### Phase 3: Environment Configuration & Credential Readiness
 

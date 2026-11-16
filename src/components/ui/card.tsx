@@ -1,7 +1,8 @@
 import * as React from "react";
+import Link from "next/link";
 import { Check, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   glow?: boolean;
@@ -149,6 +150,7 @@ export interface PricingCardProps extends React.HTMLAttributes<HTMLDivElement> {
   isPopular?: boolean;
   features: string[];
   ctaText?: string;
+  href?: string;
   onSelectTier?: () => void;
 }
 
@@ -163,6 +165,7 @@ export const PricingCard = React.forwardRef<HTMLDivElement, PricingCardProps>(
       isPopular = false,
       features,
       ctaText = "Choose Plan",
+      href,
       onSelectTier,
       ...props
     },
@@ -206,14 +209,20 @@ export const PricingCard = React.forwardRef<HTMLDivElement, PricingCardProps>(
         </ul>
       </div>
 
-      <Button
-        variant={isPopular ? "primary" : "secondary"}
-        size="lg"
-        className="w-full"
-        onClick={onSelectTier}
-      >
-        {ctaText}
-      </Button>
+      {href ? (
+        <Link href={href} className={buttonVariants({ variant: isPopular ? "primary" : "secondary", size: "lg", className: "w-full" })}>
+          {ctaText}
+        </Link>
+      ) : (
+        <Button
+          variant={isPopular ? "primary" : "secondary"}
+          size="lg"
+          className="w-full"
+          onClick={onSelectTier}
+        >
+          {ctaText}
+        </Button>
+      )}
     </div>
   )
 );

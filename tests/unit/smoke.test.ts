@@ -62,10 +62,23 @@ describe("Zod Enquiry Validation Schema", () => {
       budgetRange: "15K_TO_50K",
       timeline: "1_TO_3_MONTHS",
       message: "We need an autonomous AI multi-agent workflow integrated with our ERP.",
+      consentGiven: true,
     };
 
     const parseResult = enquiryFormSchema.safeParse(validData);
     expect(parseResult.success).toBe(true);
+  });
+
+  it("rejects an enquiry when consent is not explicitly granted", () => {
+    const withoutConsent = {
+      name: "Alex Vance",
+      email: "alex@enterprise.com",
+      serviceCategory: "AI_AUTOMATION",
+      message: "We need an autonomous AI multi-agent workflow integrated with our ERP.",
+    };
+
+    const parseResult = enquiryFormSchema.safeParse(withoutConsent);
+    expect(parseResult.success).toBe(false);
   });
 
   it("rejects an invalid email format", () => {
