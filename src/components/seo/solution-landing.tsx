@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { siteConfig } from "@/config/site";
 
 const landingPages = {
@@ -74,16 +73,10 @@ const landingPages = {
   },
 } as const;
 
-type Slug = keyof typeof landingPages;
-export const solutionSlugs = Object.keys(landingPages) as Slug[];
+export type Slug = keyof typeof landingPages;
+const solutionSlugs = Object.keys(landingPages) as Slug[];
 
-export function generateStaticParams() {
-  return solutionSlugs.map((slug) => ({ slug }));
-}
-export const dynamicParams = false;
-
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params;
+export function solutionMetadata(slug: Slug): Metadata {
   if (!(slug in landingPages)) return {};
   const page = landingPages[slug as Slug];
   const canonical = siteConfig.url + "/solutions/" + slug;
@@ -95,9 +88,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-export default async function SolutionPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  if (!(slug in landingPages)) notFound();
+export function SolutionLanding({ slug }: { slug: Slug }) {
   const page = landingPages[slug as Slug];
   const url = siteConfig.url + "/solutions/" + slug;
   const schema = {
