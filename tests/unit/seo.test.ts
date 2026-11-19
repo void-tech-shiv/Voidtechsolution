@@ -9,6 +9,7 @@ import { metadata as pricingMetadata } from "@/app/pricing/page";
 import { metadata as portfolioMetadata } from "@/app/portfolio/page";
 import { metadata as contactMetadata } from "@/app/contact/page";
 import { metadata as serviceAreasMetadata } from "@/app/service-areas/page";
+import { metadata as websiteCostGuideMetadata } from "@/app/guides/website-development-cost-india/page";
 
 describe("Phase 8.4: Technical SEO & Canonical Domain Verification", () => {
   it("enforces the approved production canonical domain across siteConfig", () => {
@@ -41,6 +42,7 @@ describe("Phase 8.4: Technical SEO & Canonical Domain Verification", () => {
     expect(urls).toContain("https://voidtechsolution.codedev.co.in/portfolio");
     expect(urls).toContain("https://voidtechsolution.codedev.co.in/contact");
     expect(urls).toContain("https://voidtechsolution.codedev.co.in/service-areas");
+    expect(urls).toContain("https://voidtechsolution.codedev.co.in/guides/website-development-cost-india");
     for (const slug of ["website-development", "ecommerce-development", "ai-automation", "college-project-mentoring"]) {
       expect(urls).toContain(`https://voidtechsolution.codedev.co.in/solutions/${slug}`);
     }
@@ -69,6 +71,7 @@ describe("Phase 8.4: Technical SEO & Canonical Domain Verification", () => {
       "https://voidtechsolution.codedev.co.in/portfolio"
     );
     expect((serviceAreasMetadata as any).alternates?.canonical).toBe("https://voidtechsolution.codedev.co.in/service-areas");
+    expect((websiteCostGuideMetadata as any).alternates?.canonical).toBe("https://voidtechsolution.codedev.co.in/guides/website-development-cost-india");
     expect((contactMetadata as any).alternates?.canonical).toBe(
       "https://voidtechsolution.codedev.co.in/contact"
     );

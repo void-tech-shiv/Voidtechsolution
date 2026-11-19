@@ -95,6 +95,14 @@ export default async function PricingPage() {
           </p>
         </div>
 
+        <p className="mt-5 text-center text-sm leading-7 text-void-muted">
+          Not sure how to compare website costs or features?{" "}
+          <Link href="/guides/website-development-cost-india" className="text-electric-purple underline underline-offset-4">
+            Read the practical India website pricing and hiring guide
+          </Link>
+          {" "}before requesting a quote.
+        </p>
+
         <PricingTable packages={packages} />
 
       </section>

@@ -113,6 +113,17 @@ export function SolutionLanding({ slug }: { slug: Slug }) {
         <Link href="/contact" className="rounded-lg bg-electric-purple px-6 py-3 font-semibold text-white">Discuss your project</Link>
         <Link href="/pricing" className="rounded-lg border border-void-border px-6 py-3 font-semibold text-white">View pricing</Link>
       </div>
+      {slug === "website-development" && (
+        <aside className="mt-8 rounded-xl border border-electric-purple/30 bg-void-surface/40 p-6">
+          <h2 className="text-xl font-bold text-white">Planning a business website budget?</h2>
+          <p className="mt-3 leading-7 text-void-muted">
+            Compare landing pages, business websites and ecommerce requirements before committing to a quote.
+          </p>
+          <Link href="/guides/website-development-cost-india" className="mt-4 inline-block text-electric-purple underline underline-offset-4">
+            Read our website development cost guide for India
+          </Link>
+        </aside>
+      )}
       <section className="mt-20" aria-labelledby="offerings-title">
         <h2 id="offerings-title" className="text-2xl font-bold text-white">What we can help with</h2>
         <div className="mt-8 grid gap-5 sm:grid-cols-2">
