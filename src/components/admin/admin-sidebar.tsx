@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import type { UserRole } from "@prisma/client";
 import {
   LayoutDashboard,
+  ChartNoAxesCombined,
   Inbox,
   Kanban,
   Layers,
@@ -40,6 +41,12 @@ export const ADMIN_NAV_ITEMS: NavItemConfig[] = [
     href: "/admin",
     icon: LayoutDashboard,
     requiredPermission: "dashboard:view",
+  },
+  {
+    name: "Traffic Analytics",
+    href: "/admin/traffic",
+    icon: ChartNoAxesCombined,
+    requiredPermission: "traffic:view",
   },
   {
     name: "CRM Pipeline",
