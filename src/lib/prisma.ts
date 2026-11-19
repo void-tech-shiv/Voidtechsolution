@@ -78,10 +78,20 @@ export function getPrismaClient(): PrismaClient {
  * methods so $transaction/$queryRaw execute with the correct Prisma instance.
  */
 export const prisma = new Proxy({} as PrismaClient, {
-  get(_target, property: string | symbol) {
+  get(target, property: string | symbol) {
+    // Preserve the public Prisma object contract for spies and other
+    // intentional overrides used by the existing Node.js test suite.
+    if (Object.prototype.hasOwnProperty.call(target, property)) {
+      return Reflect.get(target, property, target);
+    }
     const client = getPrismaClient();
     const value = Reflect.get(client, property, client);
     return typeof value === "function" ? value.bind(client) : value;
+  },
+  has(target, property: string | symbol) {
+    if (Reflect.has(target, property)) return true;
+    const client = getPrismaClient();
+    return Reflect.has(client, property) || Reflect.get(client, property, client) !== undefined;
   },
 });
 
