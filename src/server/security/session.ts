@@ -7,6 +7,7 @@ import {
   verifySessionCookie,
   sanitizeCallbackUrl,
   getSessionCookieOptions,
+  getSessionSigningSecret,
   type SessionCookiePayload,
 } from "./cookie";
 
@@ -70,7 +71,7 @@ export async function createAdminSession(
 }> {
   const rawToken = generateRawSessionToken();
   const sessionTokenHash = await hashSessionToken(rawToken);
-  const secret = process.env.AUTH_SECRET || "default_auth_secret_minimum_32_characters_long_for_security";
+  const secret = getSessionSigningSecret();
   const expiresAt = new Date(Date.now() + ABSOLUTE_SESSION_LIFETIME_MS);
 
   const session = await prisma.adminSession.create({
@@ -105,7 +106,7 @@ export type SessionValidationResult =
  * absolute lifetime (8 hours), and account active status.
  */
 export async function validateAdminSession(cookieValue: string): Promise<SessionValidationResult> {
-  const secret = process.env.AUTH_SECRET || "default_auth_secret_minimum_32_characters_long_for_security";
+  const secret = getSessionSigningSecret();
   const verified = await verifySessionCookie(cookieValue, secret);
 
   if (!verified) {
@@ -163,7 +164,7 @@ export async function validateAdminSession(cookieValue: string): Promise<Session
  * Revokes a session by deleting it from PostgreSQL.
  */
 export async function revokeAdminSession(cookieValue: string): Promise<boolean> {
-  const secret = process.env.AUTH_SECRET || "default_auth_secret_minimum_32_characters_long_for_security";
+  const secret = getSessionSigningSecret();
   const verified = await verifySessionCookie(cookieValue, secret);
   if (!verified) return false;
 

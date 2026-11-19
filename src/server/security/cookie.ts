@@ -161,3 +161,18 @@ export function getSessionCookieOptions(isProduction: boolean) {
     maxAge: Math.floor(ABSOLUTE_SESSION_LIFETIME_MS / 1000), // 28,800 seconds (8 hours)
   };
 }
+
+/**
+ * Missing/misconfigured secrets are fatal in production. A separate, explicit
+ * development-only fallback keeps local unit tests and prototyping usable.
+ */
+export function getSessionSigningSecret(): string {
+  const secret = process.env.AUTH_SECRET;
+  if (secret && secret.length >= 32) {
+    return secret;
+  }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("AUTH_SECRET must be configured with at least 32 characters.");
+  }
+  return "development-only-local-session-secret-not-for-production";
+}

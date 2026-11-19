@@ -10,7 +10,9 @@ import {
   revokeAdminSession,
   SESSION_COOKIE_NAME,
 } from "@/server/security/session";
-import { checkRateLimit } from "@/server/security/rate-limiter";
+import { peekRateLimit, recordRateLimitFailure } from "@/server/security/rate-limiter";
+import { getTrustedClientIp } from "@/server/security/client-ip";
+import { createHash } from "node:crypto";
 import { createAuditLog } from "@/server/repositories/audit.repo";
 import { validateRequestOrigin } from "@/server/security/origin";
 import type { AdminUser, AdminSession } from "@prisma/client";
@@ -55,19 +57,31 @@ export async function loginAction(input: unknown): Promise<AuthActionResult> {
   }
 
   const { email, password, rememberMe } = parsed.data;
-  const ip = reqHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
+  const ip = getTrustedClientIp(reqHeaders) ?? "anonymous";
   const userAgent = reqHeaders.get("user-agent") || "unknown";
 
-  // 3. Pre-computation Rate Limiting (5 failures / 15 min window)
-  const rateLimitKey = `auth_login:${ip}:${email.toLowerCase()}`;
-  const rateLimit = checkRateLimit(rateLimitKey, 5, 15 * 60 * 1000);
-  if (!rateLimit.allowed) {
-    const waitMins = Math.ceil((rateLimit.resetInSeconds || 60) / 60);
+  // 3. Independent per-IP and per-account failure budgets. A successful
+  // login does NOT consume them. An account key is a hash (no PII in counters).
+  const windowMs = 15 * 60 * 1000;
+  const ipKey = `auth_login_ip:${ip}`;
+  const accountKey = `auth_login_account:${createHash("sha256").update(email.toLowerCase()).digest("hex")}`;
+  const ipCheck = peekRateLimit(ipKey, 20, windowMs);
+  const accountCheck = peekRateLimit(accountKey, 10, windowMs);
+  if (!ipCheck.allowed || !accountCheck.allowed) {
+    const waitMins = Math.ceil(Math.max(
+      !ipCheck.allowed ? ipCheck.resetInSeconds : 0,
+      !accountCheck.allowed ? accountCheck.resetInSeconds : 0
+    ) / 60);
     return {
       success: false,
       error: `Too many failed login attempts. Account access is temporarily throttled. Please try again in ${waitMins} minute(s).`,
     };
   }
+
+  const recordFailedLogin = () => {
+    recordRateLimitFailure(ipKey, 20, windowMs);
+    recordRateLimitFailure(accountKey, 10, windowMs);
+  };
 
   // 4. User Lookup
   const user = await getAdminByEmail(email);
@@ -76,6 +90,7 @@ export async function loginAction(input: unknown): Promise<AuthActionResult> {
   const GENERIC_AUTH_ERROR = "Invalid email or password.";
 
   if (!user || !user.isActive) {
+    recordFailedLogin();
     // Record audit event for suspicious attempt
     try {
       await createAuditLog({
@@ -97,6 +112,7 @@ export async function loginAction(input: unknown): Promise<AuthActionResult> {
   // 5. Scrypt Password Verification
   const isMatch = verifyPassword(password, user.passwordHash);
   if (!isMatch) {
+    recordFailedLogin();
     try {
       await createAuditLog({
         action: "AUTH_LOGIN_FAILED",
@@ -167,7 +183,7 @@ export async function loginAction(input: unknown): Promise<AuthActionResult> {
  */
 export async function logoutAction(): Promise<AuthActionResult> {
   const reqHeaders = await headers();
-  const ip = reqHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
+  const ip = getTrustedClientIp(reqHeaders) ?? "anonymous";
   const userAgent = reqHeaders.get("user-agent") || "unknown";
 
   const cookieStore = await cookies();

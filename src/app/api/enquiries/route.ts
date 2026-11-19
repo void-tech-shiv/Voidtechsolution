@@ -6,11 +6,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Extract client IP address safely
-    const forwardedFor = request.headers.get("x-forwarded-for");
-    const clientIp = forwardedFor ? (forwardedFor.split(",")[0]?.trim() || "127.0.0.1") : "127.0.0.1";
-
-    const result = await submitEnquiryAction(body, clientIp);
+    const result = await submitEnquiryAction(body);
 
     if (!result.success) {
       if (result.error?.includes("limit reached")) {
@@ -24,15 +20,16 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(response, { status: 429 });
       }
 
+      const unavailable = result.error?.includes("database service interruption") ?? false;
       const response: ApiResponse = {
         success: false,
         error: {
-          code: result.errors ? "VALIDATION_ERROR" : "SUBMISSION_REJECTED",
+          code: unavailable ? "SERVICE_UNAVAILABLE" : result.errors ? "VALIDATION_ERROR" : "SUBMISSION_REJECTED",
           message: result.error || "Submission failed.",
           details: result.errors,
         },
       };
-      return NextResponse.json(response, { status: 400 });
+      return NextResponse.json(response, { status: unavailable ? 503 : 400 });
     }
 
     const response: ApiResponse<{ enquiryId: string; message: string }> = {

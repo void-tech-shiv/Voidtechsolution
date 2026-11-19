@@ -3,6 +3,7 @@ import {
   SESSION_COOKIE_NAME,
   verifySessionCookie,
   sanitizeCallbackUrl,
+  getSessionSigningSecret,
 } from "@/server/security/cookie";
 
 /**
@@ -24,9 +25,7 @@ import {
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const cookieValue = request.cookies.get(SESSION_COOKIE_NAME)?.value;
-  const authSecret =
-    process.env.AUTH_SECRET ||
-    "default_auth_secret_minimum_32_characters_long_for_security";
+  const authSecret = getSessionSigningSecret();
 
   const sessionPayload = cookieValue
     ? await verifySessionCookie(cookieValue, authSecret)

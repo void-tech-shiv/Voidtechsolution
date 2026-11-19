@@ -1,5 +1,8 @@
 "use server";
 
+import { headers } from "next/headers";
+import { createHash } from "node:crypto";
+
 import type { Prisma } from "@prisma/client";
 import {
   enquirySubmissionSchema,
@@ -11,6 +14,9 @@ import {
   checkRateLimit,
   generateSubmissionFingerprint,
   isDuplicateSubmission,
+  releaseSubmissionFingerprint,
+  getTrustedClientIp,
+  hashClientIp,
 } from "@/server/security";
 
 export interface SubmitEnquiryActionResult {
@@ -24,8 +30,7 @@ export interface SubmitEnquiryActionResult {
  * Server Action for processing and persisting inbound client enquiries.
  */
 export async function submitEnquiryAction(
-  rawInput: unknown,
-  clientIp = "127.0.0.1"
+  rawInput: unknown
 ): Promise<SubmitEnquiryActionResult> {
   // 1. Honeypot Bot Detection Trap (fast rejection before schema parsing)
   if (
@@ -59,13 +64,27 @@ export async function submitEnquiryAction(
 
   const data: EnquirySubmissionInput = parseResult.data;
 
-  // 3. Rate Limiting Check (5 per 10 minutes per IP/email)
-  const rateLimitKey = `${clientIp}:${data.email.toLowerCase()}`;
-  const rateCheck = checkRateLimit(rateLimitKey, 5, 10 * 60 * 1000);
-  if (!rateCheck.allowed) {
+  // 3. Derive visitor IP from trusted server-side request headers.
+  // When no trusted ingress is configured, use a shared anonymous key rather than a spoofable header.
+  let clientIp: string | null = null;
+  try {
+    clientIp = getTrustedClientIp(await headers());
+  } catch {
+    // Supports isolated unit tests without a Next.js request context.
+  }
+  const emailKey = `enquiry_email:${createHash("sha256").update(data.email.toLowerCase()).digest("hex")}`;
+  const emailCheck = checkRateLimit(emailKey, 5, 10 * 60 * 1000);
+  const ipCheck = clientIp
+    ? checkRateLimit(`enquiry_ip:${clientIp}`, 20, 10 * 60 * 1000)
+    : { allowed: true, resetInSeconds: 0 };
+  if (!emailCheck.allowed || !ipCheck.allowed) {
+    const retrySeconds = Math.max(
+      !emailCheck.allowed ? emailCheck.resetInSeconds : 0,
+      !ipCheck.allowed ? ipCheck.resetInSeconds : 0
+    );
     return {
       success: false,
-      error: `Submission limit reached. Please wait ${rateCheck.resetInSeconds} seconds before submitting again.`,
+      error: `Submission limit reached. Please wait ${retrySeconds} seconds before submitting again.`,
     };
   }
 
@@ -95,19 +114,27 @@ export async function submitEnquiryAction(
         referenceUrl: data.referenceUrl || undefined,
         consentGiven: data.consentGiven,
       },
-      { ipHash: clientIp }
+      { ipHash: hashClientIp(clientIp) }
     );
 
-    // 6. Asynchronous Transactional Email Dispatch (Non-blocking)
-    dispatchEnquiryNotifications(enquiry).catch((err) => {
-      console.warn("[enquiry.action] Background email dispatch error:", err);
-    });
+    // 6. Await notification dispatch before returning: unawaited work can
+    // be terminated when a serverless request finishes. Email failures do not
+    // invalidate an already persisted enquiry.
+    try {
+      const delivery = await dispatchEnquiryNotifications(enquiry);
+      if (delivery.errors.length > 0) {
+        console.warn("[enquiry.action] Notification delivery issues:", delivery.errors);
+      }
+    } catch (err) {
+      console.warn("[enquiry.action] Notification dispatch error:", err);
+    }
 
     return {
       success: true,
       enquiryId: enquiry.id,
     };
   } catch (error) {
+    releaseSubmissionFingerprint(fingerprint);
     const message = error instanceof Error ? error.message : "Database write operation failed";
     console.error("[enquiry.action] Persistence failure:", message);
     return {
