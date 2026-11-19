@@ -27,7 +27,7 @@ describe("Agency proposal pricing integrity", () => {
     expect(() => calculateQuote(items, 5000)).toThrow(/discount/);
     expect(() => calculateQuote(items, -1)).toThrow(/discount/);
     expect(() => calculateQuote(items, 0.5)).toThrow(/discount/);
-    expect(() => calculateQuote([{ description: "Enterprise platform", quantity: 100, unitPriceInr: 10_000_000 }, ...items, ...items, ...items], 0)).toThrow(/amounts/);
+    expect(() => calculateQuote([{ description: "Enterprise platform", quantity: 100, unitPriceInr: 10_000_000 }, { description: "Second enterprise module", quantity: 100, unitPriceInr: 10_000_000 }, { description: "Third enterprise module", quantity: 100, unitPriceInr: 10_000_000 }], 0)).toThrow(/amounts/);
     expect(() => calculateQuote([{ description: "Invalid quantity", quantity: 0, unitPriceInr: 999 }], 0)).toThrow();
   });
 
