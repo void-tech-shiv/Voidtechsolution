@@ -24,7 +24,10 @@
   },
   "vars": {
     "IS_CLOUDFLARE_WORKER": "true",
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "CLOUDFLARE_ACCOUNT_ID": "0d5df99f4df8e411aade8d34917ffe10",
+    "CLOUDFLARE_ANALYTICS_SITE_TAG": "4f9d122df1c6476bb151ef91605543b7",
+    "CLOUDFLARE_ANALYTICS_HOST": "voidtechsolution.codedev.co.in"
   },
   "keep_vars": true
 }
