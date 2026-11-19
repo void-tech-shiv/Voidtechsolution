@@ -78,7 +78,7 @@ export function getPrismaClient(): PrismaClient {
  * methods so $transaction/$queryRaw execute with the correct Prisma instance.
  */
 export const prisma = new Proxy({} as PrismaClient, {
-  get(_target, property: keyof PrismaClient | symbol) {
+  get(_target, property: string | symbol) {
     const client = getPrismaClient();
     const value = Reflect.get(client, property, client);
     return typeof value === "function" ? value.bind(client) : value;
