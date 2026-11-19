@@ -6,6 +6,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = siteConfig.url;
   const now = new Date();
 
+  const solutionRoutes = [
+    "/solutions/website-development",
+    "/solutions/ecommerce-development",
+    "/solutions/ai-automation",
+    "/solutions/college-project-mentoring",
+  ].map((route) => ({
+    url: `${baseUrl}${route}`,
+    lastModified: now,
+    changeFrequency: "monthly" as const,
+    priority: 0.8,
+  }));
+
   const coreRoutes = [
     "",
     "/about",
@@ -28,9 +40,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly" as const,
       priority: 0.7,
     }));
-    return [...coreRoutes, ...projectRoutes];
+    return [...coreRoutes, ...solutionRoutes, ...projectRoutes];
   } catch {
-    return coreRoutes;
+    return [...coreRoutes, ...solutionRoutes];
   }
 }
 
