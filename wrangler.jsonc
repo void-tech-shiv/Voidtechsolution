@@ -24,5 +24,6 @@
   },
   "vars": {
     "IS_CLOUDFLARE_WORKER": "true"
-  }
+  },
+  "keep_vars": true
 }
