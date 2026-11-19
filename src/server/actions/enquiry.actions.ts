@@ -114,7 +114,7 @@ export async function submitEnquiryAction(
         referenceUrl: data.referenceUrl || undefined,
         consentGiven: data.consentGiven,
       },
-      { ipHash: hashClientIp(clientIp) }
+      { ipHash: hashClientIp(clientIp) ?? undefined }
     );
 
     // 6. Await notification dispatch before returning: unawaited work can
