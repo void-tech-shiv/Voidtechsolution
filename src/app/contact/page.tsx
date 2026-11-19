@@ -10,6 +10,7 @@ import {
 import { siteConfig } from "@/config/site";
 import { Badge } from "@/components/ui/badge";
 import { ContactEnquiryForm } from "@/components/sections/contact-enquiry-form";
+import { QuickQuoteForm } from "@/components/sections/quick-quote-form";
 import { PublicPageHero } from "@/components/layout/public-page-hero";
 
 export const metadata: Metadata = {
@@ -114,6 +115,14 @@ export default function ContactPage() {
         </div>
       </section>
 
+      <section
+        id="quick-quote"
+        aria-label="Quick website quote"
+        className="relative mx-auto max-w-3xl px-4 pb-10 pt-4 sm:px-6"
+      >
+        <QuickQuoteForm compact />
+      </section>
+
       {/* ========================================================================= */}
       {/* SECTION 3: MULTI-STEP ENQUIRY FORM                                        */}
       {/* ========================================================================= */}
@@ -133,7 +142,7 @@ export default function ContactPage() {
             Project Scoping & Requirement Intake
           </h2>
           <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-void-muted max-w-xl mx-auto">
-            Complete the 3-step intake below. If you arrived from the Pricing Calculator, your selected scope is pre-populated.
+            Already know your requirements? Use the full 3-step project brief below for budgets, timelines and technical details.
           </p>
         </div>
 
