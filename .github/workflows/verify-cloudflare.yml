@@ -16,11 +16,26 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: root
+          POSTGRES_DB: voidtech_test_concurrency
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d voidtech_test_concurrency"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
     env:
       CI: "true"
-      DATABASE_URL: postgresql://test:test@localhost:5432/test_db
-      DIRECT_URL: postgresql://test:test@localhost:5432/test_db
+      DATABASE_URL: postgresql://postgres:root@localhost:5432/voidtech_test_concurrency
+      DIRECT_URL: postgresql://postgres:root@localhost:5432/voidtech_test_concurrency
+      TEST_DATABASE_URL: postgresql://postgres:root@localhost:5432/voidtech_test_concurrency
       AUTH_SECRET: ci-only-random-placeholder-32-chars-long-not-for-production
       OTP_PEPPER_SECRET: ci-only-otp-pepper-placeholder
       SMTP_HOST: localhost
@@ -30,7 +45,7 @@ jobs:
       SMTP_PASS: test-pass
       SMTP_FROM_EMAIL: notifications@example.com
       ADMIN_ALERT_EMAIL: admin@example.com
-      NEXT_PUBLIC_SITE_URL: https://example.com
+      NEXT_PUBLIC_SITE_URL: https://voidtechsolution.codedev.co.in
 
     steps:
       - name: Checkout source
@@ -50,6 +65,9 @@ jobs:
 
       - name: Verify TypeScript
         run: npm run typecheck
+
+      - name: Apply migrations to isolated local PostgreSQL
+        run: npx prisma migrate deploy
 
       - name: Run unit and component tests
         run: npm test
