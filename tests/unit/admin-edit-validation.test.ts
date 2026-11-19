@@ -28,10 +28,11 @@ describe("Admin inline editors: validation and commercial safety", () => {
     }));
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.priceInr).toBe(3999);
-      expect(result.data.features).toEqual(["Responsive design", "Contact form", "SEO setup"]);
-      expect(result.data.isActive).toBe(true);
-      expect(result.data.expectedUpdatedAt).toBeInstanceOf(Date);
+      const parsed = editPricingSchema.parse(result.data);
+      expect(parsed.priceInr).toBe(3999);
+      expect(parsed.features).toEqual(["Responsive design", "Contact form", "SEO setup"]);
+      expect(parsed.isActive).toBe(true);
+      expect(parsed.expectedUpdatedAt).toBeInstanceOf(Date);
     }
   });
 
@@ -68,7 +69,7 @@ describe("Admin inline editors: validation and commercial safety", () => {
       isActive: true,
     }));
     expect(valid.success).toBe(true);
-    if (valid.success) expect(valid.data.startingPriceInr).toBeNull();
+    if (valid.success) expect(editServiceSchema.parse(valid.data).startingPriceInr).toBeNull();
     expect(editServiceSchema.safeParse({
       ...common, title: "API development", shortDesc: "Custom APIs",
       fullDesc: "Build and operate production APIs for businesses.",
@@ -100,8 +101,9 @@ describe("Admin inline editors: validation and commercial safety", () => {
     }));
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.category).toBe("SUPPORT");
-      expect(result.data.isActive).toBe(false);
+      const parsed = editFaqSchema.parse(result.data);
+      expect(parsed.category).toBe("SUPPORT");
+      expect(parsed.isActive).toBe(false);
     }
     expect(editFaqSchema.safeParse({
       ...common, question: "What support is provided?",
