@@ -99,6 +99,17 @@ export default async function ServicesPage() {
         </div>
 
         {/* Services Filter Component */}
+        <div className="mb-10 rounded-xl border border-electric-purple/30 bg-void-surface/40 p-6">
+          <h3 className="text-lg font-semibold text-white">Explore services by what you need</h3>
+          <p className="mt-2 text-sm text-void-muted">Detailed guides for businesses and students looking for a specific type of project support.</p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link href="/solutions/website-development" className="rounded-lg border border-void-border px-4 py-3 text-sm text-electric-purple hover:border-electric-purple">Business websites & web design</Link>
+            <Link href="/solutions/ecommerce-development" className="rounded-lg border border-void-border px-4 py-3 text-sm text-electric-purple hover:border-electric-purple">Online stores & ecommerce</Link>
+            <Link href="/solutions/ai-automation" className="rounded-lg border border-void-border px-4 py-3 text-sm text-electric-purple hover:border-electric-purple">AI automation & chatbots</Link>
+            <Link href="/solutions/college-project-mentoring" className="rounded-lg border border-void-border px-4 py-3 text-sm text-electric-purple hover:border-electric-purple">College project mentoring</Link>
+          </div>
+        </div>
+
         <ServicesFilter initialServices={services} />
       </section>
 
