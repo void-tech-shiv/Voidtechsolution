@@ -216,16 +216,17 @@ describe("Public Website Multi-Page Architecture", () => {
       });
     });
 
-    it("links featured services to /services catalog", () => {
+    it("links search-intent services directly while retaining the full catalog", () => {
       render(<Footer />);
 
       const capabilitiesList = screen.getByRole("list", { name: "Footer Capabilities Links" });
-      const links = capabilitiesList.querySelectorAll("a");
-      expect(links.length).toBeGreaterThanOrEqual(6);
-
-      links.forEach((link) => {
-        expect(link).toHaveAttribute("href", "/services");
-      });
+      const hrefs = Array.from(capabilitiesList.querySelectorAll("a")).map((link) => link.getAttribute("href"));
+      expect(hrefs).toContain("/services");
+      expect(hrefs).toContain("/solutions/website-development");
+      expect(hrefs).toContain("/solutions/ecommerce-development");
+      expect(hrefs).toContain("/solutions/ai-automation");
+      expect(hrefs).toContain("/solutions/college-project-mentoring");
+      expect(hrefs).toContain("/service-areas");
     });
   });
 });
