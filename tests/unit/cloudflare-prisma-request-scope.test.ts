@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock the OpenNext request context and the database driver. These tests
 // exercise client lifecycle without connecting to production Neon/PostgreSQL.
@@ -52,6 +52,10 @@ describe("Cloudflare Prisma request-scoped connection lifecycle", () => {
     testState.clients.length = 0;
     testState.adapterUrls.length = 0;
     setWorkerRequest({});
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it("creates one PrismaNeon adapter/client per Worker request", () => {
