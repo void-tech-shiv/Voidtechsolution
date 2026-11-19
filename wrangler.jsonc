@@ -23,7 +23,8 @@
     "enabled": true
   },
   "vars": {
-    "IS_CLOUDFLARE_WORKER": "true"
+    "IS_CLOUDFLARE_WORKER": "true",
+    "NODE_ENV": "production"
   },
   "keep_vars": true
 }
