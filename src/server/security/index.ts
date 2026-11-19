@@ -8,3 +8,4 @@ export * from "./origin";
 export * from "./rbac";
 export * from "./cms-rbac";
 
+export * from "./client-ip";
