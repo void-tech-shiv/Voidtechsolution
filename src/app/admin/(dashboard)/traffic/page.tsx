@@ -218,7 +218,7 @@ export default async function AdminTrafficPage({
         <div role="alert" className="rounded-2xl border border-amber-400/40 bg-amber-400/10 p-6">
           <h2 className="text-lg font-bold text-white">Traffic data temporarily unavailable</h2>
           <p className="mt-2 text-sm text-void-light">
-            Your website is still running. Check Cloudflare's Account Analytics Read token, query permissions, or service availability.
+            Your website is still running. Check Cloudflare&apos;s Account Analytics Read token, query permissions, or service availability.
             No traffic counts have been replaced with fake zeroes.
           </p>
         </div>
