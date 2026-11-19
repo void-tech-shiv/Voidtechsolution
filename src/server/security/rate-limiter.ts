@@ -75,6 +75,32 @@ export function checkRateLimit(
 }
 
 /**
+ * Check a failure counter without charging the current attempt. Successful
+ * logins must not consume the failed-login budget.
+ */
+export function peekRateLimit(
+  key: string,
+  limit: number,
+  windowMs: number
+): { allowed: boolean; remaining: number; resetInSeconds: number } {
+  const now = Date.now();
+  const record = rateLimitMap.get(key);
+  if (!record || now >= record.resetAt) {
+    return { allowed: true, remaining: limit, resetInSeconds: Math.ceil(windowMs / 1000) };
+  }
+  return {
+    allowed: record.count < limit,
+    remaining: Math.max(0, limit - record.count),
+    resetInSeconds: Math.max(1, Math.ceil((record.resetAt - now) / 1000)),
+  };
+}
+
+/** Records a failed attempt, never a successful login. */
+export function recordRateLimitFailure(key: string, limit: number, windowMs: number) {
+  return checkRateLimit(key, limit, windowMs);
+}
+
+/**
  * Generates a SHA-256 fingerprint for duplicate payload detection.
  */
 export function generateSubmissionFingerprint(email: string, message: string, selectedPackage?: string): string {
@@ -93,8 +119,19 @@ export function isDuplicateSubmission(fingerprint: string, cooldownMs = 60 * 100
     return true;
   }
 
+  // Bounded, opportunistic cleanup prevents unbounded growth on long-lived processes.
+  if (duplicateMap.size >= 5_000) {
+    for (const [key, expiry] of duplicateMap) {
+      if (expiry <= now) duplicateMap.delete(key);
+    }
+  }
   duplicateMap.set(fingerprint, now + cooldownMs);
   return false;
+}
+
+/** Release a reserved fingerprint if persistence failed, so users can retry. */
+export function releaseSubmissionFingerprint(fingerprint: string): void {
+  duplicateMap.delete(fingerprint);
 }
 
 /**
