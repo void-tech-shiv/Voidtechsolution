@@ -183,7 +183,7 @@ export async function loginAction(input: unknown): Promise<AuthActionResult> {
  */
 export async function logoutAction(): Promise<AuthActionResult> {
   const reqHeaders = await headers();
-  const ip = reqHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
+  const ip = getTrustedClientIp(reqHeaders) ?? "anonymous";
   const userAgent = reqHeaders.get("user-agent") || "unknown";
 
   const cookieStore = await cookies();
