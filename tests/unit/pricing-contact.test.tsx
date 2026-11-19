@@ -368,7 +368,56 @@ describe("Phase 6: Server Action & API Route Processing", () => {
     expect(res2.error).toContain("An identical enquiry was recently submitted");
   });
 
-  it("submitEnquiryAction dispatches emails non-blockingly upon database persistence", async () => {
+  it("allows a retry after a failed database write rather than falsely marking it duplicate", async () => {
+    const payload = {
+      name: "Retry Lead",
+      email: `retry_${Date.now()}@testcorp.com`,
+      serviceCategory: "WEB_DEVELOPMENT" as const,
+      message: "Database temporarily unavailable, then recovered.",
+      consentGiven: true,
+    };
+    const storedEnquiry = {
+      id: "ENQ-RETRY-001",
+      ...payload,
+      phone: null,
+      companyName: null,
+      budgetRange: null,
+      timeline: null,
+      selectedPackage: null,
+      additionalConfig: null,
+      referenceUrl: null,
+      status: "NEW",
+      assignedAdminId: null,
+      estimatedValueInr: null,
+      source: "WEBSITE_CONTACT_FORM",
+      lastContactedAt: null,
+      nextFollowUpAt: null,
+      lostReason: null,
+      ipHash: null,
+      userAgent: null,
+      internalNotes: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    vi.spyOn(enquiriesRepo, "createEnquiry")
+      .mockRejectedValueOnce(new Error("Simulated database outage"))
+      .mockResolvedValueOnce(storedEnquiry as Awaited<ReturnType<typeof enquiriesRepo.createEnquiry>>);
+    vi.spyOn(emailService, "dispatchEnquiryNotifications").mockResolvedValue({
+      customerEmailSuccess: true,
+      adminEmailSuccess: true,
+      errors: [],
+    });
+
+    const first = await submitEnquiryAction(payload);
+    expect(first.success).toBe(false);
+    expect(first.error).toContain("database service interruption");
+
+    const retried = await submitEnquiryAction(payload);
+    expect(retried.success).toBe(true);
+    expect(retried.enquiryId).toBe("ENQ-RETRY-001");
+  });
+
+  it("submitEnquiryAction dispatches emails before resolving upon database persistence", async () => {
     const emailSpy = vi.spyOn(emailService, "dispatchEnquiryNotifications").mockResolvedValue({
       customerEmailSuccess: true,
       adminEmailSuccess: true,
