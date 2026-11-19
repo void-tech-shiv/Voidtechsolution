@@ -13,6 +13,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { createFaqAction } from "@/server/actions/admin-content.actions";
+import { AdminEditableContentDialog } from "@/components/admin/editable-content-dialog";
 
 interface AdminFaqsClientProps {
   initialFaqs: FAQ[];
@@ -180,6 +181,17 @@ export function AdminFaqsClient({ initialFaqs }: AdminFaqsClientProps) {
                   <ChevronDown className="h-4 w-4 text-neutral-400" />
                 )}
               </button>
+
+              <div className="flex justify-end border-t border-white/5 px-5 py-2">
+                <AdminEditableContentDialog
+                  kind="faq"
+                  row={faq}
+                  onSaved={(saved) => {
+                    setFaqs((prev) => prev.map((f) => f.id === saved.id ? saved : f));
+                    setFeedback({ type: "success", message: "FAQ updated successfully." });
+                  }}
+                />
+              </div>
 
               {isExpanded && (
                 <div className="border-t border-white/5 bg-neutral-950/40 p-5 text-xs text-neutral-300 leading-relaxed">
