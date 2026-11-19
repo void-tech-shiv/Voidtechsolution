@@ -69,6 +69,9 @@ jobs:
       - name: Apply migrations to isolated local PostgreSQL
         run: npx prisma migrate deploy
 
+      - name: Seed the isolated test database
+        run: npx prisma db seed
+
       - name: Run unit and component tests
         run: npm test
 
