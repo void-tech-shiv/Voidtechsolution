@@ -100,12 +100,41 @@ export default async function RootLayout({
     // Draft mode helper safe fallback
   }
 
+  const siteIdentity = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": siteConfig.url + "/#organization",
+        name: siteConfig.name,
+        url: siteConfig.url,
+        description: siteConfig.description,
+        logo: siteConfig.url + "/brand/voidtech-symbol.webp",
+        contactPoint: {
+          "@type": "ContactPoint",
+          contactType: "sales",
+          email: siteConfig.contactEmail,
+          availableLanguage: ["English", "Hindi"],
+        },
+      },
+      {
+        "@type": "WebSite",
+        "@id": siteConfig.url + "/#website",
+        name: siteConfig.name,
+        url: siteConfig.url,
+        inLanguage: "en-IN",
+        publisher: { "@id": siteConfig.url + "/#organization" },
+      },
+    ],
+  };
+
   return (
     <html
       lang="en"
       className={`dark ${sansFont.variable} ${monoFont.variable}`}
     >
       <head>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteIdentity).replace(/</g, "\\u003c") }} />
         {isDraftMode && (
           <meta name="robots" content="noindex, nofollow" />
         )}

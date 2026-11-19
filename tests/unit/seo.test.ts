@@ -8,6 +8,7 @@ import { metadata as servicesMetadata } from "@/app/services/page";
 import { metadata as pricingMetadata } from "@/app/pricing/page";
 import { metadata as portfolioMetadata } from "@/app/portfolio/page";
 import { metadata as contactMetadata } from "@/app/contact/page";
+import { metadata as serviceAreasMetadata } from "@/app/service-areas/page";
 
 describe("Phase 8.4: Technical SEO & Canonical Domain Verification", () => {
   it("enforces the approved production canonical domain across siteConfig", () => {
@@ -39,6 +40,10 @@ describe("Phase 8.4: Technical SEO & Canonical Domain Verification", () => {
     expect(urls).toContain("https://voidtechsolution.codedev.co.in/pricing");
     expect(urls).toContain("https://voidtechsolution.codedev.co.in/portfolio");
     expect(urls).toContain("https://voidtechsolution.codedev.co.in/contact");
+    expect(urls).toContain("https://voidtechsolution.codedev.co.in/service-areas");
+    for (const slug of ["website-development", "ecommerce-development", "ai-automation", "college-project-mentoring"]) {
+      expect(urls).toContain(`https://voidtechsolution.codedev.co.in/solutions/${slug}`);
+    }
 
     // Must not contain any legacy domain
     for (const url of urls) {
@@ -63,6 +68,7 @@ describe("Phase 8.4: Technical SEO & Canonical Domain Verification", () => {
     expect((portfolioMetadata as any).alternates?.canonical).toBe(
       "https://voidtechsolution.codedev.co.in/portfolio"
     );
+    expect((serviceAreasMetadata as any).alternates?.canonical).toBe("https://voidtechsolution.codedev.co.in/service-areas");
     expect((contactMetadata as any).alternates?.canonical).toBe(
       "https://voidtechsolution.codedev.co.in/contact"
     );

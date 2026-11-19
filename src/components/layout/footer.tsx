@@ -15,12 +15,15 @@ export function Footer() {
   }
 
   const featuredServices = [
-    { title: "Website Development", href: "/services" },
+    { title: "Website Development", href: "/solutions/website-development" },
     { title: "App Development", href: "/services" },
     { title: "Custom API Development", href: "/services" },
-    { title: "AI Automation & Workflows", href: "/services" },
+    { title: "AI Automation & Workflows", href: "/solutions/ai-automation" },
     { title: "Autonomous AI Agents", href: "/services" },
     { title: "SaaS Development", href: "/services" },
+    { title: "Ecommerce Development", href: "/solutions/ecommerce-development" },
+    { title: "College Project Mentoring", href: "/solutions/college-project-mentoring" },
+    { title: "Service Areas in India", href: "/service-areas" },
   ];
 
   return (
