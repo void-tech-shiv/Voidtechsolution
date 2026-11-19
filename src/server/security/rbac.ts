@@ -6,6 +6,7 @@ import type { UserRole, AdminUser } from "@prisma/client";
  */
 export type PermissionKey =
   | "dashboard:view"
+  | "traffic:view"
   | "enquiries:view"
   | "enquiries:update_status"
   | "enquiries:delete"
@@ -27,6 +28,7 @@ export type PermissionKey =
 export const ROLE_PERMISSIONS: Record<UserRole, readonly PermissionKey[]> = {
   SUPER_ADMIN: [
     "dashboard:view",
+    "traffic:view",
     "enquiries:view",
     "enquiries:update_status",
     "enquiries:delete",
@@ -43,6 +45,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly PermissionKey[]> = {
   ],
   ADMIN: [
     "dashboard:view",
+    "traffic:view",
     "enquiries:view",
     "enquiries:update_status",
     "services:manage",
