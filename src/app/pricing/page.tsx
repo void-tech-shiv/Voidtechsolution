@@ -120,7 +120,7 @@ export default async function PricingPage() {
           </p>
         </div>
 
-        <PricingCalculator />
+        <PricingCalculator packages={packages} />
       </section>
 
       {/* ========================================================================= */}
