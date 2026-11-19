@@ -216,6 +216,13 @@ describe("Phase 6: Multi-Step Contact Enquiry Form", () => {
   });
 
   it("displays success screen when enquiry is submitted successfully", async () => {
+    // The action now awaits transactional email dispatch before responding.
+    // Avoid external SMTP in this component test.
+    vi.spyOn(emailService, "dispatchEnquiryNotifications").mockResolvedValue({
+      customerEmailSuccess: true,
+      adminEmailSuccess: true,
+      errors: [],
+    });
     vi.spyOn(enquiriesRepo, "createEnquiry").mockResolvedValueOnce({
       id: "ENQ-TEST-SUCCESS-101",
       name: "Siddharth Rao",
