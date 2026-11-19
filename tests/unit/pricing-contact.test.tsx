@@ -359,7 +359,7 @@ describe("Phase 6: Server Action & API Route Processing", () => {
       updatedAt: new Date(),
     });
 
-    const res1 = await submitEnquiryAction(payload, "192.168.1.50");
+    const res1 = await submitEnquiryAction(payload);
     expect(res1.success).toBe(true);
 
     // Immediate second submission with identical payload
@@ -414,7 +414,6 @@ describe("Phase 6: Server Action & API Route Processing", () => {
         selectedPackage: "ai-powered",
         consentGiven: true,
       },
-      "10.0.0.99"
     );
 
     expect(result.success).toBe(true);
