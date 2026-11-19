@@ -78,7 +78,7 @@ describe("Cloudflare Traffic Analytics report", () => {
 
   it("formats countries, sources and zero/empty periods honestly", () => {
     const report = buildTrafficReport(emptyData, "24h", "2026-11-19T00:00:00Z", "2026-11-20T00:00:00Z");
-    expect(report.countries[0].label).toBe("India");
+    expect(report.countries[0]?.label).toBe("India");
     expect(report.sources.map((x) => x.label)).toEqual(["Internal navigation", "Direct / unknown"]);
     expect(report.daily).toHaveLength(1);
     expect(buildTrafficReport({ totals: [] }, "30d", "", "").pageViews).toBe(0);
