@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { Loader2, Pencil, Save, X } from "lucide-react";
 import type { FAQ, PortfolioProject, PricingPackage, Service } from "@prisma/client";
 import {
@@ -150,7 +151,7 @@ export function AdminEditableContentDialog(props: Props) {
       aria-label={`Edit ${heading}`}
     ><Pencil className="h-3.5 w-3.5" /> Edit</button>
 
-    {open && <div
+    {open && typeof document !== "undefined" && createPortal(<div
       className="fixed inset-0 z-[90] flex items-center justify-center bg-black/85 p-3 backdrop-blur-sm sm:p-5"
       onKeyDown={handleKeyDown}
     >
@@ -189,7 +190,7 @@ export function AdminEditableContentDialog(props: Props) {
           </footer>
         </form>
       </div>
-    </div>}
+    </div>, document.body)}
   </>;
 }
 
