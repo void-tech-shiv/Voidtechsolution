@@ -104,6 +104,7 @@ const mockDeactivatedAdmin: AdminUser = {
 describe("Milestone 7.3: Centralized RBAC Permission Matrix & Guards", () => {
   const allPermissions: PermissionKey[] = [
     "dashboard:view",
+    "traffic:view",
     "enquiries:view",
     "enquiries:update_status",
     "enquiries:delete",
@@ -121,12 +122,12 @@ describe("Milestone 7.3: Centralized RBAC Permission Matrix & Guards", () => {
 
   it("ROLE_PERMISSIONS defines approved permissions for exactly three roles", () => {
     expect(Object.keys(ROLE_PERMISSIONS)).toEqual(["SUPER_ADMIN", "ADMIN", "EDITOR"]);
-    expect(ROLE_PERMISSIONS.SUPER_ADMIN).toHaveLength(14);
-    expect(ROLE_PERMISSIONS.ADMIN).toHaveLength(7);
+    expect(ROLE_PERMISSIONS.SUPER_ADMIN).toHaveLength(15);
+    expect(ROLE_PERMISSIONS.ADMIN).toHaveLength(8);
     expect(ROLE_PERMISSIONS.EDITOR).toHaveLength(5);
   });
 
-  it("SUPER_ADMIN holds all 14 administrative permissions", () => {
+  it("SUPER_ADMIN holds all 15 administrative permissions", () => {
     for (const perm of allPermissions) {
       expect(hasPermission("SUPER_ADMIN", perm)).toBe(true);
       expect(() => requirePermission(mockSuperAdmin, perm)).not.toThrow();
@@ -136,6 +137,7 @@ describe("Milestone 7.3: Centralized RBAC Permission Matrix & Guards", () => {
   it("ADMIN holds operational permissions and lacks governance/destructive permissions", () => {
     const adminAllowed: PermissionKey[] = [
       "dashboard:view",
+      "traffic:view",
       "enquiries:view",
       "enquiries:update_status",
       "services:manage",
@@ -175,7 +177,7 @@ describe("Milestone 7.3: Centralized RBAC Permission Matrix & Guards", () => {
     ];
 
     const editorForbidden: PermissionKey[] = [
-      "enquiries:update_status",
+      "traffic:view",      "enquiries:update_status",
       "enquiries:delete",
       "pricing:manage",
       "settings:manage",
