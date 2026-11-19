@@ -154,7 +154,7 @@ export function buildTrafficReport(
         pageViews: safeCount(row.count),
         visits: safeCount(row.sum?.visits),
       }))
-      .filter((row) => /^\\d{4}-\\d{2}-\\d{2}$/.test(row.date))
+      .filter((row) => /^\d{4}-\d{2}-\d{2}$/.test(row.date))
       .sort((a, b) => a.date.localeCompare(b.date)),
     countries,
     devices: groupedRows(rows.devices, "deviceType"),
