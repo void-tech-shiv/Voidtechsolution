@@ -94,7 +94,7 @@ export function PricingTable({ packages = approvedPricingPackages }: PricingTabl
       {/* Package Grid */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filteredPackages.map((pkg) => {
-          const isPlus = pkg.priceInr >= 10000;
+          const isPlus = pkg.isStartingPrice;
           const formattedPrice = `₹${pkg.priceInr.toLocaleString("en-IN")}${isPlus ? "+" : ""}`;
 
           return (
