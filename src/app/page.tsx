@@ -47,7 +47,7 @@ export const metadata: Metadata = {
 export default async function HomePage() {
   // Concurrently load data via repositories with safe fallbacks
   const [services, projects, pricingPackages, faqs] = await Promise.all([
-    ServicesRepo.getAllServices(),
+    ServicesRepo.getActiveServices(),
     PortfolioRepo.getFeaturedProjects(),
     PricingRepo.getActivePricingPackages(),
     FaqRepo.getActiveFaqs(),

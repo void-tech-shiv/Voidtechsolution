@@ -62,6 +62,7 @@ export async function getActiveServices(): Promise<Service[]> {
     if (services.length > 0) {
       return services;
     }
+    if (await prisma.service.count() > 0) return [];
   } catch (error) {
     console.warn("[services.repo] Database query failed, using static fallback:", error);
   }

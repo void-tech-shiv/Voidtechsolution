@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import type { PortfolioProject } from "@prisma/client";
+import { AdminEditableContentDialog } from "@/components/admin/editable-content-dialog";
 import {
   Search,
   Filter,
@@ -14,7 +15,8 @@ interface AdminPortfolioClientProps {
 }
 
 export function AdminPortfolioClient({ initialProjects }: AdminPortfolioClientProps) {
-  const [projects] = React.useState<PortfolioProject[]>(initialProjects);
+  const [projects, setProjects] = React.useState<PortfolioProject[]>(initialProjects);
+  const [feedback, setFeedback] = React.useState<string | null>(null);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedIndustry, setSelectedIndustry] = React.useState("ALL");
   const [inspectingProject, setInspectingProject] = React.useState<PortfolioProject | null>(null);
@@ -86,6 +88,8 @@ export function AdminPortfolioClient({ initialProjects }: AdminPortfolioClientPr
         </div>
       </div>
 
+      {feedback && <div role="status" className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-xs text-emerald-200">{feedback}</div>}
+
       {/* Projects Table */}
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-neutral-900/50 backdrop-blur-md">
         <div className="overflow-x-auto">
@@ -142,6 +146,15 @@ export function AdminPortfolioClient({ initialProjects }: AdminPortfolioClientPr
                   </td>
 
                   <td className="px-6 py-4 text-right">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      <AdminEditableContentDialog
+                        kind="portfolio"
+                        row={item}
+                        onSaved={(saved) => {
+                          setProjects((prev) => prev.map((p) => p.id === saved.id ? saved : p));
+                          setFeedback(`Portfolio project '${saved.title}' saved successfully.`);
+                        }}
+                      />
                     <button
                       onClick={() => setInspectingProject(item)}
                       className="inline-flex items-center gap-1 rounded-lg border border-white/5 bg-neutral-800/80 px-2.5 py-1 text-xs text-neutral-300 hover:border-violet-500/30 hover:bg-neutral-800 hover:text-white"
@@ -149,6 +162,7 @@ export function AdminPortfolioClient({ initialProjects }: AdminPortfolioClientPr
                       <Eye className="h-3 w-3" />
                       Details
                     </button>
+                    </div>
                   </td>
                 </tr>
               ))}

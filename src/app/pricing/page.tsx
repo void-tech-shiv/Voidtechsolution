@@ -48,7 +48,9 @@ export default async function PricingPage() {
     PricingRepo.getActivePricingPackages(),
     FaqRepo.getActiveFaqs(),
   ]);
-
+  const startingPriceLabel = packages.length > 0
+    ? `₹${Math.min(...packages.map((pkg) => pkg.priceInr)).toLocaleString("en-IN")}`
+    : "Custom quote";
 
   return (
     <div className="public-editorial relative overflow-hidden">
@@ -62,12 +64,12 @@ export default async function PricingPage() {
         headingId="pricing-hero-headline"
         eyebrow="Transparent INR pricing • Predictable engineering"
         title={<>Predictable Investment. <span className="bg-gradient-to-r from-electric-purple via-electric-violet to-electric-neon bg-clip-text text-transparent">Zero Hidden Costs.</span></>}
-        description="Honest, transparent pricing strictly in Indian Rupees (INR). From ultra-fast static landing pages starting at ₹999 to custom enterprise systems, our clear 50/50 payment terms ensure alignment at kickoff and final handover."
+        description="Honest, transparent pricing strictly in Indian Rupees (INR). From ultra-fast landing pages to custom enterprise systems, our clear 50/50 payment terms ensure alignment at kickoff and final handover."
         actions={<><a href="#packages" className={buttonVariants({ variant: "glow", size: "lg", className: "min-h-12" })}>View Approved Tiers<ArrowRight className="h-4 w-4" aria-hidden="true" /></a><a href="#calculator" className={buttonVariants({ variant: "outline", size: "lg", className: "min-h-12" })}><Calculator className="h-4 w-4 text-electric-purple" aria-hidden="true" />Open Project Calculator</a></>}
         imageSrc="/hero/voidtech-pricing-3d.webp"
         imageAlt="VOIDTECH Holographic Pricing Calculator & Prism"
         asideLabel="Clear project terms"
-        aside={<div className="space-y-3"><div className="rounded-xl border border-void-border/60 bg-void-black/40 p-4"><p className="font-mono text-xs uppercase tracking-wider text-void-muted">Starting price</p><p className="mt-2 text-3xl font-bold text-white">₹999</p><p className="mt-1 text-xs text-void-muted">Package-specific scope applies</p></div><div className="grid grid-cols-2 gap-3"><div className="rounded-xl border border-void-border/60 bg-void-black/40 p-4"><p className="font-mono text-xs uppercase text-void-muted">Kickoff</p><p className="mt-2 text-xl font-bold text-electric-purple">50%</p></div><div className="rounded-xl border border-void-border/60 bg-void-black/40 p-4"><p className="font-mono text-xs uppercase text-void-muted">Handover</p><p className="mt-2 text-xl font-bold text-white">50%</p></div></div><p className="text-xs leading-relaxed text-void-muted">Ten approved packages and a project calculator make scope and investment easier to compare.</p></div>}
+        aside={<div className="space-y-3"><div className="rounded-xl border border-void-border/60 bg-void-black/40 p-4"><p className="font-mono text-xs uppercase tracking-wider text-void-muted">Starting price</p><p className="mt-2 text-3xl font-bold text-white">{startingPriceLabel}</p><p className="mt-1 text-xs text-void-muted">Package-specific scope applies</p></div><div className="grid grid-cols-2 gap-3"><div className="rounded-xl border border-void-border/60 bg-void-black/40 p-4"><p className="font-mono text-xs uppercase text-void-muted">Kickoff</p><p className="mt-2 text-xl font-bold text-electric-purple">50%</p></div><div className="rounded-xl border border-void-border/60 bg-void-black/40 p-4"><p className="font-mono text-xs uppercase text-void-muted">Handover</p><p className="mt-2 text-xl font-bold text-white">50%</p></div></div><p className="text-xs leading-relaxed text-void-muted">Our current packages and a project calculator make scope and investment easier to compare.</p></div>}
       />
 
       {/* ========================================================================= */}
@@ -86,7 +88,7 @@ export default async function PricingPage() {
             id="packages-headline"
             className="font-mono text-3xl font-bold tracking-tight text-white sm:text-4xl"
           >
-            All 10 Approved Pricing Tiers
+            {packages.length} Available Pricing Tiers
           </h2>
           <p className="mt-3 text-sm text-void-muted max-w-2xl mx-auto">
             Starting prices with the <span className="font-mono font-bold text-electric-purple">+</span> symbol denote baseline kickoff pricing where full scope is customized during technical discovery.
@@ -120,7 +122,7 @@ export default async function PricingPage() {
           </p>
         </div>
 
-        <PricingCalculator />
+        <PricingCalculator packages={packages} />
       </section>
 
       {/* ========================================================================= */}

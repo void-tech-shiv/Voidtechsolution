@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 import type { EnquiryStatus } from "@prisma/client";
 import { getCurrentAdmin } from "@/server/actions/auth.actions";
 import { validateRequestOrigin } from "@/server/security/origin";
@@ -214,6 +215,16 @@ export async function toggleServiceActiveAction(
     requirePermission(current.user, "services:manage");
 
     const updated = await updateService(serviceId, { isActive });
+    await recordAuditEvent({
+      action: "SERVICE_VISIBILITY_UPDATED", entity: "Service", entityId: updated.id,
+      actorId: current.user.id, actorEmail: current.user.email,
+      details: { isActive },
+    });
+    try {
+      revalidatePath("/");
+      revalidatePath("/services");
+      revalidatePath("/admin/services");
+    } catch { /* Revalidation may be unavailable in isolated test contexts. */ }
     return { success: true, data: updated };
   } catch (err) {
     const msg = err instanceof AuthorizationError || err instanceof Error ? err.message : "Failed to toggle service status.";
@@ -288,7 +299,16 @@ export async function togglePricingPackageActiveAction(
       where: { id: packageId },
       data: { isActive },
     });
-
+    await recordAuditEvent({
+      action: "PRICING_VISIBILITY_UPDATED", entity: "PricingPackage", entityId: updated.id,
+      actorId: current.user.id, actorEmail: current.user.email,
+      details: { isActive },
+    });
+    try {
+      revalidatePath("/");
+      revalidatePath("/pricing");
+      revalidatePath("/admin/pricing");
+    } catch { /* Revalidation may be unavailable in isolated test contexts. */ }
     return { success: true, data: updated };
   } catch (err) {
     const msg = err instanceof AuthorizationError || err instanceof Error ? err.message : "Failed to toggle package status.";

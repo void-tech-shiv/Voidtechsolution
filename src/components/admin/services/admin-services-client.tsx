@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { toggleServiceActiveAction } from "@/server/actions/admin-content.actions";
+import { AdminEditableContentDialog } from "@/components/admin/editable-content-dialog";
 
 interface AdminServicesClientProps {
   initialServices: Service[];
@@ -56,7 +57,7 @@ export function AdminServicesClient({ initialServices }: AdminServicesClientProp
       }
 
       setServices((prev) =>
-        prev.map((s) => (s.id === service.id ? { ...s, isActive: nextStatus } : s))
+        prev.map((s) => (s.id === service.id ? res.data as Service : s))
       );
       setFeedback({
         type: "success",
@@ -189,6 +190,14 @@ export function AdminServicesClient({ initialServices }: AdminServicesClientProp
 
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <AdminEditableContentDialog
+                        kind="service"
+                        row={service}
+                        onSaved={(saved) => {
+                          setServices((prev) => prev.map((s) => s.id === saved.id ? saved : s));
+                          setFeedback({ type: "success", message: `Service '${saved.title}' updated successfully.` });
+                        }}
+                      />
                       <button
                         onClick={() => setInspectingService(service)}
                         className="inline-flex items-center gap-1 rounded-lg border border-white/5 bg-neutral-800/80 px-2.5 py-1 text-xs text-neutral-300 hover:border-violet-500/30 hover:bg-neutral-800 hover:text-white"

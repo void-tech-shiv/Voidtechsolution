@@ -58,6 +58,8 @@ export async function getActivePricingPackages(): Promise<PricingPackage[]> {
     });
 
     if (packages.length > 0) return packages;
+    // A deliberately hidden catalog must not silently reappear from static fallbacks.
+    if (await prisma.pricingPackage.count() > 0) return [];
   } catch (error) {
     console.warn("[pricing.repo] Database query failed, using static fallback:", error);
   }

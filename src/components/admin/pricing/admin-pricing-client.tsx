@@ -11,6 +11,7 @@ import {
   Star,
 } from "lucide-react";
 import { togglePricingPackageActiveAction } from "@/server/actions/admin-content.actions";
+import { AdminEditableContentDialog } from "@/components/admin/editable-content-dialog";
 
 interface AdminPricingClientProps {
   initialPackages: PricingPackage[];
@@ -48,7 +49,7 @@ export function AdminPricingClient({ initialPackages }: AdminPricingClientProps)
       }
 
       setPackages((prev) =>
-        prev.map((p) => (p.id === pkg.id ? { ...p, isActive: nextStatus } : p))
+        prev.map((p) => (p.id === pkg.id ? res.data as PricingPackage : p))
       );
       setFeedback({
         type: "success",
@@ -178,6 +179,14 @@ export function AdminPricingClient({ initialPackages }: AdminPricingClientProps)
 
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <AdminEditableContentDialog
+                        kind="pricing"
+                        row={pkg}
+                        onSaved={(saved) => {
+                          setPackages((prev) => prev.map((p) => p.id === saved.id ? saved : p));
+                          setFeedback({ type: "success", message: `Package '${saved.name}' saved. Public pricing pages will reflect the update.` });
+                        }}
+                      />
                       <button
                         onClick={() => setInspectingPackage(pkg)}
                         className="inline-flex items-center gap-1 rounded-lg border border-white/5 bg-neutral-800/80 px-2.5 py-1 text-xs text-neutral-300 hover:border-violet-500/30 hover:bg-neutral-800 hover:text-white"
@@ -216,7 +225,7 @@ export function AdminPricingClient({ initialPackages }: AdminPricingClientProps)
               <div>
                 <h2 className="text-lg font-bold text-white">{inspectingPackage.name}</h2>
                 <div className="font-bold text-violet-400">
-                  ₹{inspectingPackage.priceInr.toLocaleString("en-IN")}+
+                  ₹{inspectingPackage.priceInr.toLocaleString("en-IN")}{inspectingPackage.isStartingPrice ? "+" : ""}
                 </div>
               </div>
               <button

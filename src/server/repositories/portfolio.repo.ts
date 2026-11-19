@@ -172,6 +172,7 @@ export async function getFeaturedProjects(): Promise<PortfolioProject[]> {
     });
 
     if (projects.length > 0) return projects;
+    if (await prisma.portfolioProject.count() > 0) return [];
   } catch (error) {
     console.warn("[portfolio.repo] Database query failed, using fallback:", error);
   }
