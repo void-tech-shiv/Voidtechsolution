@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { createHash } from "node:crypto";
 
 import type { Prisma } from "@prisma/client";
 import {
@@ -71,12 +72,19 @@ export async function submitEnquiryAction(
   } catch {
     // Supports isolated unit tests without a Next.js request context.
   }
-  const rateLimitKey = `enquiry:${clientIp ?? "anonymous"}`;
-  const rateCheck = checkRateLimit(rateLimitKey, 5, 10 * 60 * 1000);
-  if (!rateCheck.allowed) {
+  const emailKey = `enquiry_email:${createHash("sha256").update(data.email.toLowerCase()).digest("hex")}`;
+  const emailCheck = checkRateLimit(emailKey, 5, 10 * 60 * 1000);
+  const ipCheck = clientIp
+    ? checkRateLimit(`enquiry_ip:${clientIp}`, 20, 10 * 60 * 1000)
+    : { allowed: true, resetInSeconds: 0 };
+  if (!emailCheck.allowed || !ipCheck.allowed) {
+    const retrySeconds = Math.max(
+      !emailCheck.allowed ? emailCheck.resetInSeconds : 0,
+      !ipCheck.allowed ? ipCheck.resetInSeconds : 0
+    );
     return {
       success: false,
-      error: `Submission limit reached. Please wait ${rateCheck.resetInSeconds} seconds before submitting again.`,
+      error: `Submission limit reached. Please wait ${retrySeconds} seconds before submitting again.`,
     };
   }
 
