@@ -4,7 +4,6 @@ import { getAllProjects } from "@/server/repositories/portfolio.repo";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = siteConfig.url;
-  const now = new Date();
 
   const solutionRoutes = [
     "/solutions/website-development",
@@ -13,7 +12,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/solutions/college-project-mentoring",
   ].map((route) => ({
     url: `${baseUrl}${route}`,
-    lastModified: now,
     changeFrequency: "monthly" as const,
     priority: 0.8,
   }));
@@ -29,7 +27,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/guides/website-development-cost-india",
   ].map((route) => ({
     url: `${baseUrl}${route}`,
-    lastModified: now,
     changeFrequency: (route === "" ? "daily" : "weekly") as "daily" | "weekly",
     priority: route === "" ? 1.0 : 0.8,
   }));
@@ -38,7 +35,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const projects = await getAllProjects();
     const projectRoutes = projects.map((project) => ({
       url: `${baseUrl}/portfolio/${project.slug}`,
-      lastModified: project.updatedAt || now,
+      lastModified: project.updatedAt,
       changeFrequency: "monthly" as const,
       priority: 0.7,
     }));
