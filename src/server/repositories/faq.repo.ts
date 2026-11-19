@@ -95,6 +95,7 @@ export async function getActiveFaqs(): Promise<FAQ[]> {
     });
 
     if (faqs.length > 0) return faqs;
+    if (await prisma.fAQ.count() > 0) return [];
   } catch (error) {
     console.warn("[faq.repo] Database query failed, using fallback:", error);
   }
