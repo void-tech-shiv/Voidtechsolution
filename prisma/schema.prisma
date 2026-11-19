@@ -75,6 +75,11 @@ model Enquiry {
   assignments   LeadAssignment[]
   notifications AdminNotification[]
 
+
+  // Agency sales-to-delivery workflow (VOIDTECH SOLUTION 2.0)
+  agencyProposals AgencyProposal[]
+  agencyProjects  AgencyProject[]
+
   ipHash    String?
   userAgent String?
   createdAt DateTime @default(now())
@@ -633,4 +638,98 @@ model MediaAsset {
   @@index([provider, storageKey])
   @@index([uploaderId])
   @@map("media_assets")
+}
+
+// ------------------------------------------------------------------------------
+// 13. AGENCY PROPOSALS, CLIENT PROJECTS & DELIVERY MILESTONES (Phase 3)
+// ------------------------------------------------------------------------------
+
+enum AgencyProposalStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+}
+
+enum AgencyProjectStatus {
+  PLANNED
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+model AgencyProposal {
+  id            String @id @default(cuid())
+  enquiryId     String
+  enquiry       Enquiry @relation(fields: [enquiryId], references: [id], onDelete: Restrict)
+  title         String
+  scope         String @db.Text
+  terms         String @db.Text
+  currency      String @default("INR")
+  subtotalInr   Int
+  discountInr   Int @default(0)
+  totalInr      Int
+  status        AgencyProposalStatus @default(DRAFT)
+  validUntil    DateTime?
+  sentAt        DateTime?
+  acceptedAt    DateTime?
+  rejectedAt    DateTime?
+  createdById   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  items         AgencyProposalItem[]
+  project       AgencyProject?
+
+  @@index([enquiryId, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@map("agency_proposals")
+}
+
+model AgencyProposalItem {
+  id            String @id @default(cuid())
+  proposalId    String
+  proposal      AgencyProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  description   String
+  quantity      Int
+  unitPriceInr  Int
+  lineTotalInr  Int
+  orderIndex    Int
+
+  @@index([proposalId, orderIndex])
+  @@map("agency_proposal_items")
+}
+
+model AgencyProject {
+  id         String @id @default(cuid())
+  proposalId String @unique
+  proposal   AgencyProposal @relation(fields: [proposalId], references: [id], onDelete: Restrict)
+  enquiryId  String
+  enquiry    Enquiry @relation(fields: [enquiryId], references: [id], onDelete: Restrict)
+  title      String
+  status     AgencyProjectStatus @default(PLANNED)
+  dueAt      DateTime?
+  notes      String? @db.Text
+  milestones AgencyProjectMilestone[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([enquiryId, createdAt(sort: Desc)])
+  @@index([status, dueAt])
+  @@map("agency_projects")
+}
+
+model AgencyProjectMilestone {
+  id          String @id @default(cuid())
+  projectId   String
+  project     AgencyProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  orderIndex  Int
+  isCompleted Boolean @default(false)
+  completedAt DateTime?
+  updatedAt   DateTime @updatedAt
+
+  @@unique([projectId, orderIndex])
+  @@index([projectId, isCompleted])
+  @@map("agency_project_milestones")
 }

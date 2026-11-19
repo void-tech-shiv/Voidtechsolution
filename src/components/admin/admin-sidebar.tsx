@@ -11,6 +11,8 @@ import {
   Kanban,
   Layers,
   CircleDollarSign,
+  FileText,
+  ClipboardList,
   Briefcase,
   HelpCircle,
   Users,
@@ -54,6 +56,18 @@ export const ADMIN_NAV_ITEMS: NavItemConfig[] = [
     icon: Kanban,
     requiredPermission: "enquiries:view",
     badge: "CRM",
+  },
+  {
+    name: "Proposals",
+    href: "/admin/proposals",
+    icon: FileText,
+    requiredPermission: "proposals:manage",
+  },
+  {
+    name: "Client Projects",
+    href: "/admin/projects",
+    icon: ClipboardList,
+    requiredPermission: "projects:manage",
   },
   {
     name: "Enquiries",

@@ -105,6 +105,8 @@ describe("Milestone 7.3: Centralized RBAC Permission Matrix & Guards", () => {
   const allPermissions: PermissionKey[] = [
     "dashboard:view",
     "traffic:view",
+    "proposals:manage",
+    "projects:manage",
     "enquiries:view",
     "enquiries:update_status",
     "enquiries:delete",
@@ -122,12 +124,12 @@ describe("Milestone 7.3: Centralized RBAC Permission Matrix & Guards", () => {
 
   it("ROLE_PERMISSIONS defines approved permissions for exactly three roles", () => {
     expect(Object.keys(ROLE_PERMISSIONS)).toEqual(["SUPER_ADMIN", "ADMIN", "EDITOR"]);
-    expect(ROLE_PERMISSIONS.SUPER_ADMIN).toHaveLength(15);
-    expect(ROLE_PERMISSIONS.ADMIN).toHaveLength(8);
+    expect(ROLE_PERMISSIONS.SUPER_ADMIN).toHaveLength(17);
+    expect(ROLE_PERMISSIONS.ADMIN).toHaveLength(10);
     expect(ROLE_PERMISSIONS.EDITOR).toHaveLength(5);
   });
 
-  it("SUPER_ADMIN holds all 15 administrative permissions", () => {
+  it("SUPER_ADMIN holds all 17 administrative permissions", () => {
     for (const perm of allPermissions) {
       expect(hasPermission("SUPER_ADMIN", perm)).toBe(true);
       expect(() => requirePermission(mockSuperAdmin, perm)).not.toThrow();
@@ -138,6 +140,8 @@ describe("Milestone 7.3: Centralized RBAC Permission Matrix & Guards", () => {
     const adminAllowed: PermissionKey[] = [
       "dashboard:view",
       "traffic:view",
+      "proposals:manage",
+      "projects:manage",
       "enquiries:view",
       "enquiries:update_status",
       "services:manage",
@@ -177,7 +181,10 @@ describe("Milestone 7.3: Centralized RBAC Permission Matrix & Guards", () => {
     ];
 
     const editorForbidden: PermissionKey[] = [
-      "traffic:view",      "enquiries:update_status",
+      "traffic:view",
+      "proposals:manage",
+      "projects:manage",
+      "enquiries:update_status",
       "enquiries:delete",
       "pricing:manage",
       "settings:manage",
