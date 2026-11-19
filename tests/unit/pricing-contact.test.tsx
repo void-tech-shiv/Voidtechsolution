@@ -363,7 +363,7 @@ describe("Phase 6: Server Action & API Route Processing", () => {
     expect(res1.success).toBe(true);
 
     // Immediate second submission with identical payload
-    const res2 = await submitEnquiryAction(payload, "192.168.1.50");
+    const res2 = await submitEnquiryAction(payload);
     expect(res2.success).toBe(false);
     expect(res2.error).toContain("An identical enquiry was recently submitted");
   });
