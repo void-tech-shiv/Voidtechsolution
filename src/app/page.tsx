@@ -13,6 +13,7 @@ import { ServicesRepo, PortfolioRepo, PricingRepo, FaqRepo } from "@/server/repo
 import { ServicesFilter } from "@/components/sections/services-filter";
 import { FaqAccordion } from "@/components/sections/faq-accordion";
 import { QuickInquiry } from "@/components/sections/quick-inquiry";
+import { QuickQuoteForm } from "@/components/sections/quick-quote-form";
 import { buttonVariants } from "@/components/ui/button";
 import { GlassCard, PricingCard } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +65,30 @@ export default async function HomePage() {
       {/* SECTION 1: CINEMATIC 3D TECHNOLOGY HERO ENVIRONMENT                       */}
       {/* ========================================================================= */}
       <CinematicHero />
+
+      <section
+        id="quick-quote"
+        aria-labelledby="quick-quote-heading"
+        className="relative mx-auto grid max-w-[1440px] gap-8 border-t border-void-border/60 px-4 py-14 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-12 lg:px-8 xl:px-12"
+      >
+        <div>
+          <p className="font-mono text-xs font-semibold uppercase tracking-widest text-electric-purple">
+            Website development for real businesses
+          </p>
+          <h2 id="quick-quote-heading" className="mt-4 max-w-xl text-3xl font-extrabold text-white sm:text-4xl">
+            Need a website? Get a free quote without the technical hassle.
+          </h2>
+          <p className="mt-5 max-w-xl text-base leading-relaxed text-void-light">
+            A business site, portfolio, online store or custom web app — tell us what you need.
+            We will review your request and help you decide the next steps.
+          </p>
+          <p className="mt-5 text-sm text-void-muted">
+            No account required. No obligation to buy. A real project enquiry, handled by our team.
+          </p>
+        </div>
+        <QuickQuoteForm />
+      </section>
+
 
       {/* ========================================================================= */}
       {/* SECTION 2: BRAND INTRODUCTION                                             */}
