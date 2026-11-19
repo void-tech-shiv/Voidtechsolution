@@ -1,4 +1,3 @@
-import "server-only";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 /**
