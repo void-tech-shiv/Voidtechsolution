@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import type { PricingPackage } from "@prisma/client";
 import Link from "next/link";
 import {
   Calculator,
@@ -150,7 +151,11 @@ export const ADDON_OPTIONS: AddonOption[] = [
   },
 ];
 
-export function PricingCalculator() {
+export function PricingCalculator({ packages }: { packages?: Array<Pick<PricingPackage, "slug" | "name" | "priceInr" | "isStartingPrice" | "category">> }) {
+  const calculatorPackages = React.useMemo<PackageOption[]>(() =>
+    packages ? packages.map((item) => ({ id: item.slug, name: item.name, startingPrice: item.priceInr, isStartingPlus: item.isStartingPrice, category: item.category })) : PACKAGE_OPTIONS,
+    [packages]
+  );
   const [selectedCategory, setSelectedCategory] = React.useState<string>("WEB_DEVELOPMENT");
   const [selectedPackageId, setSelectedPackageId] = React.useState<string>("basic-static");
   const [selectedAddons, setSelectedAddons] = React.useState<string[]>([]);
@@ -181,7 +186,7 @@ export function PricingCalculator() {
   };
 
   // Pricing calculations
-  const selectedPackage = PACKAGE_OPTIONS.find((p) => p.id === selectedPackageId) || PACKAGE_OPTIONS[0];
+  const selectedPackage = calculatorPackages.find((p) => p.id === selectedPackageId) || calculatorPackages[0] || PACKAGE_OPTIONS[0];
 
   const calculatedResult = React.useMemo(() => {
     const basePrice = selectedPackage?.startingPrice || 999;
@@ -228,6 +233,12 @@ export function PricingCalculator() {
     params.set("timeline", timelineUrgency === "PRIORITY" ? "URGENT_UNDER_1_MONTH" : "1_TO_3_MONTHS");
     return `/contact?${params.toString()}`;
   }, [selectedCategory, selectedPackageId, selectedAddons, timelineUrgency]);
+
+  if (packages && packages.length === 0) {
+    return <p className="rounded-xl border border-void-border p-6 text-center text-sm text-void-muted">
+      Pricing is currently available by quotation. <Link href="/contact" className="text-electric-purple underline">Request a custom quote</Link>.
+    </p>;
+  }
 
   return (
     <div id="calculator" className="space-y-12">
@@ -293,7 +304,7 @@ export function PricingCalculator() {
               2. Select Starting Package Baseline
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {PACKAGE_OPTIONS.map((pkg) => {
+              {calculatorPackages.map((pkg) => {
                 const isSelected = selectedPackageId === pkg.id;
                 return (
                   <button
