@@ -1,0 +1,61 @@
+name: Validate Next.js and Cloudflare Worker
+
+on:
+  push:
+    branches:
+      - main
+      - fix/cloudflare-build-20261119
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "true"
+      DATABASE_URL: postgresql://test:test@localhost:5432/test_db
+      DIRECT_URL: postgresql://test:test@localhost:5432/test_db
+      AUTH_SECRET: ci-only-random-placeholder-32-chars-long-not-for-production
+      OTP_PEPPER_SECRET: ci-only-otp-pepper-placeholder
+      SMTP_HOST: localhost
+      SMTP_PORT: "587"
+      SMTP_SECURE: "false"
+      SMTP_USER: test-user
+      SMTP_PASS: test-pass
+      SMTP_FROM_EMAIL: notifications@example.com
+      ADMIN_ALERT_EMAIL: admin@example.com
+      NEXT_PUBLIC_SITE_URL: https://example.com
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install all dependencies including dev tools
+        run: npm ci --include=dev
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Verify TypeScript
+        run: npm run typecheck
+
+      - name: Run unit and component tests
+        run: npm test
+
+      - name: Build Cloudflare Worker bundle
+        run: npm run build:worker
+
+      - name: Verify compiled OpenNext Worker artifact
+        run: test -s .open-next/worker.js
